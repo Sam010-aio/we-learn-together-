@@ -177,7 +177,73 @@ strengths, leaf translucency).
   hidden during the two AO g-buffer renders (also removes 42k grass instances from
   those passes — a measurable win).
 
-## 7. Files touched
+## 7. Site plan (Street-View-Abgleich) — Vertrag für den Umgebungs-Umbau
+
+Ground truth: die fünf Street-View-Screenshots (März 2022, Via Dentis / Abt-Jerusalem-Straße).
+App-Koordinaten, 1 u = 1 m, +z = Oker-/Naturseite, −z = Campus-Süden.
+
+```
+                +z  Oker (Fluss z≈39, Steg, Ufer-Hecken z≈22.6, dichter Baumbestand)  — bestehend
+   ┌──────────────────────────────────────────────────────────────────────┐
+   │   STUDIERENDENHAUS (0,0), 32×28, Pflaster-Apron bis ±19/±17          │
+   │   Abt-Jerusalem-Straße: Asphalt N-S bei x≈27 (Piktogramme, Parken)   │
+   ├── Via Dentis: Klinker O-W, z −19.3…−25.7, x −14…30, Granitborde ─────┤
+   │ PLAZA (Klinker-       │ ALTGEBÄUDE x 11…25, z −29…−91                │  Gelbes Giebelhaus (34,−27)
+   │ Promenade) x −8…11,   │ Langachse N-S, SCHMALSEITE z=−29             │  Turm 15 Gesch. (44,−42)
+   │ z −29…−91, Baum-      │ gegenüber dem Eingang, Portale → West        │  Parkplatz x 31…40, z −30…−44
+   │ scheiben-Reihe        │ (Plaza-Seite)                                 │  (geschwungene Hecke am Rand)
+   │ AUDIMAX (−26,−58) Front → Ost (Plaza)                                 │
+   └──────────────────────────────────────────────────────────────────────┘
+Eingangs-Blick (von ~(2,1.7,−14) nach Süden): Altgebäude-Schmalseite gegenüber, Langfassade
+läuft nach Süden die Plaza entlang, gelbes Giebelhaus + dunkler Rasterturm hinten-links (Osten),
+weiße Audimax-Kulisse diagonal rechts (Westen).
+```
+
+Zusätzliche Entscheidungen: Gerüst + blauer Aufzugsturm des realen Altgebäudes werden NICHT
+modelliert (Bauzustand, nicht Gebäude); Altgebäude-Tiefe bleibt bei den modellierten 14 m
+(real ~40 m — Remodel des Detailbaus nicht gerechtfertigt, Proportion der Schauseiten stimmt);
+Schattenkamera (±46 m) deckt Straße/Plaza-Anfang — fernes Altgebäude-Ende bleibt als Kulisse
+außerhalb des Schattenkastens.
+
+## 8. Umsetzung Site-Umbau + Asset-Fixes (Change Log)
+
+**Menschen v3 (Task B):** alle aufgemalten Gesichtszüge entfernt (ein abstraktes Stil-Level
+überall); Kopf kleiner (~7,5 Kopfhöhen), Schultern > Hüfte, Arme enden Mitte Oberschenkel
+(asymmetrische Beugung), Standasymmetrie + Idle-Sway/Kopfdrift (Registry, bei Rebuilds
+bereinigt; Figuren vom Matrix-Freeze ausgenommen — Kinder unter eingefrorenen Eltern).
+
+**Hecken (Task B):** `hedgeRun()`/`buildHedges()` — 4 vertex-verrauschte Box-Varianten
+(wellige Silhouette, gerundete Deckelkante), Vertex-AO zur Basis, 3 cm versenkt, 14 Blatt-
+karten/Segment inkl. Ausreißer oben; globale Sammel-Instanzierung (4 + 1 Draw Calls gesamt).
+
+**Gras-Cluster (Task B):** 6–10 einzeln gebogene Halm-Geometrien pro Cluster (Taper + Bogen,
+Vertexfarbverlauf, aufwärts geblendete Normalen), Auswärtsneigung, Wind pro Halm; jede
+Gruppe verwurzelt (Steinring auf Belag + Erdscheibe). Rasen-Einzelhalme (42k-Feld) bleiben
+als eigenes Fernsystem.
+
+**Site-Umbau (Task A)** — siehe Site-Plan in §7:
+- Altgebäude um 90° gedreht/versetzt (18,0,−60, ry=−90°): Schmalseite z=−29 gegenüber dem
+  Eingang, Portale/Freitreppe nach Westen zur Plaza; Pavillon-Ostfenster ergänzt (nach der
+  Drehung straßensichtbar).
+- Via Dentis (Klinker 44×6,4 m, Granitborde), Plaza-Promenade (19×64 m Klinker) mit
+  Baumscheiben-Reihe + Pollern, Parkplatz (Asphaltfläche, 4 Autos) mit geschwungener Hecke,
+  2 Straßenrand-Autos, Fahrrad-Piktogramme auf der Asphaltstraße, Bügel + 4 Räder vor der
+  Altgebäude-Schmalseite.
+- Kulisse: gelbes 2-geschossiges Giebelhaus (38,−28.5), 15-Geschoss-Turm mit gebackenem
+  dunklem Fensterraster-Shader statt Einzelband-Meshes (44,−42, 50 m), weiße Audimax-Kulisse
+  (−26,−58) mit zurückgesetztem Glas-EG, Stützenreihe, auskragendem OG + dunklem Band.
+- Vegetation urban: Süd-Bäume in Baumscheiben an Via/Plaza verlegt, dichter Bestand nur zur
+  Oker-Seite; Falllaub-/Partikel-Anker nachgezogen; Halmfeld-Ausschlüsse für Via/Plaza/Parken;
+  Poller-Südreihe vor die Straße gezogen, Markierungslinien enden vor der Kreuzung.
+- Boden auf 180×210 erweitert (Altgebäude reicht bis z=−91).
+
+**Messung:** high-Tier 5 322 Draw Calls (vor Umbau 5 432 — Foliage-AO-Ausschluss kompensiert
+die Kulissenbauten), 1,44 M Dreiecke (+0,34 M); 14/14 Interaktionstests, 0 Konsolen-Fehler.
+Verbleibende Abweichung (dokumentiert): Altgebäude-Modelltiefe 14 m statt realer ~40 m;
+Schmalseiten-Proportion dadurch schlanker als im Foto — Remodel des Bestands-Detailbaus
+wäre unverhältnismäßig.
+
+## 9. Files touched
 
 - `index.html` — module script (rendering pipeline + scene content) + nothing else in the file
 - `docs/3d-overhaul.md` — this document

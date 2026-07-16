@@ -467,7 +467,7 @@ function lawnTexture(){ const s=1024,c=cvs(s),x=c.getContext('2d')
     x.strokeStyle=['#6d8054','#7d9163','#8ba071','#5f7349'][i%4]; x.globalAlpha=.25+Math.random()*.35; x.lineWidth=1
     x.beginPath(); x.moveTo(px,py); x.lineTo(px+Math.sin(ang)*4,py-Math.cos(ang)*(3+Math.random()*4)); x.stroke() }
   x.globalAlpha=1; return tx(c) }
-const grassT=lawnTexture(); grassT.repeat.set(10,8)
+const grassT=lawnTexture(); grassT.repeat.set(10,12)
 const paverT=paverTex(); paverT.repeat.set(21,19)
 /* Archviz: fotografische Texturen nachladen (Gras, Holzdecke) — Fallback = Canvas-Textur.
    Die prozedurale Normal-Map bleibt und wird auf das Foto-Repeat synchronisiert. */
@@ -825,10 +825,10 @@ function standPerson(gp,x,z,ry,seed){ const K=humanKit(seed), s=K.s
     ;[-.09,.09].forEach(sx2=>mk(new THREE.BoxGeometry(.04,.3,.02),bp,sx2,1.3,-.1)) }
   gp.add(grp) }
 /* ===== Park: entsättigt, große Parkbäume mit hoher Krone ===== */
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(180,150),M.grass); ground.rotation.x=-Math.PI/2; ground.position.y=-.002; ground.receiveShadow=true; buildingGroup.add(ground)
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(180,210),M.grass); ground.rotation.x=-Math.PI/2; ground.position.y=-.002; ground.position.z=-25; ground.receiveShadow=true; buildingGroup.add(ground)
 const apron=new THREE.Mesh(new THREE.PlaneGeometry(W+2*OV+3.4,D+2*OV+3.4),M.paver); apron.rotation.x=-Math.PI/2; apron.position.y=.015; apron.receiveShadow=true; buildingGroup.add(apron)
 const bolls=[]
-for(let x=-19;x<=19;x+=2.4){ bolls.push({x,y:.42,z:D/2+OV+3.9},{x,y:.42,z:-(D/2+OV+3.9)}) }
+for(let x=-19;x<=19;x+=2.4){ bolls.push({x,y:.42,z:D/2+OV+3.9},{x,y:.42,z:-18.6}) }
 for(let z=-14;z<=14;z+=2.4){ bolls.push({x:W/2+OV+3.9,y:.42,z},{x:-(W/2+OV+3.9),y:.42,z}) }
 instanced(new THREE.CylinderGeometry(.05,.055,.84,10),new THREE.MeshStandardMaterial({color:'#2b2b2e',roughness:.55,metalness:.35}),bolls)
 { const bwood=new THREE.MeshStandardMaterial({color:'#8a6b4a',roughness:.85})
@@ -849,7 +849,7 @@ const asphaltMat=new THREE.MeshStandardMaterial({color:'#eceded',map:asphaltT,ro
 const street=new THREE.Mesh(new THREE.PlaneGeometry(6.4,76),asphaltMat)
 street.rotation.x=-Math.PI/2; street.position.set(27,.012,0); street.receiveShadow=true; buildingGroup.add(street)
 B(.28,.13,76,new THREE.MeshStandardMaterial({color:'#c9c6bd',roughness:.9}),23.72,.065,0,0,false,true)
-for(let z=-34;z<=34;z+=4){ const d=new THREE.Mesh(new THREE.PlaneGeometry(.12,1.6),new THREE.MeshStandardMaterial({color:'#e8e8e4',roughness:.9})); d.rotation.x=-Math.PI/2; d.position.set(27,.018,z); buildingGroup.add(d) }
+for(let z=-14;z<=34;z+=4){ const d=new THREE.Mesh(new THREE.PlaneGeometry(.12,1.6),new THREE.MeshStandardMaterial({color:'#e8e8e4',roughness:.9})); d.rotation.x=-Math.PI/2; d.position.set(27,.018,z); buildingGroup.add(d) }
 const stLampMat=new THREE.MeshStandardMaterial({color:'#e8eaec',emissive:0xffe2ae,emissiveIntensity:.05})
 const stLights=[]
 function streetLamp(x,z){ const g=new THREE.Group(); g.position.set(x,0,z)
@@ -859,9 +859,71 @@ function streetLamp(x,z){ const g=new THREE.Group(); g.position.set(x,0,z)
   const pt=new THREE.PointLight(0xffe2ae,0,17,2); pt.position.set(.88,4.05,0); g.add(pt); stLights.push(pt)
   buildingGroup.add(g) }
 streetLamp(23.4,-26); streetLamp(23.4,-13); streetLamp(23.4,0); streetLamp(23.4,13); streetLamp(23.4,26)
-/* Hecken: über hedgeRun() (Definition nach LEAF_TEX) — Segmente werden global gesammelt
-   und einmal instanziert. Flussufer-Reihen wie im Foto: */
-const HEDGE_RUNS=[]
+/* ===== Campus-Süd nach Street View: Via Dentis, Plaza-Promenade, Parkplatz, Möblierung ===== */
+const HEDGE_RUNS=[] // [cx,cz,len,ry,h] — von hedgeRun() konsumiert, kurz vor dem Matrix-Freeze
+let treePit // Baumscheiben-Helfer, im Block definiert, von der Baumliste weiter unten genutzt
+/* Klinker-Klon mit eigener Kachelung + Makro-Variation (Material teilt sonst das Apron-Repeat) */
+function paverMat(rx,ry2){ const m2=new THREE.MeshStandardMaterial({roughness:.95,envMapIntensity:sceneConfig.materials.envMapIntensity.paver})
+  m2.map=paverT.clone(); m2.map.repeat.set(rx,ry2); m2.map.needsUpdate=true
+  m2.normalMap=M.paver.normalMap.clone(); m2.normalMap.repeat.set(rx,ry2); m2.normalMap.needsUpdate=true
+  return antiTiling(m2,sceneConfig.materials.macroVariation.paver) }
+{ /* Via Dentis: schmale Klinkerstraße Ost-West zwischen Eingang und Altgebäude-Schmalseite */
+  const via=new THREE.Mesh(new THREE.PlaneGeometry(44,6.4),paverMat(24,3.5))
+  via.rotation.x=-Math.PI/2; via.position.set(8,.013,-22.5); via.receiveShadow=true; buildingGroup.add(via)
+  const curbM=new THREE.MeshStandardMaterial({color:'#b8b5ac',roughness:.85})
+  ;[-19.15,-25.85].forEach(cz=>{ const c2=new THREE.Mesh(new THREE.BoxGeometry(44,.09,.24),curbM)
+    c2.position.set(8,.045,cz); c2.receiveShadow=true; buildingGroup.add(c2) })
+  /* Plaza-Promenade entlang der Altgebäude-Westfassade (Hauptachse Richtung Audimax) */
+  const plaza=new THREE.Mesh(new THREE.PlaneGeometry(19,64),paverMat(10,34))
+  plaza.rotation.x=-Math.PI/2; plaza.position.set(1.5,.012,-60); plaza.receiveShadow=true; buildingGroup.add(plaza)
+  /* Parkplatz östlich des Altgebäudes (Foto: Stellflächen mit Hecke am Rand) */
+  const park=new THREE.Mesh(new THREE.PlaneGeometry(10,15),antiTiling(new THREE.MeshStandardMaterial({color:'#85868c',roughness:.95}),.08))
+  park.rotation.x=-Math.PI/2; park.position.set(35.5,.011,-36.5); park.receiveShadow=true; buildingGroup.add(park)
+  /* Baumscheiben: Steinkante + Mulch — Straßenbäume stehen im Belag, nicht im Wildwuchs */
+  const pitEdgeM=new THREE.MeshStandardMaterial({color:'#9d968b',roughness:.9})
+  const mulchM=new THREE.MeshStandardMaterial({color:'#4b3d2e',roughness:1})
+  treePit=(x,z)=>{ const e2=new THREE.Mesh(new THREE.BoxGeometry(2,.12,2),pitEdgeM); e2.position.set(x,.05,z); e2.receiveShadow=true; buildingGroup.add(e2)
+    const m2=new THREE.Mesh(new THREE.CylinderGeometry(.85,.85,.1,12),mulchM); m2.position.set(x,.075,z); buildingGroup.add(m2) }
+  /* Fahrrad-Piktogramme auf der Asphaltstraße (Street-View-Detail) */
+  const picto=(()=>{ const c2=cvs(128),x2=c2.getContext('2d'); x2.clearRect(0,0,128,128)
+    x2.strokeStyle='#e8e8e4'; x2.lineWidth=7; x2.lineCap='round'
+    x2.beginPath(); x2.arc(36,90,20,0,Math.PI*2); x2.stroke()
+    x2.beginPath(); x2.arc(92,90,20,0,Math.PI*2); x2.stroke()
+    x2.beginPath(); x2.moveTo(36,90); x2.lineTo(58,60); x2.lineTo(92,90); x2.lineTo(64,90); x2.lineTo(36,90); x2.stroke()
+    x2.beginPath(); x2.moveTo(58,60); x2.lineTo(54,46); x2.moveTo(46,46); x2.lineTo(64,46); x2.stroke()
+    x2.beginPath(); x2.moveTo(76,68); x2.lineTo(92,52); x2.stroke()
+    const t2=new THREE.CanvasTexture(c2); t2.colorSpace=THREE.SRGBColorSpace; return t2 })()
+  const pictoM=new THREE.MeshStandardMaterial({map:picto,transparent:true,alphaTest:.3,roughness:.9})
+  ;[4,15].forEach(pz=>{ const d2=new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.1),pictoM)
+    d2.rotation.x=-Math.PI/2; d2.rotation.z=Math.PI; d2.position.set(27,.02,pz); buildingGroup.add(d2) })
+  /* Einfache Kontext-Autos (Parkplatz + Straßenrand) */
+  const wheelG=new THREE.CylinderGeometry(.31,.31,.22,14), wheelM=new THREE.MeshStandardMaterial({color:'#22262b',roughness:.6})
+  const carGlassM=new THREE.MeshStandardMaterial({color:'#1d232a',roughness:.15,metalness:.3})
+  function car(x,z,ry,col){ const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=ry
+    const bodyM=new THREE.MeshStandardMaterial({color:col,roughness:.32,metalness:.45})
+    const b=new THREE.Mesh(new THREE.BoxGeometry(1.78,.5,4.2),bodyM); b.position.y=.56; b.castShadow=true; g.add(b)
+    const cab=new THREE.Mesh(new THREE.BoxGeometry(1.6,.5,2.14),bodyM); cab.position.set(0,1.02,-.16); cab.castShadow=true; g.add(cab)
+    const gl=new THREE.Mesh(new THREE.BoxGeometry(1.64,.34,2.2),carGlassM); gl.position.set(0,1.05,-.16); g.add(gl)
+    ;[[-.82,1.35],[.82,1.35],[-.82,-1.45],[.82,-1.45]].forEach(([wx,wz])=>{ const w=new THREE.Mesh(wheelG,wheelM)
+      w.rotation.z=Math.PI/2; w.position.set(wx,.31,wz); g.add(w) })
+    buildingGroup.add(g) }
+  car(34,-31.5,Math.PI/2,'#c9ccd0'); car(34,-34.5,Math.PI/2,'#e8e8e6'); car(34,-37.8,Math.PI/2,'#7e2f2c'); car(34,-41,Math.PI/2,'#3c4c63')
+  car(28.3,8.5,0,'#4a4d52'); car(28.3,19,0,'#c9ccd0')
+  /* Fahrradbügel vor der Altgebäude-Schmalseite (Räder folgen nach der bike()-Definition) */
+  for(let i=0;i<3;i++){ const bar=new THREE.Mesh(new THREE.TorusGeometry(.42,.03,8,16,Math.PI),M.alu)
+    bar.position.set(12.6+i*1.6,.02,-27.2); buildingGroup.add(bar) }
+  /* Poller entlang Via-Dentis-Nordkante + Plaza-Westkante */
+  const siteBolls=[]
+  for(let x=-10;x<=22;x+=2.6) siteBolls.push({x,y:.42,z:-18.7})
+  for(let z=-32;z>=-86;z-=6) siteBolls.push({x:-7.6,y:.42,z})
+  instanced(new THREE.CylinderGeometry(.05,.055,.84,10),new THREE.MeshStandardMaterial({color:'#2b2b2e',roughness:.55,metalness:.35}),siteBolls)
+  /* Formale Heckenbänder (Plaza-Ostkante vor dem Altgebäude), Inseln am Promenaden-Mund,
+     geschwungene Hecke am Parkplatzrand — urbaner Campus statt Wildwuchs */
+  HEDGE_RUNS.push([9.9,-40,12,Math.PI/2,.68],[9.9,-58,12,Math.PI/2,.68],[9.9,-76,12,Math.PI/2,.68])
+  HEDGE_RUNS.push([-2.5,-27.4,6,0,.6],[6.5,-27.4,5,0,.6])
+  HEDGE_RUNS.push([30.4,-32.5,6,Math.PI/2+.16,1.12],[31.2,-38.5,6,Math.PI/2-.13,1.16],[30.6,-43.5,4,Math.PI/2+.1,1.1])
+}
+/* Hecken: über hedgeRun() (Definition nach LEAF_TEX) — Flussufer-Reihen wie im Foto: */
 HEDGE_RUNS.push([-10.5,22.6,13.5,0,1.0],[9,22.6,8.5,0,1.0])
 const p2=new THREE.Mesh(new THREE.PlaneGeometry(3.6,58),M.gravel); p2.rotation.x=-Math.PI/2; p2.rotation.z=-1.2; p2.position.set(-26,.008,-12); p2.receiveShadow=true; buildingGroup.add(p2)
 /* Realistische Bäume: Astskelett mit Rindentextur + dichtes kleines Laub */
@@ -1003,10 +1065,15 @@ function tree(x,z,s,seed){
   if(im.instanceColor) im.instanceColor.needsUpdate=true
   im.frustumCulled=false; g.add(im); AO_EXCLUDE.push(im)
   buildingGroup.add(g) }
-;[[-21.5,20,2.9,21],[20,-20.5,3.1,22],[10,21.8,2.7,23],[-22,-19.5,2.8,24],[-27.5,5,3.0,25],[16.9,22,2.5,26],
-  [-31,-6,1.9,2],[-31,14,1.6,3],[35,-2,1.5,4],[34,-22,1.6,5],[-33,3,1.5,6],[2,24,1.5,7],[-14,-24,1.6,8],[12,-25,1.8,9],[33.5,-14,1.8,10],[-29,-19,1.7,11],[34,16,1.7,12],[6,27,1.5,13],[-22,9,1.9,14],[33,8,1.6,15]].forEach(a=>tree(...a))
+/* Urbaner Campus: dichter Bestand nur zur Oker-Seite (+z); Süden = Straßenbäume in
+   Baumscheiben entlang Via Dentis/Plaza (Street-View-Layout) */
+;[[-21.5,20,2.9,21],[-20,-16.5,2.8,22],[10,21.8,2.7,23],[-14,-16.2,2.6,24],[-27.5,5,3.0,25],[16.9,22,2.5,26],
+  [-31,-6,1.9,2],[-31,14,1.6,3],[35,-2,1.5,4],[34,-22,1.6,5],[-33,3,1.5,6],[2,24,1.5,7],[-4,-33,1.9,8],[6,-33,1.9,9],[33.5,-14,1.8,10],[-29,-19,1.7,11],[34,16,1.7,12],[6,27,1.5,13],[-22,9,1.9,14],[33,8,1.6,15],
+  [-5.5,-44,2.2,27],[-5.5,-58,2.0,28],[-5.5,-72,2.1,29],[-5.5,-86,1.8,30]].forEach(a=>tree(...a))
+/* Baumscheiben unter allen Bäumen, die im Belag stehen */
+;[[-4,-33],[6,-33],[-5.5,-44],[-5.5,-58],[-5.5,-72],[-5.5,-86],[34,-22]].forEach(([px,pz])=>treePit(px,pz))
 /* Falllaub unter den Bäumen — wie auf den Herbstfotos */
-{ const LIT=[[-21.5,20],[20,-20.5],[10,21.8],[-22,-19.5],[-27.5,5],[16.9,22],[-31,-6],[-14,-24],[12,-25],[-22,9]]
+{ const LIT=[[-21.5,20],[-20,-16.5],[10,21.8],[-14,-16.2],[-27.5,5],[16.9,22],[-31,-6],[-4,-33],[-5.5,-44],[-22,9]]
   const cols=sceneConfig.materials.autumnPalette
   const geo=new THREE.PlaneGeometry(.17,.12), n=LIT.length*150
   const mat=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:1,side:THREE.DoubleSide,map:LEAF_CARD_TEX,alphaTest:.4})
@@ -1085,6 +1152,8 @@ function bladeTexture(){ const s=128,c=cvs(s),x=c.getContext('2d'); x.clearRect(
   while(placed<N && guard<N*8){ guard++
     const px=(Math.random()-.5)*90, pz=(Math.random()-.5)*72
     if(Math.abs(px)<AX && Math.abs(pz)<AZ) continue
+    if(px>-14&&px<30&&pz<-19.3&&pz>-25.7) continue // Via Dentis (Klinker)
+    if(pz<-27&&px>-8&&px<41) continue              // Plaza + Altgebäude + Parkplatz
     if(pz>39+Math.sin(px*.045)*3-4.8&&pz<39+Math.sin(px*.045)*3+4.8) continue
     const d1=Math.abs((px-28)*Math.cos(.32)-(pz-9)*Math.sin(.32))
     const d2=Math.abs((px+26)*Math.cos(1.2)+(pz+12)*Math.sin(1.2))
@@ -1122,7 +1191,7 @@ function shrub(x,z,s){ const g=new THREE.Group(); g.position.set(x,0,z)
     m4.compose(new THREE.Vector3(Math.cos(a)*rr*.8*s,.3*s+Math.random()*.4*s,Math.sin(a)*rr*.8*s),q,sv); im.setMatrixAt(i,m4) }
   im.castShadow=true; im.customDepthMaterial=LEAF_DEPTH; im.instanceMatrix.needsUpdate=true; im.frustumCulled=false
   g.add(im); AO_EXCLUDE.push(im); buildingGroup.add(g) }
-;[[-17.5,23.2,1],[7.5,24.2,.8],[23.5,6.5,1],[24.5,-2,.9],[-27,-6,1.1],[-24,15,.9],[12,-23,1],[30,17,.85]].forEach(([x,z,s])=>shrub(x,z,s))
+;[[-17.5,23.2,1],[7.5,24.2,.8],[23.5,6.5,1],[24.5,-2,.9],[-27,-6,1.1],[-24,15,.9],[30,-20,1],[30,17,.85]].forEach(([x,z,s])=>shrub(x,z,s))
 const dk=new THREE.MeshStandardMaterial({color:'#33363b',roughness:.7,metalness:.3}), wd=new THREE.MeshStandardMaterial({color:'#7d6a53',roughness:.9})
 function bench(x,z,ry){ const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=ry
   ;[-.75,.75].forEach(lx=>{ const l=new THREE.Mesh(new THREE.BoxGeometry(.06,.44,.5),dk); l.position.set(lx,.22,0); l.castShadow=true; g.add(l) })
@@ -1168,6 +1237,7 @@ function bike(x,z,ry){ const g=new THREE.Group(); g.position.set(x,0,z); g.rotat
     const ped=new THREE.Mesh(new THREE.BoxGeometry(.09,.02,.05),dk2); ped.position.set(BB[0]+dx,BB[1]+dy,off*1.4); g.add(ped) })
   buildingGroup.add(g) }
 for(let i=0;i<6;i++) bike(-4+i*1.3,22.3,Math.PI/2+(i%3-1)*.08)
+bike(12.9,-27.1,1.62); bike(14.2,-27.2,1.5); bike(15.8,-27.1,1.68); bike(17,-27.2,1.55)
 bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
 ;[[-4,15.9],[2,15.9]].forEach(([x,z])=>{ const g=new THREE.Group(); g.position.set(x,0,z)
   const top=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.03,24),M.table); top.position.y=1.05; top.castShadow=true; g.add(top)
@@ -1187,7 +1257,9 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
   const roofD=new THREE.MeshStandardMaterial({color:'#5c554a',roughness:.95})
   const doorM=new THREE.MeshStandardMaterial({color:'#4a3a28',roughness:.7})
   /* TU-Altgebäude nach Originalfotos: Rustika, Bogenfenster, Balustrade, Risalit, Glasdach */
-  { const A=new THREE.Group(); A.position.set(18,0,-42); buildingGroup.add(A)
+  /* Lage nach Street View: Langachse Nord-Süd, SCHMALSEITE (z=-29) gegenüber dem
+     Studierendenhaus-Eingang, Portale/Risalit nach Westen zur Plaza (ry=-90°) */
+  { const A=new THREE.Group(); A.position.set(18,0,-60); A.rotation.y=-Math.PI/2; buildingGroup.add(A)
     const L2=62, D2=14
     const rustTex=(()=>{ const c2=cvs(512),x2=c2.getContext('2d')
       for(let row=0;row<10;row++){ const y=row*51
@@ -1265,7 +1337,10 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
         const sp=new THREE.Mesh(new THREE.CylinderGeometry(.06,.3,1.7,4),stoneM); sp.rotation.y=Math.PI/4; sp.position.y=1.35; ob.add(sp)
         const kg=new THREE.Mesh(new THREE.SphereGeometry(.14,10,8),stoneM); kg.position.y=2.3; ob.add(kg) }) })
       arcWin(A,px,9.1,(D2+1.6)/2+.02,0,1.6,3.4,true)
-      arcWin(A,px,3.6,(D2+1.6)/2+.02,0,1.4,2.5,Math.random()>.5) })
+      arcWin(A,px,3.6,(D2+1.6)/2+.02,0,1.4,2.5,Math.random()>.5)
+      /* Ostseite der Pavillons ist nach der Drehung straßensichtbar — gleiche Fensterachsen */
+      arcWin(A,px,9.1,-(D2+1.6)/2-.02,Math.PI,1.6,3.4,Math.random()>.5)
+      arcWin(A,px,3.6,-(D2+1.6)/2-.02,Math.PI,1.4,2.5,Math.random()>.7) })
     /* Mittelrisalit: 3 Portale, 3 große Bögen, Attika mit Inschrift, Obelisken, Freitreppe */
     { const R=new THREE.Group(); R.position.set(0,0,0); A.add(R)
       const rw=16
@@ -1311,15 +1386,44 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
         gl.position.set(0,13.0,-2.5); R.add(gl)
         const ridge=new THREE.Mesh(new THREE.BoxGeometry(grx*2,.14,.14),trimM); ridge.position.set(0,13.0+gh,-2.5); R.add(ridge)
         const base2=new THREE.Mesh(new THREE.BoxGeometry(gw+.4,.3,gd+.4),trimM); base2.position.set(0,12.95,-2.5); R.add(base2) } } }
-  const hh=new THREE.Group(); hh.position.set(18,0,-66); buildingGroup.add(hh)
-  const hhB=new THREE.Mesh(new THREE.BoxGeometry(13,38,11),new THREE.MeshStandardMaterial({color:'#aeb6c2',roughness:.75})); hhB.position.y=19; hhB.castShadow=true; hh.add(hhB)
-  for(let fl=0;fl<11;fl++){ const fy=2.2+fl*3.3
-    const band=new THREE.Mesh(new THREE.BoxGeometry(12.2,1.7,.3),Math.random()>.5?winGlass:new THREE.MeshStandardMaterial({color:'#3a4653',roughness:.2,metalness:.4}))
-    band.position.set(0,fy,5.6); hh.add(band) }
-  for(let k=0;k<6;k++){ const pil=new THREE.Mesh(new THREE.BoxGeometry(.5,37,.5),new THREE.MeshStandardMaterial({color:'#c3cad4',roughness:.6}))
-    pil.position.set(-6+k*2.4,19,5.65); hh.add(pil) }
-  const tech=new THREE.Mesh(new THREE.BoxGeometry(6,2.2,5),new THREE.MeshStandardMaterial({color:'#8d97a5',roughness:.8})); tech.position.y=39.1; hh.add(tech)
-  const ant=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,4,6),new THREE.MeshStandardMaterial({color:'#5c646e',roughness:.5})); ant.position.y=42.2; hh.add(ant)
+  /* Hochhaus-Turm (Landmarke hinten-links vom Eingang): ~15 Geschosse dunkles Fensterraster */
+  const hh=new THREE.Group(); hh.position.set(44,0,-42); hh.rotation.y=-1; buildingGroup.add(hh)
+  const hhTex=(()=>{ const c2=cvs(256),x2=c2.getContext('2d')
+    x2.fillStyle='#2e3742'; x2.fillRect(0,0,256,256)
+    for(let y=6;y<256;y+=17)for(let xx=6;xx<256;xx+=16){ x2.fillStyle=Math.random()>.82?'#8fa3b8':'#1d242d'
+      x2.fillRect(xx,y,11,12) }
+    const t2=tx(c2); t2.repeat.set(3,10); return t2 })()
+  const hhM=new THREE.MeshStandardMaterial({map:hhTex,roughness:.35,metalness:.3})
+  const hhB=new THREE.Mesh(new THREE.BoxGeometry(15,50,13),hhM); hhB.position.y=25; hhB.castShadow=true; hh.add(hhB)
+  const hhCap=new THREE.Mesh(new THREE.BoxGeometry(15.8,.5,13.8),new THREE.MeshStandardMaterial({color:'#c3cad4',roughness:.6}))
+  hhCap.position.y=50.4; hh.add(hhCap) // schmales Dach-Vordach
+  const tech=new THREE.Mesh(new THREE.BoxGeometry(6,2.2,5),new THREE.MeshStandardMaterial({color:'#8d97a5',roughness:.8})); tech.position.y=51.6; hh.add(tech)
+  const ant=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,4,6),new THREE.MeshStandardMaterial({color:'#5c646e',roughness:.5})); ant.position.y=54.7; hh.add(ant)
+  /* Gelbes 2-geschossiges Giebelhaus (zwischen Eingang und Turm) */
+  { const gb=new THREE.Group(); gb.position.set(38,0,-28.5); gb.rotation.y=.12; buildingGroup.add(gb)
+    const body=new THREE.Mesh(new THREE.BoxGeometry(13,6.5,9),new THREE.MeshStandardMaterial({color:'#d9b96a',roughness:.85}))
+    body.position.y=3.25; body.castShadow=true; gb.add(body)
+    ;[-1,1].forEach(sd=>{ const rf=new THREE.Mesh(new THREE.BoxGeometry(13.6,.22,5.6),roofD)
+      rf.position.set(0,7.7,sd*2.32); rf.rotation.x=sd*.48; rf.castShadow=true; gb.add(rf) })
+    const gShape=new THREE.Shape(); gShape.moveTo(-4.5,0); gShape.lineTo(4.5,0); gShape.lineTo(0,2.2); gShape.closePath()
+    ;[-6.5,6.5].forEach(gx=>{ const tri=new THREE.Mesh(new THREE.ShapeGeometry(gShape),new THREE.MeshStandardMaterial({color:'#d2b263',roughness:.85,side:THREE.DoubleSide}))
+      tri.rotation.y=Math.PI/2; tri.position.set(gx,6.5,0); gb.add(tri) })
+    for(let fl=0;fl<2;fl++)for(let k=0;k<5;k++){ const win=new THREE.Mesh(new THREE.BoxGeometry(.9,1.4,.08),winGlass)
+      win.position.set(-4.8+k*2.4,1.8+fl*2.6,4.55); gb.add(win) }
+    const dr=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.3,.1),doorM); dr.position.set(0,1.15,-4.55); gb.add(dr) }
+  /* Weiße Audimax-Kulisse: zurückgesetztes Glas-EG hinter schlanken Stützen, auskragendes
+     weißes Obergeschoss mit durchlaufendem dunklem Fensterband — Front nach Osten zur Plaza */
+  { const au=new THREE.Group(); au.position.set(-26,0,-58); buildingGroup.add(au)
+    const gfGlass=new THREE.Mesh(new THREE.BoxGeometry(20,4,15),new THREE.MeshStandardMaterial({color:'#20262c',roughness:.15,metalness:.4}))
+    gfGlass.position.set(-2,2,0); au.add(gfGlass)
+    const cols2=[] // Stützenreihe entlang der Ostkante (instanced() nutzt Weltkoordinaten)
+    for(let k=0;k<8;k++) cols2.push({x:-26+9.6,y:0,z:-58-7+k*2,sy:4.4})
+    instanced(new THREE.CylinderGeometry(.14,.14,1,10).translate(0,.5,0),new THREE.MeshStandardMaterial({color:'#eef0f1',roughness:.5}),cols2)
+    const up=new THREE.Mesh(new THREE.BoxGeometry(26,5.2,19),new THREE.MeshStandardMaterial({color:'#eceff0',roughness:.55}))
+    up.position.set(0,7,0); up.castShadow=true; au.add(up)
+    const band=new THREE.Mesh(new THREE.BoxGeometry(.25,1.9,17.6),winGlass); band.position.set(13.1,7.1,0); au.add(band)
+    const roof2=new THREE.Mesh(new THREE.BoxGeometry(26.6,.4,19.6),new THREE.MeshStandardMaterial({color:'#3a3f47',roughness:.7}))
+    roof2.position.y=9.8; au.add(roof2) }
 }
 /* Fluss (Oker) mit Ufern und Holzsteg */
 function ribbon(w,yOff){ const segs=160
@@ -1434,7 +1538,7 @@ const terrasseLights=[tl1,tl2,tl3,tl4]
    GPU-freundlich: 2× Points + 1 InstancedMesh, alle Puffer vorab alloziert — null Alloc pro Frame */
 const fireflies=(()=>{ const c=sceneConfig.particles.fireflies
   const pos=new Float32Array(c.count*3), base=new Float32Array(c.count*3), ph=new Float32Array(c.count)
-  const SPOTS=[[-17.5,23.2],[7.5,24.2],[-27,-6],[12,-23],[-24,15],[-21.5,20],[20,-20.5],[16.9,22]]
+  const SPOTS=[[-17.5,23.2],[7.5,24.2],[-27,-6],[31,-38],[-24,15],[-21.5,20],[-20,-16.5],[16.9,22]]
   for(let i=0;i<c.count;i++){ const s=SPOTS[i%SPOTS.length]
     base[i*3]=s[0]+(Math.random()-.5)*6; base[i*3+1]=.4+Math.random()*1.9; base[i*3+2]=s[1]+(Math.random()-.5)*6
     ph[i]=Math.random()*Math.PI*2 }
@@ -1454,7 +1558,7 @@ const motes=(()=>{ const c=sceneConfig.particles.motes
   p.frustumCulled=false; buildingGroup.add(p)
   return {p,base,ph,attr:g.attributes.position,drift:c.drift,speed:c.speed} })()
 const fallLeaves=(()=>{ const c=sceneConfig.particles.leaves
-  const TREES=[[-21.5,20],[20,-20.5],[10,21.8],[-22,-19.5],[-27.5,5],[16.9,22]]
+  const TREES=[[-21.5,20],[-20,-16.5],[10,21.8],[-14,-16.2],[-27.5,5],[16.9,22]]
   const geo=new THREE.PlaneGeometry(c.size[0],c.size[1])
   const im=new THREE.InstancedMesh(geo,new THREE.MeshStandardMaterial({color:'#f5f5f2',roughness:1,side:THREE.DoubleSide,map:LEAF_CARD_TEX,alphaTest:.4}),c.count)
   const cols=sceneConfig.materials.autumnPalette, cl=new THREE.Color()
