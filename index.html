@@ -267,10 +267,10 @@ const sceneConfig = {
     leafStrength: .16,         // metres of sway for tree leaf clusters
     hedgeStrength: .04,        // hedges barely move
   },
-  particles: {
-    fireflies: 56,             // night-only warm drifting points near the hedges/trees (photo 1 mood)
-    leaves: 36,                // slowly falling leaves under the park trees (autumn photos)
-    motes: 48,                 // sun-lit dust motes inside the hall (photo 2/3 light shafts)
+  particles: {                 // Gesamtbudget < 200 Instanzen (Brief) — aktuell 140
+    fireflies: { count:56, size:.09, color:'#ffd27a', opacity:.85, drift:1.1 }, // nachts an Hecken/Bäumen (Foto-1-Stimmung)
+    motes:     { count:48, size:.05, color:'#fff6e0', opacity:.14, drift:.4 },  // Staub im Tageslicht der Halle (Fotos 2/3)
+    leaves:    { count:36, fallHeight:6.5, fallTime:11, flutter:.9 },           // einzelne fallende Blätter unter den Parkbäumen (Herbstfotos)
   },
   ao: {                        // GTAO — grounds furniture/columns; biggest "sits on the floor" win
     radius: .5,                // occlusion search radius (m) — room-scale contact darkening
@@ -496,11 +496,49 @@ const M = {
 }
 /* IBL-Antwort pro Material zentral aus sceneConfig */
 Object.entries(sceneConfig.materials.envMapIntensity).forEach(([k,v])=>{ if(M[k]) M[k].envMapIntensity=v })
-/* Laub-Transluzenz: Rückseiten leicht warmgrün aufhellen — Blätter wirken durchleuchtet statt Plastik */
-function leafTranslucency(mat){ const b=sceneConfig.materials.leafBackfaceBoost
-  mat.onBeforeCompile=sh=>{ sh.fragmentShader=sh.fragmentShader.replace('#include <color_fragment>',
-    `#include <color_fragment>\n\tif(!gl_FrontFacing) diffuseColor.rgb *= vec3(${b[0]},${b[1]},${b[2]});`) }
+/* Globaler Wind: eine Uniform für alle Foliage-Shader, pro Frame einmal gesetzt */
+const windUniform={ value:0 }
+/* Foliage-Shader-Hook (onBeforeCompile ist Single-Slot, daher kombiniert):
+   - wind: Vertex-Sway, Phase aus der Instanz-Weltposition — nichts bewegt sich synchron.
+     weight 'tip' = Halmspitzen biegen (y 0→1), 'unit' = ganzes Blattbüschel schwingt.
+   - translucency: Rückseiten leicht warmgrün aufhellen — durchleuchtetes Laub statt Plastik. */
+function foliageShader(mat,{wind=0,weight='unit',translucency=false}={}){
+  mat.onBeforeCompile=sh=>{
+    if(wind>0){
+      sh.uniforms.uWind=windUniform
+      const w = weight==='tip' ? 'max(position.y,0.0)' : '1.0'
+      sh.vertexShader=sh.vertexShader
+        .replace('#include <common>','#include <common>\nuniform float uWind;')
+        .replace('#include <begin_vertex>',`#include <begin_vertex>
+#ifdef USE_INSTANCING
+\tfloat windPh = instanceMatrix[3][0]*.7 + instanceMatrix[3][2]*.9;
+#else
+\tfloat windPh = 0.0;
+#endif
+\tfloat windW = ${w};
+\ttransformed.x += (sin(uWind+windPh)*.62 + sin(uWind*1.73+windPh*1.31)*.38) * ${wind.toFixed(3)} * windW;
+\ttransformed.z += cos(uWind*.79+windPh) * ${(wind*.6).toFixed(3)} * windW;`)
+    }
+    if(translucency){ const b=sceneConfig.materials.leafBackfaceBoost
+      sh.fragmentShader=sh.fragmentShader.replace('#include <color_fragment>',
+        `#include <color_fragment>\n\tif(!gl_FrontFacing) diffuseColor.rgb *= vec3(${b[0]},${b[1]},${b[2]});`) }
+  }
   return mat }
+/* Makro-Noise gegen sichtbares Kacheln: großskalige Helligkeitsvariation in Weltkoordinaten */
+function antiTiling(mat,amount){
+  mat.onBeforeCompile=sh=>{
+    sh.vertexShader=sh.vertexShader
+      .replace('#include <common>','#include <common>\nvarying vec2 vMacroW;')
+      .replace('#include <begin_vertex>','#include <begin_vertex>\n\tvMacroW=(modelMatrix*vec4(position,1.0)).xz;')
+    sh.fragmentShader=sh.fragmentShader
+      .replace('#include <common>','#include <common>\nvarying vec2 vMacroW;')
+      .replace('#include <map_fragment>',`#include <map_fragment>
+\tfloat macroN = sin(vMacroW.x*.061+vMacroW.y*.083)*sin(vMacroW.x*.157-vMacroW.y*.111)
+\t             + .5*sin(vMacroW.x*.023-vMacroW.y*.031);
+\tdiffuseColor.rgb *= 1.0 + macroN*${amount.toFixed(3)};`)
+  }
+  return mat }
+antiTiling(M.grass,.11); antiTiling(M.paver,.07)
 const B=(w,h,d,mat,x,y,z,ry=0,cast=true,recv=false)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat); m.position.set(x,y,z); m.rotation.y=ry; m.castShadow=cast; m.receiveShadow=recv; buildingGroup.add(m); return m }
 function instanced(geo,mat,items,cast=true){ const im=new THREE.InstancedMesh(geo,mat,items.length)
   const m4=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(), sv=new THREE.Vector3()
@@ -769,7 +807,8 @@ function streetLamp(x,z){ const g=new THREE.Group(); g.position.set(x,0,z)
   buildingGroup.add(g) }
 streetLamp(23.4,-26); streetLamp(23.4,-13); streetLamp(23.4,0); streetLamp(23.4,13); streetLamp(23.4,26)
 /* Hecke zum Flussufer (Foto: dichte Hecke vor dem Haus) */
-{ const hm=new THREE.MeshStandardMaterial({color:'#43593a',roughness:1})
+{ const hm=foliageShader(new THREE.MeshStandardMaterial({color:'#43593a',roughness:1}),
+    { wind:sceneConfig.wind.hedgeStrength, weight:'tip' })
   const hedges=[]
   for(let x=-17;x<=-4;x+=1.05) hedges.push({x:x+(Math.random()-.5)*.15,y:.5,z:22.6+(Math.random()-.5)*.2,sx:1.15,sy:.9+Math.random()*.25,sz:1})
   for(let x=5;x<=13;x+=1.05) hedges.push({x:x+(Math.random()-.5)*.15,y:.5,z:22.6+(Math.random()-.5)*.2,sx:1.15,sy:.9+Math.random()*.25,sz:1})
@@ -819,7 +858,8 @@ function tree(x,z,s,seed){
   bm.castShadow=true; bm.instanceMatrix.needsUpdate=true; bm.frustumCulled=false; g.add(bm)
   /* Laubbueschel sitzen an jeder Zweigspitze — nichts sticht mehr heraus */
   const tint=new THREE.Color().setHSL(.27+rnd()*.04,.3+rnd()*.1,.28+rnd()*.07)
-  const lm=leafTranslucency(new THREE.MeshStandardMaterial({ map:LEAF_TEX, alphaTest:.35, side:THREE.DoubleSide, roughness:1, color:tint, envMapIntensity:.35 }))
+  const lm=foliageShader(new THREE.MeshStandardMaterial({ map:LEAF_TEX, alphaTest:.35, side:THREE.DoubleSide, roughness:1, color:tint, envMapIntensity:.35 }),
+    { wind:sceneConfig.wind.leafStrength, translucency:true })
   const n=tips.length*4+6
   const im=new THREE.InstancedMesh(quadGeo,lm,n)
   const q=new THREE.Quaternion(), e=new THREE.Euler()
@@ -867,7 +907,8 @@ function bladeTexture(){ const s=128,c=cvs(s),x=c.getContext('2d'); x.clearRect(
     x.quadraticCurveTo(bx2+(tip-bx2)*.4,s*.5,tip,8+Math.random()*14); x.stroke() }
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t }
 {
-  const gm=new THREE.MeshStandardMaterial({ map:bladeTexture(), alphaTest:.35, side:THREE.DoubleSide, roughness:1 })
+  const gm=foliageShader(new THREE.MeshStandardMaterial({ map:bladeTexture(), alphaTest:.35, side:THREE.DoubleSide, roughness:1 }),
+    { wind:sceneConfig.wind.grassStrength, weight:'tip' })
   const gq=new THREE.PlaneGeometry(1,1); gq.translate(0,.5,0)
   const N=42000, gi=new THREE.InstancedMesh(gq,gm,N)
   gi.castShadow=false; gi.receiveShadow=true; gi.frustumCulled=false
@@ -912,7 +953,8 @@ function bladeTexture(){ const s=128,c=cvs(s),x=c.getContext('2d'); x.clearRect(
 }
 /* Straeucher / Unterwuchs */
 function shrub(x,z,s){ const g=new THREE.Group(); g.position.set(x,0,z)
-  const lm=leafTranslucency(new THREE.MeshStandardMaterial({ map:LEAF_TEX, alphaTest:.45, side:THREE.DoubleSide, roughness:1, color:new THREE.Color().setHSL(.26+Math.random()*.06,.3,.3+Math.random()*.08), envMapIntensity:.35 }))
+  const lm=foliageShader(new THREE.MeshStandardMaterial({ map:LEAF_TEX, alphaTest:.45, side:THREE.DoubleSide, roughness:1, color:new THREE.Color().setHSL(.26+Math.random()*.06,.3,.3+Math.random()*.08), envMapIntensity:.35 }),
+    { wind:sceneConfig.wind.leafStrength*.7, translucency:true })
   const n=14, im=new THREE.InstancedMesh(quadGeo,lm,n)
   const m4=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(), sv=new THREE.Vector3()
   for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, rr=Math.random()
@@ -1228,6 +1270,65 @@ const tl2=new THREE.PointLight(0xffd9a0,0,26,2); tl2.position.set(7,3,HZ+2.2); b
 const tl3=new THREE.PointLight(0xffd9a0,0,30,2); tl3.position.set(-12,5.6,HZ+1.4); buildingGroup.add(tl3)
 const tl4=new THREE.PointLight(0xffd9a0,0,30,2); tl4.position.set(12,5.6,HZ+1.4); buildingGroup.add(tl4)
 const terrasseLights=[tl1,tl2,tl3,tl4]
+
+/* ===== Leben: Glühwürmchen (Nacht), Staub in der Halle (Tag), fallendes Laub =====
+   GPU-freundlich: 2× Points + 1 InstancedMesh, alle Puffer vorab alloziert — null Alloc pro Frame */
+const fireflies=(()=>{ const c=sceneConfig.particles.fireflies
+  const pos=new Float32Array(c.count*3), base=new Float32Array(c.count*3), ph=new Float32Array(c.count)
+  const SPOTS=[[-17.5,23.2],[7.5,24.2],[-27,-6],[12,-23],[-24,15],[-21.5,20],[20,-20.5],[16.9,22]]
+  for(let i=0;i<c.count;i++){ const s=SPOTS[i%SPOTS.length]
+    base[i*3]=s[0]+(Math.random()-.5)*6; base[i*3+1]=.4+Math.random()*1.9; base[i*3+2]=s[1]+(Math.random()-.5)*6
+    ph[i]=Math.random()*Math.PI*2 }
+  pos.set(base)
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3))
+  const p=new THREE.Points(g,new THREE.PointsMaterial({color:c.color,size:c.size,transparent:true,opacity:c.opacity,blending:THREE.AdditiveBlending,depthWrite:false}))
+  p.visible=false; p.frustumCulled=false; buildingGroup.add(p)
+  return {p,base,ph,attr:g.attributes.position,drift:c.drift} })()
+const motes=(()=>{ const c=sceneConfig.particles.motes
+  const pos=new Float32Array(c.count*3), base=new Float32Array(c.count*3), ph=new Float32Array(c.count)
+  for(let i=0;i<c.count;i++){ const og=i%2
+    base[i*3]=(Math.random()-.5)*26; base[i*3+1]=(og?F1:F0)+.5+Math.random()*2.2; base[i*3+2]=(Math.random()-.5)*22
+    ph[i]=Math.random()*Math.PI*2 }
+  pos.set(base)
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3))
+  const p=new THREE.Points(g,new THREE.PointsMaterial({color:c.color,size:c.size,transparent:true,opacity:c.opacity,blending:THREE.AdditiveBlending,depthWrite:false}))
+  p.frustumCulled=false; buildingGroup.add(p)
+  return {p,base,ph,attr:g.attributes.position,drift:c.drift} })()
+const fallLeaves=(()=>{ const c=sceneConfig.particles.leaves
+  const TREES=[[-21.5,20],[20,-20.5],[10,21.8],[-22,-19.5],[-27.5,5],[16.9,22]]
+  const geo=new THREE.PlaneGeometry(.16,.11)
+  const im=new THREE.InstancedMesh(geo,new THREE.MeshStandardMaterial({color:'#ffffff',roughness:1,side:THREE.DoubleSide}),c.count)
+  const cols=['#c8a04a','#b4763a','#8a5a2e','#d9b45c','#a06a34'], cl=new THREE.Color()
+  const home=new Float32Array(c.count*2), off=new Float32Array(c.count)
+  for(let i=0;i<c.count;i++){ const tr=TREES[i%TREES.length]
+    home[i*2]=tr[0]+(Math.random()-.5)*5; home[i*2+1]=tr[1]+(Math.random()-.5)*5
+    off[i]=Math.random()*c.fallTime
+    cl.set(cols[i%5]); im.setColorAt(i,cl) }
+  if(im.instanceColor) im.instanceColor.needsUpdate=true
+  im.frustumCulled=false; im.castShadow=false; buildingGroup.add(im)
+  return {im,home,off,cfg:c} })()
+const _lm4=new THREE.Matrix4(), _lq=new THREE.Quaternion(), _le=new THREE.Euler(), _lv=new THREE.Vector3(), _ls=new THREE.Vector3(1,1,1)
+function updateLife(t){
+  if(fireflies.p.visible){ const a=fireflies.attr.array
+    for(let i=0;i<fireflies.ph.length;i++){ const p2=fireflies.ph[i]
+      a[i*3]  =fireflies.base[i*3]  +Math.sin(t*.43+p2*2.1)*fireflies.drift
+      a[i*3+1]=fireflies.base[i*3+1]+Math.sin(t*.61+p2)*.5
+      a[i*3+2]=fireflies.base[i*3+2]+Math.cos(t*.37+p2*1.7)*fireflies.drift }
+    fireflies.attr.needsUpdate=true }
+  if(motes.p.visible){ const a=motes.attr.array
+    for(let i=0;i<motes.ph.length;i++){ const p2=motes.ph[i]
+      a[i*3]  =motes.base[i*3]  +Math.sin(t*.16+p2*3.1)*motes.drift
+      a[i*3+1]=motes.base[i*3+1]+Math.sin(t*.11+p2)*motes.drift*.6
+      a[i*3+2]=motes.base[i*3+2]+Math.cos(t*.13+p2*2.3)*motes.drift }
+    motes.attr.needsUpdate=true }
+  { const c=fallLeaves.cfg
+    for(let i=0;i<c.count;i++){ const k=((t+fallLeaves.off[i])%c.fallTime)/c.fallTime
+      const ph2=fallLeaves.off[i]*2.4
+      _lv.set(fallLeaves.home[i*2]+Math.sin(t*.8+ph2)*c.flutter, c.fallHeight*(1-k)+.03, fallLeaves.home[i*2+1]+Math.cos(t*.66+ph2)*c.flutter)
+      _le.set(t*.9+ph2, t*.7+ph2*1.3, 0); _lq.setFromEuler(_le)
+      _lm4.compose(_lv,_lq,_ls); fallLeaves.im.setMatrixAt(i,_lm4) }
+    fallLeaves.im.instanceMatrix.needsUpdate=true }
+}
 
 /* ===== Postprocessing: Render → GTAO → Bloom → Output(ACES/sRGB) → Vignette ===== */
 let composer=null, bloomPass=null, gtaoPass=null, vignettePass=null
@@ -2087,6 +2188,7 @@ function applyMode(){ const night=state.mode==='nacht'
   terrasseLights.forEach(l=>l.intensity=mc.terrasseIntensity)
   stLights.forEach(l=>l.intensity=mc.stLightIntensity)
   stLampMat.emissiveIntensity=mc.streetLamp.emissive
+  fireflies.p.visible=night; motes.p.visible=!night
   if(bloomPass){ bloomPass.strength=mc.bloom.strength; bloomPass.radius=mc.bloom.radius; bloomPass.threshold=mc.bloom.threshold }
   waterMat.color.set(mc.water.color); waterMat.envMapIntensity=mc.water.envMapIntensity
   waterMat.normalScale.setScalar(mc.water.normalScale); waterMat.roughness=mc.water.roughness
@@ -2473,6 +2575,8 @@ renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
       e2.position.y=1.1+((i-1)%3)*.5+Math.sin(t+i)*.12; e2.rotation.y=a+1.2 } }) }
   if(sc===gearScene){ gears.forEach((gr,i)=>{ gr.g.rotation.z+=(i%2?-1:1)*.008*(14/gr.teeth) }) }
   if(sc===scene){
+    windUniform.value=t*sceneConfig.wind.speed
+    updateLife(t)
     waterTex.offset.x=t*.05
     waterTex.offset.y=t*.016+Math.sin(t*.6)*.02 }
   if(sc===scene&&composer&&state.settings.effects){ composer.render() } else { renderer.render(sc,camera) }
