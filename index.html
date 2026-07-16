@@ -197,49 +197,194 @@ input:focus,select:focus{border-color:#4F46E5;box-shadow:0 0 0 3px rgba(79,70,22
 
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+import { Sky } from 'three/addons/objects/Sky.js'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
-import { Water } from 'three/addons/objects/Water.js'
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js'
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
+import { VignetteShader } from 'three/addons/shaders/VignetteShader.js'
 
 const GRID=4, W=32, D=28, HX=16, HZ=14, SLAB=.22, F0=.22, CLEAR=3.3
 const F1=F0+CLEAR+SLAB, CEIL1=F1+CLEAR, ROOF_TOP=CEIL1+.28, BAL=2.2, OV=3.1, ATR_W=10, ATR_D=7
 
-/* ===== Renderer: heller Overcast-Look wie auf den Fotos ===== */
+/* ============================================================================
+   sceneConfig — single source of truth for every tunable visual value.
+   All values are derived from the reference photos of the real
+   Studierendenhaus TU Braunschweig (day interiors = soft bright daylight;
+   night exteriors = blue-hour sky with a warm glowing interior).
+   Live-tune in DevTools: window.__kommilo3d.config …, then
+   window.__kommilo3d.applyMode() to re-apply.
+   ============================================================================ */
+const sceneConfig = {
+  renderer: {
+    maxPixelRatio: 2,          // brief: clamp devicePixelRatio to 2; quality tiers may lower it
+    anisotropy: 8,             // texture sharpness at grazing angles (grass, pavers)
+  },
+  camera: {
+    fov: 35,                   // long-lens cinematic framing, matches the photos' perspective compression
+    near: .3, far: 900,        // far encloses sky dome (r=760) + city backdrop without z-fighting
+    damping: .05,              // orbit inertia — soft, weighty camera feel
+    breatheAmp: .05,           // metres of idle vertical "breathing" drift (very subtle life)
+    breatheSpeed: .22,         // Hz-ish speed of the breathing sine — slow enough to not read as a loop
+  },
+  quality: {                   // tiers applied by the adaptive performance monitor (Phase D)
+    high:   { pixelRatio: 2,   shadowMap: 2048, ao: true,  aoHalfRes: false },
+    medium: { pixelRatio: 1.5, shadowMap: 2048, ao: true,  aoHalfRes: true  },
+    low:    { pixelRatio: 1.1, shadowMap: 1024, ao: false, aoHalfRes: true  },
+    fpsDrop: 45,               // sustained fps below this → drop one tier
+    fpsRaise: 57,              // sustained fps above this → raise one tier (with hysteresis)
+    windowSec: 3,              // seconds of fps averaging before a tier decision
+  },
+  shadow: {
+    frustum: 46,               // half-size (m) of the sun shadow box — building + near park, keeps texels dense
+    far: 220,                  // shadow camera reach — sun sits ~90 m out
+    bias: -.0004,              // acne-vs-peter-panning balance (brief value, verified visually)
+    normalBias: .025,          // pushes samples along normals — fixes stripes on thin steel profiles
+  },
+  sun: { distance: 90 },       // world distance of the directional light along its direction
+  skyDome: { radius: 760 },    // visible sky sphere scale — inside camera.far, outside city backdrop
+  stars: { size: 1.3, opacity: .9 }, // night star points — subtle, like the sparse stars of photo 1
+  materials: {
+    /* per-material image-based-lighting response: 1 = full reflection of the sky env.
+       Matte fabrics/carpet stay low; glass and painted steel pick up the sky. */
+    envMapIntensity: {
+      steel: 1.1, steelWhite: .9, alu: 1.2, fascia: 1.0, glass: 1.6,
+      concrete: .55, carpetGF: .35, carpetOG: .35, ribRoof: 1.0, ribCeil: .8,
+      woodCeil: .6, curtain: .45, lamp: .4, partition: .5, white: .7,
+      grass: .5, paver: .6, gravel: .5, tower: .6, block: .55, table: .8, chair: .7,
+    },
+    leafBackfaceBoost: [1.22, 1.3, 1.08], // fake translucency: backlit leaves brighten slightly green-warm
+    normalScale: {             // strength of the procedurally generated normal maps
+      paver: .55, bark: .9, woodCeil: .4, grass: .45, carpet: .3, asphalt: .5,
+    },
+  },
+  wind: {                      // global foliage wind (vertex shader, per-instance phase)
+    speed: .55,                // slow gusts — fast wind reads as fake
+    grassStrength: .1,         // metres of tip sway for grass blades/tufts
+    leafStrength: .16,         // metres of sway for tree leaf clusters
+    hedgeStrength: .04,        // hedges barely move
+  },
+  particles: {
+    fireflies: 56,             // night-only warm drifting points near the hedges/trees (photo 1 mood)
+    leaves: 36,                // slowly falling leaves under the park trees (autumn photos)
+    motes: 48,                 // sun-lit dust motes inside the hall (photo 2/3 light shafts)
+  },
+  ao: {                        // GTAO — grounds furniture/columns; biggest "sits on the floor" win
+    radius: .5,                // occlusion search radius (m) — room-scale contact darkening
+    distanceExponent: 1.5, thickness: 1.2, scale: 1.4, samples: 12,
+    blendIntensity: .95,       // how strongly AO multiplies the beauty pass
+  },
+  vignette: { offset: 1.0, darkness: 1.22 },  // three-VignetteShader-Skala: >1 dunkelt wirklich ab (~0.3 in Postprocessing-Lib-Skala)
+  msaaSamples: 4,              // MSAA on the composer target — geometry edge AA (WebGL2)
+  modes: {
+    /* ---- TAG: soft late-afternoon sun; photos 2/3 (bright neutral interior) ---- */
+    tag: {
+      exposure: 1.12,          // ACES exposure — bright but keeps white steel below clipping
+      sun: { azimuthDeg: 56, elevationDeg: 38, color: '#ffedd6', intensity: 3.0 }, // warm key (brief #fff3e0 family), long soft shadows
+      sky: { turbidity: 2.2, rayleigh: 2.4, mieCoefficient: .004, mieG: .8, scale: .32 }, // klarer Sommerhimmel; scale drückt Preetham-Luminanz auf Foto-Blau
+      envIntensity: .1,        // sky-IBL (ohne Sonnenscheibe): Preetham ist ~10× heller als HDRIs — niedrig halten, sonst ersaufen die Schatten
+      hemi: { sky: '#cfe4ff', ground: '#b3a98f', intensity: .3 }, // blue sky bounce over warm paver/grass bounce
+      fill: { color: '#dfe9f4', intensity: .14 },  // faint opposite-side sky fill so shadow sides don't die
+      fog: { color: '#dfe9f2', density: .0038 },   // FogExp2 — hazy blue-grey; city backdrop softly fades (photo 4 depth)
+      bloom: { strength: .12, radius: .35, threshold: .9 }, // just a whisper on the skylight/lamps
+      warmPoints: 4,           // interior warm point lights barely read in daylight
+      lampEmissive: 1.1, curtainEmissive: .06, bulbEmissive: .05, dlEmissive: .05,
+      streetLamp: { emissive: .05, intensity: 0 },
+      terrasseIntensity: 0, stLightIntensity: 0,
+      water: { color: '#2b4634', envMapIntensity: 1.1, normalScale: .55, roughness: .16 },
+      groundBounce: '#8f9a7d', // grass-green ground plate colour inside the generated IBL
+    },
+    /* ---- NACHT: blue hour — deep navy sky, warm glowing interior (photos 1/4/5) ---- */
+    nacht: {
+      exposure: 1.0,           // darker overall, ACES shoulder keeps lamps from clipping
+      sun: { azimuthDeg: -118, elevationDeg: 34, color: '#7e93bd', intensity: .16 }, // "moon" key — cool steel-blue rim
+      sky: { turbidity: 1.3, rayleigh: 4, mieCoefficient: .001, mieG: .7, scale: .6,
+             sunAzimuthDeg: 56, sunElevationDeg: -9 }, // blaue Stunde: Sonne tief unterm Horizont → dunkles Navy, kein Sepia-Stich
+      envIntensity: .4,        // Nachthimmel ist real dunkel — etwas mehr Gewicht für lesbare Glas-Reflexe
+      hemi: { sky: '#22304d', ground: '#141a24', intensity: .14 }, // deep blue ambient of photo 1
+      fill: { color: '#31405e', intensity: .04 },
+      fog: { color: '#0e1a2f', density: .005 },    // navy haze — distant trees melt into the blue hour
+      bloom: { strength: .5, radius: .5, threshold: .55 },  // warm glow, but structure stays readable (photo 1, not a blob)
+      warmPoints: 46,          // interior warm fill — the golden glow of the references
+      lampEmissive: 4.4, curtainEmissive: 1.05, bulbEmissive: 2.8, dlEmissive: 2.4,
+      streetLamp: { emissive: 2.4, intensity: 11 },
+      terrasseIntensity: 18, stLightIntensity: 11,
+      water: { color: '#0d151c', envMapIntensity: .5, normalScale: .75, roughness: .12 },
+      groundBounce: '#1a2026', // night ground plate inside the generated IBL
+    },
+  },
+}
+
+/* ===== Renderer: sRGB out, ACES filmic, weiche Schatten ===== */
+let qualityTier = 'high' // adaptive: der Performance-Monitor (unten) stuft bei Bedarf ab
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25))
+renderer.outputColorSpace = THREE.SRGBColorSpace
+renderer.setPixelRatio(Math.min(devicePixelRatio, sceneConfig.quality[qualityTier].pixelRatio, sceneConfig.renderer.maxPixelRatio))
 renderer.setSize(innerWidth-264, innerHeight-64)
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
 renderer.toneMapping = THREE.ACESFilmicToneMapping
-renderer.toneMappingExposure = 1.18
+renderer.toneMappingExposure = sceneConfig.modes.tag.exposure
 document.getElementById('stage').appendChild(renderer.domElement)
 const scene = new THREE.Scene()
-scene.fog = new THREE.Fog(0xf2f4f5, 110, 300)
+scene.fog = new THREE.FogExp2(new THREE.Color(sceneConfig.modes.tag.fog.color), sceneConfig.modes.tag.fog.density)
 const pmrem = new THREE.PMREMGenerator(renderer)
-scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture
-if ('environmentIntensity' in scene) scene.environmentIntensity = .65
-const camera = new THREE.PerspectiveCamera(35, (innerWidth-264)/(innerHeight-64), .3, 900)
+/* Sonnenrichtung aus Azimut/Elevation — EINE Quelle für Licht, Himmel und Specular */
+function dirFromAngles(azimuthDeg, elevationDeg, out){
+  const phi = THREE.MathUtils.degToRad(90-elevationDeg), theta = THREE.MathUtils.degToRad(azimuthDeg)
+  return (out||new THREE.Vector3()).setFromSphericalCoords(1, phi, theta) }
+/* Sichtbarer Himmel (Preetham) — ersetzt den flachen CSS-Verlauf hinter dem Canvas.
+   skyScale skaliert die enorme Preetham-Rohluminanz auf Foto-Niveau (sattes Blau statt Weiß). */
+const skyMesh = new Sky(); skyMesh.scale.setScalar(sceneConfig.skyDome.radius); scene.add(skyMesh)
+skyMesh.material.uniforms.skyScale = { value: 1 }
+skyMesh.material.fragmentShader = skyMesh.material.fragmentShader
+  .replace('uniform float mieDirectionalG;', 'uniform float mieDirectionalG;\n\t\tuniform float skyScale;')
+  .replace('gl_FragColor = vec4( retColor, 1.0 );', 'gl_FragColor = vec4( retColor * skyScale, 1.0 );')
+skyMesh.material.needsUpdate = true
+/* IBL: PMREM aus demselben Himmel + Bodenplatte — Außenlicht statt Studio-RoomEnvironment */
+const envCache = {}
+function envFor(modeKey){
+  if(envCache[modeKey]) return envCache[modeKey]
+  const mc = sceneConfig.modes[modeKey]
+  const es = new THREE.Scene()
+  const esky = new Sky(); esky.scale.setScalar(180); es.add(esky)
+  /* Sonnenscheibe aus der IBL entfernen: direktes Sonnenlicht kommt NUR vom
+     DirectionalLight (mit Schatten) — sonst flutet ein schattenloser Zweitsonnen-Lobe alles flach. */
+  esky.material.fragmentShader = esky.material.fragmentShader.replace('L0 += ( vSunE * 19000.0 * Fex ) * sundisk;','')
+  esky.material.needsUpdate = true
+  const u = esky.material.uniforms, sk = mc.sky
+  u.turbidity.value = sk.turbidity; u.rayleigh.value = sk.rayleigh
+  u.mieCoefficient.value = sk.mieCoefficient; u.mieDirectionalG.value = sk.mieG
+  dirFromAngles(sk.sunAzimuthDeg ?? mc.sun.azimuthDeg, sk.sunElevationDeg ?? mc.sun.elevationDeg, u.sunPosition.value)
+  const gnd = new THREE.Mesh(new THREE.CircleGeometry(150, 24).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: mc.groundBounce }))
+  gnd.position.y = -2; es.add(gnd)
+  envCache[modeKey] = pmrem.fromScene(es, .04).texture
+  gnd.geometry.dispose(); gnd.material.dispose()
+  return envCache[modeKey] }
+const camera = new THREE.PerspectiveCamera(sceneConfig.camera.fov, (innerWidth-264)/(innerHeight-64), sceneConfig.camera.near, sceneConfig.camera.far)
 const controls = new OrbitControls(camera, renderer.domElement)
-controls.enableDamping = true; controls.dampingFactor = .07
+controls.enableDamping = true; controls.dampingFactor = sceneConfig.camera.damping
 controls.autoRotate = true; controls.autoRotateSpeed = .3
 controls.minDistance = 3; controls.maxDistance = 110; controls.maxPolarAngle = Math.PI * .495
 controls.rotateSpeed = .92; controls.zoomSpeed = 1.15
 controls.addEventListener('start', () => controls.autoRotate = false)
 
-/* ===== Licht: bedeckt-hell, weiche neutrale Schatten ===== */
-const hemi=new THREE.HemisphereLight(0xf4f7fa, 0xd8d5cf, 1.05); scene.add(hemi)
-const sun = new THREE.DirectionalLight(0xffffff, 1.05)
-sun.position.set(30, 52, 26); sun.castShadow = true
-sun.shadow.mapSize.set(1024, 1024); sun.shadow.bias = -.0004; sun.shadow.normalBias = .035; sun.shadow.radius = 7
-Object.assign(sun.shadow.camera, { left: -52, right: 52, top: 52, bottom: -52, far: 170 })
+/* ===== Licht: geschichtet — Sonne (Schatten), Himmels-Bounce, IBL ===== */
+const hemi=new THREE.HemisphereLight(0xcfe4ff, 0xb3a98f, .42); scene.add(hemi)
+const sun = new THREE.DirectionalLight(0xffffff, 2.6)
+sun.castShadow = true
+sun.shadow.mapSize.set(sceneConfig.quality[qualityTier].shadowMap, sceneConfig.quality[qualityTier].shadowMap)
+sun.shadow.bias = sceneConfig.shadow.bias; sun.shadow.normalBias = sceneConfig.shadow.normalBias
+{ const f = sceneConfig.shadow.frustum
+  Object.assign(sun.shadow.camera, { left: -f, right: f, top: f, bottom: -f, far: sceneConfig.shadow.far })
+  sun.shadow.camera.updateProjectionMatrix() } // ohne dies bleibt der Ortho-Frustum beim ±5-m-Default → keine Schatten
 scene.add(sun)
-const fill = new THREE.DirectionalLight(0xeef2f6, .35); fill.position.set(-34, 24, -26); scene.add(fill)
-const warm1 = new THREE.PointLight(0xfff2d9, 6, 28, 2); warm1.position.set(0, 2.9, 0); scene.add(warm1)
-const warm2 = new THREE.PointLight(0xfff2d9, 6, 28, 2); warm2.position.set(0, 6.4, 0); scene.add(warm2)
+const fill = new THREE.DirectionalLight(0xdfe9f4, .18); fill.position.set(-34, 24, -26); scene.add(fill)
+const warm1 = new THREE.PointLight(0xfff2d9, 4, 28, 2); warm1.position.set(0, 2.9, 0); scene.add(warm1)
+const warm2 = new THREE.PointLight(0xfff2d9, 4, 28, 2); warm2.position.set(0, 6.4, 0); scene.add(warm2)
 
 
 const buildingGroup=new THREE.Group(); scene.add(buildingGroup)
@@ -247,7 +392,21 @@ const tablesGroup=new THREE.Group(); scene.add(tablesGroup)
 const clickTargets=[]
 /* ===== Texturen ===== */
 function cvs(s){ const c=document.createElement('canvas'); c.width=c.height=s; return c }
-function tx(c){ const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.anisotropy=8; t.colorSpace=THREE.SRGBColorSpace; return t }
+function tx(c){ const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.anisotropy=sceneConfig.renderer.anisotropy; t.colorSpace=THREE.SRGBColorSpace; return t }
+/* Normal-Map aus einer Canvas-Textur (Sobel über Luminanz) — Mikrorelief ohne Netz-Assets */
+function normalFromTex(tex2,strength){ const src=tex2.image, s=src.width
+  const sx=src.getContext('2d').getImageData(0,0,s,src.height), w=s, h=src.height
+  const lum=new Float32Array(w*h)
+  for(let i=0;i<w*h;i++){ const o=i*4; lum[i]=(sx.data[o]*.299+sx.data[o+1]*.587+sx.data[o+2]*.114)/255 }
+  const out=document.createElement('canvas'); out.width=w; out.height=h
+  const oc=out.getContext('2d'), od=oc.createImageData(w,h)
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const L=lum[y*w+((x-1+w)%w)], R=lum[y*w+((x+1)%w)], U=lum[((y-1+h)%h)*w+x], Dn=lum[((y+1)%h)*w+x]
+    const nx=(L-R)*strength, ny=(Dn-U)*strength, nz=1, il=1/Math.hypot(nx,ny,nz), o=(y*w+x)*4
+    od.data[o]=(nx*il*.5+.5)*255; od.data[o+1]=(ny*il*.5+.5)*255; od.data[o+2]=(nz*il*.5+.5)*255; od.data[o+3]=255 }
+  oc.putImageData(od,0,0)
+  const t=new THREE.CanvasTexture(out); t.wrapS=t.wrapT=THREE.RepeatWrapping
+  t.anisotropy=sceneConfig.renderer.anisotropy; t.repeat.copy(tex2.repeat); return t }
 function stripeTex(c1,c2,n=16){ const s=512,c=cvs(s),x=c.getContext('2d'); x.fillStyle=c1; x.fillRect(0,0,s,s); const w=s/n
   for(let i=0;i<n;i++){ const g=x.createLinearGradient(i*w,0,(i+1)*w,0); g.addColorStop(0,c1); g.addColorStop(.5,c2); g.addColorStop(1,c1); x.fillStyle=g; x.fillRect(i*w,0,w,s) } return tx(c) }
 function noiseTex(base,fl,n=5200){ const s=512,c=cvs(s),x=c.getContext('2d'); x.fillStyle=base; x.fillRect(0,0,s,s)
@@ -294,40 +453,54 @@ function lawnTexture(){ const s=1024,c=cvs(s),x=c.getContext('2d')
   x.globalAlpha=1; return tx(c) }
 const grassT=lawnTexture(); grassT.repeat.set(10,8)
 const paverT=paverTex(); paverT.repeat.set(21,19)
-/* Archviz: fotografische Texturen nachladen (Gras, Holzdecke) — Fallback = Canvas-Textur */
+/* Archviz: fotografische Texturen nachladen (Gras, Holzdecke) — Fallback = Canvas-Textur.
+   Die prozedurale Normal-Map bleibt und wird auf das Foto-Repeat synchronisiert. */
 setTimeout(()=>{ try{ const TL=new THREE.TextureLoader(); TL.crossOrigin='anonymous'
   const swap=(url,mat,rx,ry2)=>{ TL.load(url,t=>{ t.wrapS=t.wrapT=THREE.RepeatWrapping; t.colorSpace=THREE.SRGBColorSpace
-    t.repeat.set(rx,ry2); t.anisotropy=8; mat.map=t; mat.needsUpdate=true },undefined,()=>{}) }
+    t.repeat.set(rx,ry2); t.anisotropy=sceneConfig.renderer.anisotropy; mat.map=t
+    if(mat.normalMap) mat.normalMap.repeat.set(rx,ry2)
+    mat.needsUpdate=true },undefined,()=>{}) }
   swap('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r169/examples/textures/terrain/grasslight-big.jpg',M.grass,26,20)
   swap('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r169/examples/textures/hardwood2_diffuse.jpg',M.woodCeil,1/1.7,1/1.7)
 }catch(e){} },800)
 const towerT=towerTex(); towerT.repeat.set(3,8)
 
-/* ===== Materialien (entsättigt, PBR) ===== */
+/* ===== Materialien (entsättigt, PBR — Albedo nie reinweiß/-schwarz) ===== */
+const NS=sceneConfig.materials.normalScale
+const carpetN=normalFromTex(carpetT,NS.carpet)
+const carpetNGF=carpetN.clone(); carpetNGF.repeat.copy(carpetGF.repeat); carpetNGF.needsUpdate=true
+const carpetNOG=carpetN.clone(); carpetNOG.repeat.copy(carpetOG.repeat); carpetNOG.needsUpdate=true
 const M = {
-  steel: new THREE.MeshStandardMaterial({ color:'#f5f6f8', roughness:.4, metalness:.42 }),
-  steelWhite: new THREE.MeshStandardMaterial({ color:'#fbfcfd', roughness:.52, metalness:.25 }),
+  steel: new THREE.MeshStandardMaterial({ color:'#eef0f3', roughness:.4, metalness:.42 }),
+  steelWhite: new THREE.MeshStandardMaterial({ color:'#f2f4f6', roughness:.52, metalness:.25 }),
   alu: new THREE.MeshStandardMaterial({ color:'#d3d7db', roughness:.35, metalness:.6 }),
   concrete: new THREE.MeshStandardMaterial({ color:'#d9d8d5', roughness:.93 }),
   fascia: new THREE.MeshStandardMaterial({ color:'#eff1f3', roughness:.5, metalness:.28 }),
-  glass: new THREE.MeshPhysicalMaterial({ color:'#e4edf1', transparent:true, opacity:.12, roughness:.05, metalness:0, clearcoat:1, clearcoatRoughness:.05, envMapIntensity:1.9, side:THREE.DoubleSide, depthWrite:false }),
-  carpetGF: new THREE.MeshStandardMaterial({ map:carpetGF, roughness:.98 }),
-  carpetOG: new THREE.MeshStandardMaterial({ map:carpetOG, roughness:.98 }),
+  glass: new THREE.MeshPhysicalMaterial({ color:'#e4edf1', transparent:true, opacity:.12, roughness:.06, metalness:0, clearcoat:1, clearcoatRoughness:.05, side:THREE.DoubleSide, depthWrite:false }),
+  carpetGF: new THREE.MeshStandardMaterial({ map:carpetGF, roughness:.98, normalMap:carpetNGF }),
+  carpetOG: new THREE.MeshStandardMaterial({ map:carpetOG, roughness:.98, normalMap:carpetNOG }),
   ribRoof: new THREE.MeshStandardMaterial({ map:ribRoof, roughness:.6, metalness:.2 }),
   ribCeil: new THREE.MeshStandardMaterial({ map:ribCeil, roughness:.6, metalness:.2 }),
-  woodCeil: new THREE.MeshStandardMaterial({ map:woodCeilT, roughness:.82 }),
+  woodCeil: new THREE.MeshStandardMaterial({ map:woodCeilT, roughness:.82, normalMap:normalFromTex(woodCeilT,NS.woodCeil) }),
   curtain: new THREE.MeshStandardMaterial({ map:curtainT, roughness:.85, side:THREE.DoubleSide, emissive:0x9c6f06, emissiveIntensity:.08 }),
-  lamp: new THREE.MeshStandardMaterial({ color:'#ffffff', emissive:0xfff6e4, emissiveIntensity:1.3 }),
+  lamp: new THREE.MeshStandardMaterial({ color:'#fafaf8', emissive:0xfff6e4, emissiveIntensity:1.3 }),
   partition: new THREE.MeshStandardMaterial({ color:'#e5e6e8', roughness:.97 }),
-  white: new THREE.MeshStandardMaterial({ color:'#f8f9fa', roughness:.6 }),
-  grass: new THREE.MeshStandardMaterial({ map:grassT, roughness:1 }),
-  paver: new THREE.MeshStandardMaterial({ map:paverT, roughness:.95 }),
+  white: new THREE.MeshStandardMaterial({ color:'#f4f5f6', roughness:.6 }),
+  grass: new THREE.MeshStandardMaterial({ map:grassT, roughness:1, normalMap:normalFromTex(grassT,NS.grass) }),
+  paver: new THREE.MeshStandardMaterial({ map:paverT, roughness:.95, normalMap:normalFromTex(paverT,NS.paver) }),
   gravel: new THREE.MeshStandardMaterial({ color:'#a8a59c', roughness:.98 }),
   tower: new THREE.MeshStandardMaterial({ map:towerT, roughness:.8 }),
   block: new THREE.MeshStandardMaterial({ color:'#d3cabb', roughness:.9 }),
-  table: new THREE.MeshStandardMaterial({ color:'#fcfcfc', roughness:.32, metalness:.05 }),
+  table: new THREE.MeshStandardMaterial({ color:'#f1f1ee', roughness:.32, metalness:.05 }),
   chair: new THREE.MeshStandardMaterial({ color:'#26282c', roughness:.5, metalness:.15 }),
 }
+/* IBL-Antwort pro Material zentral aus sceneConfig */
+Object.entries(sceneConfig.materials.envMapIntensity).forEach(([k,v])=>{ if(M[k]) M[k].envMapIntensity=v })
+/* Laub-Transluzenz: Rückseiten leicht warmgrün aufhellen — Blätter wirken durchleuchtet statt Plastik */
+function leafTranslucency(mat){ const b=sceneConfig.materials.leafBackfaceBoost
+  mat.onBeforeCompile=sh=>{ sh.fragmentShader=sh.fragmentShader.replace('#include <color_fragment>',
+    `#include <color_fragment>\n\tif(!gl_FrontFacing) diffuseColor.rgb *= vec3(${b[0]},${b[1]},${b[2]});`) }
+  return mat }
 const B=(w,h,d,mat,x,y,z,ry=0,cast=true,recv=false)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat); m.position.set(x,y,z); m.rotation.y=ry; m.castShadow=cast; m.receiveShadow=recv; buildingGroup.add(m); return m }
 function instanced(geo,mat,items,cast=true){ const im=new THREE.InstancedMesh(geo,mat,items.length)
   const m4=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(), sv=new THREE.Vector3()
@@ -578,18 +751,21 @@ instanced(new THREE.CylinderGeometry(.05,.055,.84,10),new THREE.MeshStandardMate
       const bp=new THREE.Mesh(new THREE.BoxGeometry(.05,.52,.05),bsteel); bp.position.set(lx,.65,.315); bp.rotation.x=-.22; g.add(bp) })
     buildingGroup.add(g) }
   bench(8,17.6,0); bench(-8,17.6,0); bench(-2,-17.6,Math.PI); bench(21.3,6,Math.PI/2) }
-/* Pockelsstraße: Asphalt, Bordstein, parkende Autos, Laternen */
-const street=new THREE.Mesh(new THREE.PlaneGeometry(6.4,76),new THREE.MeshStandardMaterial({color:'#83848a',roughness:.96}))
+/* Pockelsstraße: Asphalt (Noise-Albedo + Relief + Roughness-Variation → leicht feuchter Look wie im Juli-Foto) */
+const asphaltT=noiseTex('#7e7f85',['#6f7076','#8b8c92','#75767c'],4200); asphaltT.repeat.set(3,24)
+const asphaltMat=new THREE.MeshStandardMaterial({color:'#eceded',map:asphaltT,roughness:.9,
+  normalMap:normalFromTex(asphaltT,NS.asphalt),roughnessMap:asphaltT})
+const street=new THREE.Mesh(new THREE.PlaneGeometry(6.4,76),asphaltMat)
 street.rotation.x=-Math.PI/2; street.position.set(27,.012,0); street.receiveShadow=true; buildingGroup.add(street)
 B(.28,.13,76,new THREE.MeshStandardMaterial({color:'#c9c6bd',roughness:.9}),23.72,.065,0,0,false,true)
 for(let z=-34;z<=34;z+=4){ const d=new THREE.Mesh(new THREE.PlaneGeometry(.12,1.6),new THREE.MeshStandardMaterial({color:'#e8e8e4',roughness:.9})); d.rotation.x=-Math.PI/2; d.position.set(27,.018,z); buildingGroup.add(d) }
-window.__stLampMat=new THREE.MeshStandardMaterial({color:'#e8eaec',emissive:0xffe2ae,emissiveIntensity:.05})
-window.__stLights=[]
+const stLampMat=new THREE.MeshStandardMaterial({color:'#e8eaec',emissive:0xffe2ae,emissiveIntensity:.05})
+const stLights=[]
 function streetLamp(x,z){ const g=new THREE.Group(); g.position.set(x,0,z)
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.05,.075,4.4,10),M.alu); pole.position.y=2.2; pole.castShadow=true; g.add(pole)
   const arm=new THREE.Mesh(new THREE.BoxGeometry(.95,.05,.08),M.alu); arm.position.set(.45,4.36,0); g.add(arm)
-  const head=new THREE.Mesh(new THREE.BoxGeometry(.52,.11,.24),window.__stLampMat); head.position.set(.88,4.28,0); g.add(head)
-  const pt=new THREE.PointLight(0xffe2ae,0,17,2); pt.position.set(.88,4.05,0); g.add(pt); window.__stLights.push(pt)
+  const head=new THREE.Mesh(new THREE.BoxGeometry(.52,.11,.24),stLampMat); head.position.set(.88,4.28,0); g.add(head)
+  const pt=new THREE.PointLight(0xffe2ae,0,17,2); pt.position.set(.88,4.05,0); g.add(pt); stLights.push(pt)
   buildingGroup.add(g) }
 streetLamp(23.4,-26); streetLamp(23.4,-13); streetLamp(23.4,0); streetLamp(23.4,13); streetLamp(23.4,26)
 /* Hecke zum Flussufer (Foto: dichte Hecke vor dem Haus) */
@@ -615,7 +791,8 @@ function leafTexture(){ const s=256,c=cvs(s),x=c.getContext('2d'); x.clearRect(0
   x.globalAlpha=1; const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8; return t }
 const LEAF_TEX=leafTexture()
 const LEAF_DEPTH=new THREE.MeshDepthMaterial({ depthPacking:THREE.RGBADepthPacking, map:LEAF_TEX, alphaTest:.35 })
-const BARK=new THREE.MeshStandardMaterial({ map:barkTexture(), roughness:1 })
+const BARK_TEX=barkTexture()
+const BARK=new THREE.MeshStandardMaterial({ map:BARK_TEX, roughness:1, normalMap:normalFromTex(BARK_TEX,NS.bark), envMapIntensity:.4 })
 const quadGeo=new THREE.PlaneGeometry(1,1)
 const branchGeo=new THREE.CylinderGeometry(.62,1,1,8); branchGeo.translate(0,.5,0)
 function tree(x,z,s,seed){
@@ -642,7 +819,7 @@ function tree(x,z,s,seed){
   bm.castShadow=true; bm.instanceMatrix.needsUpdate=true; bm.frustumCulled=false; g.add(bm)
   /* Laubbueschel sitzen an jeder Zweigspitze — nichts sticht mehr heraus */
   const tint=new THREE.Color().setHSL(.27+rnd()*.04,.3+rnd()*.1,.28+rnd()*.07)
-  const lm=new THREE.MeshStandardMaterial({ map:LEAF_TEX, alphaTest:.35, side:THREE.DoubleSide, roughness:1, color:tint })
+  const lm=leafTranslucency(new THREE.MeshStandardMaterial({ map:LEAF_TEX, alphaTest:.35, side:THREE.DoubleSide, roughness:1, color:tint, envMapIntensity:.35 }))
   const n=tips.length*4+6
   const im=new THREE.InstancedMesh(quadGeo,lm,n)
   const q=new THREE.Quaternion(), e=new THREE.Euler()
@@ -735,7 +912,7 @@ function bladeTexture(){ const s=128,c=cvs(s),x=c.getContext('2d'); x.clearRect(
 }
 /* Straeucher / Unterwuchs */
 function shrub(x,z,s){ const g=new THREE.Group(); g.position.set(x,0,z)
-  const lm=new THREE.MeshStandardMaterial({ map:LEAF_TEX, alphaTest:.45, side:THREE.DoubleSide, roughness:1, color:new THREE.Color().setHSL(.26+Math.random()*.06,.3,.3+Math.random()*.08) })
+  const lm=leafTranslucency(new THREE.MeshStandardMaterial({ map:LEAF_TEX, alphaTest:.45, side:THREE.DoubleSide, roughness:1, color:new THREE.Color().setHSL(.26+Math.random()*.06,.3,.3+Math.random()*.08), envMapIntensity:.35 }))
   const n=14, im=new THREE.InstancedMesh(quadGeo,lm,n)
   const m4=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(), sv=new THREE.Vector3()
   for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, rr=Math.random()
@@ -957,13 +1134,12 @@ const bank=new THREE.Mesh(ribbon(9.2,.02),new THREE.MeshStandardMaterial({color:
 bank.receiveShadow=true; buildingGroup.add(bank)
 const bankWet=new THREE.Mesh(ribbon(8.2,.032),new THREE.MeshStandardMaterial({color:'#4a5240',roughness:.9}))
 buildingGroup.add(bankWet)
-const wn=new THREE.TextureLoader().load('https://cdn.jsdelivr.net/npm/three@0.169.0/examples/textures/waternormals.jpg',tx2=>{
+const waterTex=new THREE.TextureLoader().load('https://cdn.jsdelivr.net/npm/three@0.169.0/examples/textures/waternormals.jpg',tx2=>{
   tx2.wrapS=tx2.wrapT=THREE.RepeatWrapping; tx2.repeat.set(26,2.5) })
-const waterPBR=new THREE.MeshStandardMaterial({color:0x2b4634,roughness:.14,metalness:.35,
-  normalMap:wn,normalScale:new THREE.Vector2(.55,.55),envMapIntensity:1.25})
-const water=new THREE.Mesh(ribbon(7.6,.06),waterPBR)
+const waterMat=new THREE.MeshStandardMaterial({color:0x2b4634,roughness:.16,metalness:.35,
+  normalMap:waterTex,normalScale:new THREE.Vector2(.55,.55),envMapIntensity:1.1})
+const water=new THREE.Mesh(ribbon(7.6,.06),waterMat)
 water.receiveShadow=true; buildingGroup.add(water)
-window.__water=water; window.__waterTex=wn; window.__waterMat=waterPBR
 /* Ufer-Bäume, die sich im Wasser spiegeln */
 tree(-8,39+Math.sin(-8*.045)*3-5.4,1.6,21)
 tree(2,39+Math.sin(2*.045)*3-5.0,1.25,23)
@@ -1019,7 +1195,6 @@ standPerson(buildingGroup,3,16.4,2.6,14)
 /* Lichterketten & Außenbeleuchtung — romantisch bei Nacht */
 const bulbGeo=new THREE.SphereGeometry(.05,10,8)
 const bulbMat=new THREE.MeshStandardMaterial({color:'#fff1cf',emissive:0xffd9a0,emissiveIntensity:.06,roughness:.4})
-window.__bulbMat=bulbMat
 const cableMat=new THREE.MeshStandardMaterial({color:'#232521',roughness:.9})
 const bulbPos=[]
 function festoon(a,b,sag,nB){ const va=new THREE.Vector3(a[0],a[1],a[2]), vb=new THREE.Vector3(b[0],b[1],b[2])
@@ -1042,7 +1217,6 @@ const bulbInst=new THREE.InstancedMesh(bulbGeo,bulbMat,bulbPos.length)
 bulbInst.instanceMatrix.needsUpdate=true; bulbInst.frustumCulled=false; buildingGroup.add(bulbInst)
 const dlGeo=new THREE.CylinderGeometry(.09,.09,.04,10)
 const dlMat=new THREE.MeshStandardMaterial({color:'#f5efe2',emissive:0xffe6b8,emissiveIntensity:.05})
-window.__dlMat=dlMat
 const dlPos=[]
 for(let x=-14;x<=14;x+=4){ dlPos.push([x,CEIL1-.03,HZ+OV-1.2],[x,CEIL1-.03,-(HZ+OV-1.2)]) }
 for(let z=-10;z<=10;z+=5){ dlPos.push([HX+OV-1.2,CEIL1-.03,z],[-(HX+OV-1.2),CEIL1-.03,z]) }
@@ -1053,18 +1227,27 @@ const tl1=new THREE.PointLight(0xffd9a0,0,26,2); tl1.position.set(-6,3,HZ+2.5); 
 const tl2=new THREE.PointLight(0xffd9a0,0,26,2); tl2.position.set(7,3,HZ+2.2); buildingGroup.add(tl2)
 const tl3=new THREE.PointLight(0xffd9a0,0,30,2); tl3.position.set(-12,5.6,HZ+1.4); buildingGroup.add(tl3)
 const tl4=new THREE.PointLight(0xffd9a0,0,30,2); tl4.position.set(12,5.6,HZ+1.4); buildingGroup.add(tl4)
-window.__terrasseLights=[tl1,tl2,tl3,tl4]
+const terrasseLights=[tl1,tl2,tl3,tl4]
 
-/* ===== Postprocessing: Ambient Occlusion (SAO) ===== */
-let composer=null
+/* ===== Postprocessing: Render → GTAO → Bloom → Output(ACES/sRGB) → Vignette ===== */
+let composer=null, bloomPass=null, gtaoPass=null, vignettePass=null
 try {
-  composer = new EffectComposer(renderer)
+  const vw=innerWidth-264, vh=innerHeight-64
+  /* MSAA auf dem Composer-Target: Geometriekanten bleiben glatt trotz Post-Kette (WebGL2) */
+  composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(vw, vh, { type: THREE.HalfFloatType, samples: sceneConfig.msaaSamples }))
   composer.addPass(new RenderPass(scene, camera))
-  const bloomPass=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.18,.4,.85)
-  window.__bloom=bloomPass
+  gtaoPass = new GTAOPass(scene, camera, vw, vh)
+  gtaoPass.updateGtaoMaterial(sceneConfig.ao)
+  gtaoPass.blendIntensity = sceneConfig.ao.blendIntensity
+  composer.addPass(gtaoPass)
+  bloomPass=new UnrealBloomPass(new THREE.Vector2(vw,vh),sceneConfig.modes.tag.bloom.strength,sceneConfig.modes.tag.bloom.radius,sceneConfig.modes.tag.bloom.threshold)
   composer.addPass(bloomPass)
   composer.addPass(new OutputPass())
-  composer.setSize(innerWidth-264, innerHeight-64)
+  vignettePass=new ShaderPass(VignetteShader)
+  vignettePass.uniforms.offset.value=sceneConfig.vignette.offset
+  vignettePass.uniforms.darkness.value=sceneConfig.vignette.darkness
+  composer.addPass(vignettePass)
+  composer.setSize(vw, vh)
 } catch(e) { composer = null }
 
 
@@ -1867,55 +2050,49 @@ function current(){ const s=state.section
   if(s==='campus'||s==='gruppen'||s==='partner') return scene
   return ambScene }
 const CAMS={campus:{p:[34,3.2,27],t:[0,4,0]},gruppen:{p:[26,5.2,38],t:[0,3.4,0]},partner:{p:[22,6.5,30],t:[0,2.2,0]},international:{p:[0,1.2,7],t:[0,0,0]},profil:{p:[0,1.5,3.6],t:[0,1,0]},matches:{p:[2.6,1.9,3.4],t:[0,1.1,0]},unterlagen:{p:[0,1.9,4.6],t:[0,1.2,-.6]},einladungen:{p:[0,1.6,4.8],t:[0,1.2,0]},einstellungen:{p:[.4,1.5,4.6],t:[.3,1.4,0]},amb:{p:[0,0,10],t:[0,0,0]}}
-/* Tag/Nacht: Sonne, Mond, Sterne */
-const sunMesh=new THREE.Mesh(new THREE.SphereGeometry(6,20,16),new THREE.MeshBasicMaterial({color:0xfff3c4,fog:false}))
-sunMesh.position.set(140,110,70); scene.add(sunMesh)
-const halo=new THREE.Mesh(new THREE.SphereGeometry(10,20,16),new THREE.MeshBasicMaterial({color:0xfff6d8,transparent:true,opacity:.28,fog:false,blending:THREE.AdditiveBlending,depthWrite:false}))
-sunMesh.add(halo)
+/* Tag/Nacht: die Sonnenscheibe liefert der Himmels-Shader; Mond + Sterne nur nachts */
 const moonMesh=new THREE.Mesh(new THREE.SphereGeometry(5,20,16),new THREE.MeshBasicMaterial({color:0xe8ecf4,fog:false}))
 const mShadow=new THREE.Mesh(new THREE.SphereGeometry(4.6,20,16),new THREE.MeshBasicMaterial({color:0x10182a,fog:false}))
 mShadow.position.set(-1.8,.6,1.2); moonMesh.add(mShadow)
-moonMesh.position.set(-110,90,-50); moonMesh.visible=false; scene.add(moonMesh)
+moonMesh.visible=false; scene.add(moonMesh)
 const starGeo=new THREE.BufferGeometry()
 { const n=1600, pos=new Float32Array(n*3)
   for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, e=Math.random()*Math.PI*.48
     pos[i*3]=Math.cos(a)*Math.cos(e)*320; pos[i*3+1]=20+Math.sin(e)*320; pos[i*3+2]=Math.sin(a)*Math.cos(e)*320 }
   starGeo.setAttribute('position',new THREE.BufferAttribute(pos,3)) }
-const stars=new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xeef2ff,size:1.7,sizeAttenuation:true,transparent:true,opacity:1,fog:false}))
+const stars=new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xeef2ff,size:sceneConfig.stars.size,sizeAttenuation:true,transparent:true,opacity:sceneConfig.stars.opacity,fog:false}))
 stars.visible=false; scene.add(stars)
+/* applyMode: reine Anwendung von sceneConfig.modes[…] — keine Look-Werte außerhalb der Config */
+const SUNV=new THREE.Vector3()
 function applyMode(){ const night=state.mode==='nacht'
+  const mc=sceneConfig.modes[night?'nacht':'tag']
   document.body.classList.toggle('night',night)
-  sunMesh.visible=!night; moonMesh.visible=night; stars.visible=night
-  if(night){ hemi.intensity=.08; hemi.color.set(0x1c2740); hemi.groundColor.set(0x0c1018)
-    sun.intensity=.05; sun.color.set(0x8fa6cc); sun.position.set(-70,60,-40)
-    fill.intensity=.02; warm1.intensity=70; warm2.intensity=70
-    M.lamp.emissiveIntensity=6; M.curtain.emissiveIntensity=1.3
-    if(window.__bulbMat)window.__bulbMat.emissiveIntensity=5
-    if(window.__dlMat)window.__dlMat.emissiveIntensity=5
-    ;(window.__terrasseLights||[]).forEach(l=>l.intensity=30)
-    ;(window.__stLights||[]).forEach(l=>l.intensity=15)
-    if(window.__stLampMat)window.__stLampMat.emissiveIntensity=3.2
-    if(window.__bloom){ window.__bloom.strength=1.05; window.__bloom.radius=.55; window.__bloom.threshold=.45 }
-    if(window.__waterMat){ window.__waterMat.color.set(0x0b141a); window.__waterMat.envMapIntensity=.45
-      window.__waterMat.normalScale.set(.75,.75) }
-    if('environmentIntensity' in scene) scene.environmentIntensity=.04
-    renderer.toneMappingExposure=.95
-    scene.fog.color.set(0x090f1c); scene.fog.near=90; scene.fog.far=320
-  } else { hemi.intensity=1.05; hemi.color.set(0xdcecff); hemi.groundColor.set(0xd8d5cf)
-    sun.intensity=1.35; sun.color.set(0xfff7e6); sun.position.set(60,70,40)
-    fill.intensity=.35; warm1.intensity=6; warm2.intensity=6
-    M.lamp.emissiveIntensity=1.3; M.curtain.emissiveIntensity=.08
-    if(window.__bulbMat)window.__bulbMat.emissiveIntensity=.06
-    if(window.__dlMat)window.__dlMat.emissiveIntensity=.05
-    ;(window.__terrasseLights||[]).forEach(l=>l.intensity=0)
-    ;(window.__stLights||[]).forEach(l=>l.intensity=0)
-    if(window.__stLampMat)window.__stLampMat.emissiveIntensity=.05
-    if(window.__bloom){ window.__bloom.strength=.18; window.__bloom.radius=.4; window.__bloom.threshold=.85 }
-    if(window.__waterMat){ window.__waterMat.color.set(0x2b4634); window.__waterMat.envMapIntensity=1.25
-      window.__waterMat.normalScale.set(.55,.55) }
-    if('environmentIntensity' in scene) scene.environmentIntensity=.6
-    renderer.toneMappingExposure=1.18
-    scene.fog.color.set(0xe8f1f8); scene.fog.near=110; scene.fog.far=320 } }
+  moonMesh.visible=night; stars.visible=night
+  renderer.toneMappingExposure=mc.exposure
+  /* EINE Sonnenrichtung für Schlagschatten, Himmel und Reflexe (Akzeptanzkriterium) */
+  dirFromAngles(mc.sun.azimuthDeg,mc.sun.elevationDeg,SUNV)
+  sun.position.copy(SUNV).multiplyScalar(sceneConfig.sun.distance)
+  sun.intensity=mc.sun.intensity; sun.color.set(mc.sun.color)
+  moonMesh.position.copy(SUNV).multiplyScalar(420)
+  const sk=mc.sky, su=skyMesh.material.uniforms
+  su.turbidity.value=sk.turbidity; su.rayleigh.value=sk.rayleigh
+  su.mieCoefficient.value=sk.mieCoefficient; su.mieDirectionalG.value=sk.mieG
+  su.skyScale.value=sk.scale
+  dirFromAngles(sk.sunAzimuthDeg ?? mc.sun.azimuthDeg, sk.sunElevationDeg ?? mc.sun.elevationDeg, su.sunPosition.value)
+  hemi.intensity=mc.hemi.intensity; hemi.color.set(mc.hemi.sky); hemi.groundColor.set(mc.hemi.ground)
+  fill.intensity=mc.fill.intensity; fill.color.set(mc.fill.color)
+  warm1.intensity=mc.warmPoints; warm2.intensity=mc.warmPoints
+  M.lamp.emissiveIntensity=mc.lampEmissive; M.curtain.emissiveIntensity=mc.curtainEmissive
+  bulbMat.emissiveIntensity=mc.bulbEmissive; dlMat.emissiveIntensity=mc.dlEmissive
+  terrasseLights.forEach(l=>l.intensity=mc.terrasseIntensity)
+  stLights.forEach(l=>l.intensity=mc.stLightIntensity)
+  stLampMat.emissiveIntensity=mc.streetLamp.emissive
+  if(bloomPass){ bloomPass.strength=mc.bloom.strength; bloomPass.radius=mc.bloom.radius; bloomPass.threshold=mc.bloom.threshold }
+  waterMat.color.set(mc.water.color); waterMat.envMapIntensity=mc.water.envMapIntensity
+  waterMat.normalScale.setScalar(mc.water.normalScale); waterMat.roughness=mc.water.roughness
+  scene.environment=envFor(night?'nacht':'tag')
+  scene.environmentIntensity=mc.envIntensity
+  scene.fog.color.set(mc.fog.color); scene.fog.density=mc.fog.density }
 const partnerGroup=new THREE.Group(); partnerGroup.visible=false; scene.add(partnerGroup)
 const partnerTargets=[]
 function partnerTable(p,x,z,ry,i){
@@ -2279,8 +2456,12 @@ addEventListener('resize',()=>{ camera.aspect=(innerWidth-264)/(innerHeight-64);
 renderer.setSize(innerWidth-264,innerHeight-64); camera.aspect=(innerWidth-264)/(innerHeight-64); camera.updateProjectionMatrix()
 if(composer) composer.setSize(innerWidth-264,innerHeight-64)
 const appClock=new THREE.Clock()
+let breathePrev=0
 renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
   controls.update()
+  /* Kamera-"Atmen": minimale vertikale Drift als Delta — begrenzt, driftet nie weg */
+  { const b=Math.sin(t*sceneConfig.camera.breatheSpeed*Math.PI*2)*sceneConfig.camera.breatheAmp
+    camera.position.y+=b-breathePrev; breathePrev=b }
   const sc=current()
   if(sc===ambScene) ambShapes.forEach(sh=>{ sh.position.y=sh.userData.y0+Math.sin(t*sh.userData.sp+sh.userData.ph)*.45; sh.rotation.x+=.001*sh.userData.sp*3; sh.rotation.y+=.0014*sh.userData.sp*3 })
   if(sc===globeScene){ globeGroup.rotation.y+=.0008; arcs.forEach(a=>{ const k=(t*.14+a.off)%1; a.dot.position.copy(a.curve.getPoint(k)) }) }
@@ -2291,9 +2472,9 @@ renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
     else { const a=t*.25+(i-1)/6*Math.PI*2; e2.position.x=Math.cos(a)*2.2; e2.position.z=Math.sin(a)*1.6
       e2.position.y=1.1+((i-1)%3)*.5+Math.sin(t+i)*.12; e2.rotation.y=a+1.2 } }) }
   if(sc===gearScene){ gears.forEach((gr,i)=>{ gr.g.rotation.z+=(i%2?-1:1)*.008*(14/gr.teeth) }) }
-  if(sc===scene&&window.__waterTex){
-    window.__waterTex.offset.x=t*.05
-    window.__waterTex.offset.y=t*.016+Math.sin(t*.6)*.02 }
+  if(sc===scene){
+    waterTex.offset.x=t*.05
+    waterTex.offset.y=t*.016+Math.sin(t*.6)*.02 }
   if(sc===scene&&composer&&state.settings.effects){ composer.render() } else { renderer.render(sc,camera) }
   updateLabels() })
 { const bell=document.querySelector('.bellb')
@@ -2302,6 +2483,8 @@ renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
     d.style.cssText='position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:99px;background:#EF4444;display:none'
     bell.appendChild(d) } }
 rebuildTables(); rebuildPartners(); applyMode(); syncScene(); render()
+/* Einziger 3D-Tuning-Handle: Werte in .config ändern, dann .applyMode() — ersetzt die alten window.__*-Streuungen */
+window.__kommilo3d={ config:sceneConfig, applyMode, camera, controls, renderer, composer, info:()=>renderer.info.render }
 window.__payPoll=0
 if(location.search.indexOf('paid=1')>=0){ history.replaceState({},'',location.pathname)
   toast('Zahlung wird bestätigt …','Einen Moment — deine Credits kommen gleich.')
