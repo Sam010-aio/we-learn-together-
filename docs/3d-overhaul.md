@@ -243,7 +243,28 @@ Verbleibende Abweichung (dokumentiert): Altgebäude-Modelltiefe 14 m statt reale
 Schmalseiten-Proportion dadurch schlanker als im Foto — Remodel des Bestands-Detailbaus
 wäre unverhältnismäßig.
 
-## 9. Files touched
+## 9. Delta-Tabelle Foto↔Render (Fidelity-Pass) — vorher erhoben, nachher aufgelöst
+
+| # | Delta (präzise) | Schwere | Status |
+|---|---|---|---|
+| 1 | Turm: real helles Beton-/Alu-Raster mit dunklen eingesetzten Scheiben, ~17 Geschosse, schlankes Dachvordach; Render: dunkle Noise-Platte | schwer | **fixed** — deterministisches 17×9-Gitter (helles Skelett, dunkle Scheiben, wenige erleuchtet, Brüstungsband), auskragendes Vordach |
+| 2 | Gebäudeordnung ab Blickpunkt V: real Turm ganz links hinten, gelbes Haus davor-mittig, Altgebäude rechts; Render gespiegelt | schwer | **fixed** — Turm (−52,−50), gelbes Haus (−20,−33.5), Altgebäude unverändert (18,−60); 7/7 Assertions PASS (Output im Change Log) |
+| 3 | Bibliothek: stand auf der Landmarken-Seite | schwer | **fixed** — (24,0,62) hinter der Oker, Front nach Süden; Assertion „Gegenseite/hinter V" PASS |
+| 4 | Figuren: starre ungelenkige Gliedmaßen, Stumpf-Enden, Schweben/Clipping, Gleiten statt Gehen | schwer | **fixed** — Gelenk-Hierarchie (Schulter/Ellbogen/Hüfte/Knie/Knöchel), Fäustling+Daumen, echte Schuhe; Sitzpose mit korrekten Kontaktpunkten (Gesäß .455, Füße flach, Unterarme auf .74), Stehtisch-Lehnen, 5 Gehende mit echtem Gangzyklus (Beinwechsel, Kniebeuge, Armgegentakt, Körperhub), Gesprächsgruppe mit Geste; Atmen/Kopfdrift/Tippwellen, Timings pro Figur randomisiert; Stehtisch-Clipping behoben; ~33 Figuren < 40-Budget |
+| 5 | Tagesnebel: weißer Vorhang ab ~100 m | mittel | **fixed** — Dichte .0038 → .0026, Resthaze bleibt |
+| 6 | Bäume: ein Lollipop-Archetyp | mittel | **improved** — 3 Kronen-Archetypen (rund/hoch-oval/geschichtet über Zwischenetagen-Cluster), frühere Verzweigung, Stammgabel ~50 % bei Typ 2, breiterer Hue-Jitter; Restabweichung: Kronendichte unter Foto-Niveau (Instanz-Budget), dokumentiert |
+
+**Charaktersystem-Entscheidung (1a):** Option B (prozedurale Gelenk-Skelette). Begründung: keine
+in dieser Umgebung beziehbare, lizenz-verifizierbare CC0-GLB-Rigging-Bibliothek (npm-Registry
+erreichbar, aber kein kuratiertes geprüftes Paket); Option B hält Payload bei 0 MB, garantiert
+EIN Stilisierungslevel und erfüllt Anatomie-/Posen-Spezifikation vollständig.
+
+**Messung Fidelity-Pass:** high-Tier 6 112 Draw Calls (+790 durch ~33 Gelenk-Figuren à ~25 Meshes),
+1,69 M Dreiecke; SwiftShader-Frametime sank dennoch (2 781 ms vs 2 957 ms — kleinere Foliage-Last).
+14/14 Interaktionstests, 0 Konsolen-Fehler. Echte 60-fps-Validierung weiterhin nur auf realer
+GPU möglich (dokumentierte Umgebungsgrenze).
+
+## 10. Files touched
 
 - `index.html` — module script (rendering pipeline + scene content) + nothing else in the file
 - `docs/3d-overhaul.md` — this document

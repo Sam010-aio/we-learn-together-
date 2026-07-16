@@ -294,7 +294,7 @@ const sceneConfig = {
       envIntensity: .1,        // sky-IBL (ohne Sonnenscheibe): Preetham ist ~10× heller als HDRIs — niedrig halten, sonst ersaufen die Schatten
       hemi: { sky: '#cfe4ff', ground: '#b3a98f', intensity: .3 }, // blue sky bounce over warm paver/grass bounce
       fill: { color: '#dfe9f4', intensity: .14 },  // faint opposite-side sky fill so shadow sides don't die
-      fog: { color: '#dfe9f2', density: .0038 },   // FogExp2 — hazy blue-grey; city backdrop softly fades (photo 4 depth)
+      fog: { color: '#dfe9f2', density: .0026 },   // FogExp2 — dezente Haze: Turm/Altgebäude bleiben auf Realdistanz klar lesbar
       bloom: { strength: .12, radius: .35, threshold: .9 }, // just a whisper on the skylight/lamps
       warmPoints: 4,           // interior warm point lights barely read in daylight
       lampEmissive: 1.1, curtainEmissive: .06, bulbEmissive: .05, dlEmissive: .05,
@@ -398,6 +398,7 @@ const warm2 = new THREE.PointLight(0xfff2d9, TAG.warmPoints, 28, 2); warm2.posit
 
 const buildingGroup=new THREE.Group(); scene.add(buildingGroup)
 const tablesGroup=new THREE.Group(); scene.add(tablesGroup)
+const peopleGroup=new THREE.Group(); scene.add(peopleGroup) // Figuren im Freien — nie matrix-eingefroren
 const clickTargets=[]
 /* ===== Texturen ===== */
 function cvs(s){ const c=document.createElement('canvas'); c.width=c.height=s; return c }
@@ -518,8 +519,8 @@ const windUniform={ value:0 }
    als solide Quadrate verrechnet und "AO-Geisterquadrate" werfen. Diese Objekte werden
    während des AO-G-Buffers ausgeblendet (spart zugleich 42k Instanzen in zwei Re-Renders). */
 const AO_EXCLUDE=[]
-/* Subtile Idle-Bewegung aller Figuren (Gewichtsverlagerung + Kopfdrift) — Registry für updateLife */
-const PEOPLE_SWAY=[]
+/* Referenzen der Landmarken für die Site-Plan-Assertions (Dev-Verifikation) */
+const SITE={riverZ:39}
 /* Foliage-Shader-Hook (onBeforeCompile ist Single-Slot, daher kombiniert):
    - wind: Vertex-Sway, Phase aus der Instanz-Weltposition — nichts bewegt sich synchron.
      weight 'tip' = Halmspitzen biegen (y 0→1), 'unit' = ganzes Blattbüschel schwingt.
@@ -771,59 +772,79 @@ function head(gh,K){ const s=K.s
     mk(new THREE.SphereGeometry(.04,12,10),K.mH,0,.078,-.052) } // Dutt
   else { mk(new THREE.SphereGeometry(.095,20,16,0,Math.PI*2,0,Math.PI*.6),K.mH,0,.004,-.019,-.28)
     mk(new THREE.SphereGeometry(.047,12,10),K.mH,0,.048,.059,0,[1.25,.55,.9]) } } // Pony vorn
-/* Sitzende Person (Tische): Gesäß auf Sitzhöhe .455, Blick +z zum Tisch, Hände auf der Platte */
-function person(g,x,z,ry,seed){ const K=humanKit(seed), s=K.s
-  const grp=new THREE.Group(); grp.position.set(x,0,z); grp.rotation.y=ry
-  grp.scale.setScalar(.95+((s*13)%11)/110)
-  const mk=(geo,m,px,py,pz,rx=0,rz=0,sc)=>{ const o=new THREE.Mesh(geo,m); o.position.set(px,py,pz); o.rotation.x=rx; o.rotation.z=rz; if(sc)o.scale.set(sc[0],sc[1],sc[2]); o.castShadow=true; grp.add(o); return o }
-  mk(new THREE.SphereGeometry(.13,16,12),K.mP,0,.5,-.02,0,0,[1.2,.7,1])                     // Becken auf dem Sitz
-  ;[-.075,.075].forEach(lx=>{
-    mk(new THREE.CapsuleGeometry(.062,.26,6,12),K.mP,lx,.5,.17,Math.PI/2-.06)              // Oberschenkel waagrecht
-    mk(new THREE.CapsuleGeometry(.05,.3,6,12),K.mP,lx*1.05,.27,.345,.08)                   // Unterschenkel
-    mk(new THREE.CapsuleGeometry(.042,.11,6,10),K.mShoe,lx*1.05,.05,.415,Math.PI/2)        // Schuh
-    mk(new THREE.BoxGeometry(.08,.02,.17),new THREE.MeshStandardMaterial({color:'#e8e6e0',roughness:.8}),lx*1.05,.012,.418) })
-  mk(new THREE.CapsuleGeometry(.12,.3,10,18),K.mS,0,.82,.0,-.07,0,[1.18,1,.78])            // Rumpf, leicht zurückgelehnt
-  ;[-.15,.15].forEach(sx2=>mk(new THREE.SphereGeometry(.062,12,10),K.mS,sx2,.985,.01))     // Schultern
-  ;[-1,1].forEach(sd=>{
-    mk(new THREE.CapsuleGeometry(.042,.2,6,10),K.mS,sd*.185,.88,.06,-.5,sd*-.1)            // Oberarm nach vorn unten
-    mk(new THREE.CapsuleGeometry(.036,.2,6,10),K.mS,sd*.155,.72,.27,-1.25)                 // Unterarm zur Platte
-    mk(new THREE.SphereGeometry(.038,10,8),K.mK,sd*.145,.748,.365,0,0,[.85,.7,1.1]) })     // Hand auf dem Tisch, am Ärmel
-  mk(new THREE.CylinderGeometry(.041,.05,.1,12),K.mK,0,1.06,.01)                            // Hals
-  const col=new THREE.Mesh(new THREE.TorusGeometry(.055,.014,8,20),K.mS); col.rotation.x=Math.PI/2
-  col.position.set(0,1.03,.01); col.castShadow=true; grp.add(col)                          // Kragen
-  const gh=new THREE.Group(); gh.position.set(0,1.17,.015); gh.rotation.y=((s%5)-2)*.16; grp.add(gh)
-  head(gh,K)
-  const sway={grp,gh,ph:s*1.3,base:0,hy:gh.rotation.y,amp:.004,dead:false}
-  grp.userData.sway=sway; PEOPLE_SWAY.push(sway)
-  g.add(grp) }
-/* Stehende Person (Park, Wege) — 1,72 m, ~7,5 Kopfhöhen, Gewichtsverlagerung, teils mit Rucksack */
-function standPerson(gp,x,z,ry,seed){ const K=humanKit(seed), s=K.s
-  const grp=new THREE.Group(); grp.position.set(x,0,z); grp.rotation.y=ry; grp.scale.setScalar(.95+((s*7)%9)/90)
-  const sway={grp,gh:null,ph:s*2.1,base:(s%2?1:-1)*.012,hy:0,amp:.008,dead:false}
-  grp.rotation.z=sway.base // leichte Standasymmetrie — nie perfekt symmetrisch
-  const mk=(geo,m,px,py,pz,rx=0,rz=0,sc)=>{ const o=new THREE.Mesh(geo,m); o.position.set(px,py,pz); o.rotation.x=rx; o.rotation.z=rz; if(sc)o.scale.set(sc[0],sc[1],sc[2]); o.castShadow=true; grp.add(o); return o }
-  ;[-.09,.09].forEach(lx=>{
-    mk(new THREE.CapsuleGeometry(.048,.14,6,10),K.mShoe,lx,.052,.04,Math.PI/2)             // Schuh
-    mk(new THREE.BoxGeometry(.09,.022,.2),new THREE.MeshStandardMaterial({color:'#e8e6e0',roughness:.8}),lx,.012,.048)
-    mk(new THREE.CapsuleGeometry(.05,.3,6,12),K.mP,lx,.29,.01,0,lx<0?.02:-.02)             // Wade
-    mk(new THREE.CapsuleGeometry(.063,.3,6,12),K.mP,lx*.95,.62,0,0,lx<0?.03:-.03) })       // Oberschenkel
-  mk(new THREE.SphereGeometry(.105,16,12),K.mP,.012,.9,0,0,0,[1.1,.75,.95])                // Hüfte, minimal versetzt
-  mk(new THREE.CapsuleGeometry(.112,.36,10,18),K.mS,0,1.24,0,0,.01,[1.16,1,.78])           // Rumpf/Jacke
-  ;[-.148,.148].forEach(sx2=>mk(new THREE.SphereGeometry(.058,12,10),K.mS,sx2,1.415,0))    // Schultern breiter als Hüfte
-  ;[-1,1].forEach(sd=>{ const bend=sd*(s%2?1:-1)>0?.2:.09                                  // ein Arm stärker gebeugt
-    mk(new THREE.CapsuleGeometry(.04,.24,6,10),K.mS,sd*.195,1.29,.005,bend*.4,sd*-.06)     // Oberarm
-    mk(new THREE.CapsuleGeometry(.034,.2,6,10),K.mS,sd*.208,1.02,.02+bend*.09,bend,sd*-.02)// Unterarm
-    mk(new THREE.SphereGeometry(.038,10,8),K.mK,sd*.215,.84,.05+bend*.15,0,0,[.82,1.1,.95]) }) // Hand endet auf Mitte Oberschenkel
-  mk(new THREE.CylinderGeometry(.04,.049,.1,12),K.mK,0,1.5,0)                              // Hals
-  const col=new THREE.Mesh(new THREE.TorusGeometry(.054,.013,8,20),K.mS); col.rotation.x=Math.PI/2
-  col.position.set(0,1.47,0); col.castShadow=true; grp.add(col)
-  const gh=new THREE.Group(); gh.position.set(0,1.615,.01); gh.rotation.y=((s%5)-2)*.12; grp.add(gh)
-  head(gh,K)
-  sway.gh=gh; sway.hy=gh.rotation.y; grp.userData.sway=sway; PEOPLE_SWAY.push(sway)
+/* ===== Figuren v4: echte Gelenk-Hierarchie (CLAUDE.md-Standard) =====
+   Jede Gliedmaße hängt an einem Gelenk-Group (Schulter/Ellbogen/Hüfte/Knie/Knöchel) —
+   Posen und Gang entstehen durch Gelenkrotationen statt starrer Zylinder. Fäustling-Hände
+   mit Daumen, echte Schuhe, keine Gesichter. Registry FIGURES treibt Gang + Mikro-Bewegung. */
+const FIGURES=[]
+const SOLE=new THREE.MeshStandardMaterial({color:'#e8e6e0',roughness:.8})
+function makeFigure(seed){ const K=humanKit(seed), s=K.s
+  const root=new THREE.Group()
+  root.scale.setScalar(.93+((s*13)%15)/93.75)  // ±8 % Körpergröße
+  const build=1+(((s*7)%9)-4)/100              // ±4 % Statur
+  const mk=(parent,geo,m,px,py,pz)=>{ const o=new THREE.Mesh(geo,m); o.position.set(px,py,pz); o.castShadow=true; parent.add(o); return o }
+  const joint=(parent,px,py,pz)=>{ const j=new THREE.Group(); j.position.set(px,py,pz); parent.add(j); return j }
+  const B={}
+  B.pelvis=joint(root,0,.86,0)
+  mk(B.pelvis,new THREE.SphereGeometry(.104,16,12),K.mP,0,.02,0).scale.set(1.1*build,.72,.9)
+  B.torso=joint(B.pelvis,0,.06,0); B.torso.userData.rx0=0
+  mk(B.torso,new THREE.CapsuleGeometry(.108,.3,10,16),K.mS,0,.23,0).scale.set(1.18*build,1,.76)
+  ;[-.16,.16].forEach(sx2=>mk(B.torso,new THREE.SphereGeometry(.055,12,10),K.mS,sx2*build,.4,0)) // Schultern breiter als Hüfte
+  const col=new THREE.Mesh(new THREE.TorusGeometry(.05,.012,8,18),K.mS); col.rotation.x=Math.PI/2; col.position.y=.44; col.castShadow=true; B.torso.add(col)
+  B.neck=joint(B.torso,0,.455,0); mk(B.neck,new THREE.CylinderGeometry(.037,.045,.1,10),K.mK,0,.04,0)
+  B.head=joint(B.neck,0,.13,.008); B.head.rotation.y=((s%5)-2)*.12; head(B.head,K)
+  ;['L','R'].forEach((sd,i)=>{ const g2=i?1:-1
+    const sh=B['sh'+sd]=joint(B.torso,g2*.175*build,.385,0)
+    mk(sh,new THREE.CapsuleGeometry(.039,.19,6,10),K.mS,0,-.125,0)
+    const el=B['el'+sd]=joint(sh,0,-.26,0)
+    mk(el,new THREE.CapsuleGeometry(.033,.17,6,10),K.mS,0,-.1,0)
+    mk(el,new THREE.SphereGeometry(.041,10,8),K.mK,0,-.225,.006).scale.set(.78,1.15,.95)   // Fäustling
+    mk(el,new THREE.SphereGeometry(.017,8,6),K.mK,g2*-.033,-.2,.02)                        // Daumen
+    const hip=B['hip'+sd]=joint(B.pelvis,g2*.088*build,-.02,0)
+    mk(hip,new THREE.CapsuleGeometry(.062,.26,6,12),K.mP,0,-.19,0)
+    const kn=B['kn'+sd]=joint(hip,0,-.4,0)
+    mk(kn,new THREE.CapsuleGeometry(.048,.26,6,12),K.mP,0,-.18,0)
+    const an=B['an'+sd]=joint(kn,0,-.38,0)
+    const shoe=mk(an,new THREE.CapsuleGeometry(.043,.12,6,10),K.mShoe,0,-.032,.06); shoe.rotation.x=Math.PI/2
+    mk(an,new THREE.BoxGeometry(.084,.02,.19),SOLE,0,-.062,.062) })
   if(s%3===0){ const bp=new THREE.MeshStandardMaterial({color:['#7a3b3b','#3e5c48','#4a4f8c'][(s>>2)%3],roughness:.85})
-    mk(new THREE.BoxGeometry(.26,.34,.12),bp,0,1.22,-.17)                                  // Rucksack
-    ;[-.09,.09].forEach(sx2=>mk(new THREE.BoxGeometry(.04,.3,.02),bp,sx2,1.3,-.1)) }
-  gp.add(grp) }
+    mk(B.torso,new THREE.BoxGeometry(.25,.32,.11),bp,0,.24,-.15)                            // Rucksack
+    ;[-.085,.085].forEach(sx2=>mk(B.torso,new THREE.BoxGeometry(.04,.28,.02),bp,sx2,.3,-.09)) }
+  return {root,B,K,s} }
+/* Sitzpose: Gesäß auf Sitz (.455), Oberschenkel waagrecht, Füße flach, Unterarme auf Platte (.74) */
+function poseSit(F){ const B=F.B
+  B.pelvis.position.y=.55
+  B.torso.rotation.x=B.torso.userData.rx0=.1                     // leichte Vorneigung
+  ;['L','R'].forEach(sd=>{ B['hip'+sd].rotation.x=-1.47; B['kn'+sd].rotation.x=1.47; B['an'+sd].rotation.x=0
+    B['sh'+sd].rotation.x=-.52; B['el'+sd].rotation.x=-.72 })
+  B.shL.rotation.z=.06; B.shR.rotation.z=-.06
+  B.hipL.rotation.z=.05; B.hipR.rotation.z=-.05 }
+/* Standpose: Gewicht auf einem Bein, Arme leicht + asymmetrisch gebeugt */
+function poseStand(F){ const B=F.B, s=F.s, w=(s%2?1:-1)
+  B.pelvis.rotation.z=w*.025; B.torso.rotation.z=-w*.02
+  B['kn'+(w>0?'L':'R')].rotation.x=.14; B['hip'+(w>0?'L':'R')].rotation.x=-.1  // Spielbein
+  B.shL.rotation.x=.05+(s%3)*.02; B.shR.rotation.x=.08
+  B.elL.rotation.x=-.2-(s%3)*.14; B.elR.rotation.x=-.42-(s%4)*.08 }
+/* Stehtisch-Pose: ein Unterarm liegt auf der hohen Platte */
+function poseLean(F,side){ poseStand(F); const B=F.B
+  B['sh'+side].rotation.x=-.7; B['el'+side].rotation.x=-.5 }
+function registerFigure(F,mode,opts){ const e=Object.assign({F,mode,ph:F.s*1.7+(F.s%7),dead:false},opts||{})
+  F.root.userData.fig=e; FIGURES.push(e); return e }
+/* Kompatible Wrapper für bestehende Aufrufstellen */
+function person(g,x,z,ry,seed){ const F=makeFigure(seed)
+  F.root.position.set(x,0,z); F.root.rotation.y=ry
+  poseSit(F); registerFigure(F,'sit')
+  g.add(F.root) }
+function standPerson(gp,x,z,ry,seed){ const F=makeFigure(seed)
+  F.root.position.set(x,0,z); F.root.rotation.y=ry
+  poseStand(F); registerFigure(F,'stand')
+  gp.add(F.root) }
+/* Gehende Figur entlang eines Pfads (Ping-Pong), echter Gangzyklus in updateLife */
+function walker(path,seed,speed){ const F=makeFigure(seed)
+  peopleGroup.add(F.root)
+  const segLen=[]; let len=0
+  for(let k=0;k<path.length-1;k++){ const l=Math.hypot(path[k+1][0]-path[k][0],path[k+1][1]-path[k][1]); segLen.push(l); len+=l }
+  registerFigure(F,'walk',{path,segLen,len,len2:len*2,d:((seed*7)%13)/13*len*2,speed:speed||1.05}) }
 /* ===== Park: entsättigt, große Parkbäume mit hoher Krone ===== */
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(180,210),M.grass); ground.rotation.x=-Math.PI/2; ground.position.y=-.002; ground.position.z=-25; ground.receiveShadow=true; buildingGroup.add(ground)
 const apron=new THREE.Mesh(new THREE.PlaneGeometry(W+2*OV+3.4,D+2*OV+3.4),M.paver); apron.rotation.x=-Math.PI/2; apron.position.y=.015; apron.receiveShadow=true; buildingGroup.add(apron)
@@ -1015,24 +1036,32 @@ function buildHedges(){
   if(hedgeKit.leaves.length){ const fi=instanced(quadGeo,hedgeKit.leafMat,hedgeKit.leaves)
     fi.customDepthMaterial=LEAF_DEPTH; AO_EXCLUDE.push(fi) } }
 const branchGeo=new THREE.CylinderGeometry(.62,1,1,10); branchGeo.translate(0,.5,0)
+/* Drei Kronen-Archetypen (rund / hoch-oval / geschichtet) + gelegentliche Stammgabel —
+   keine Reihe identischer Bäume mehr in Kameranähe */
 function tree(x,z,s,seed){
   let r=seed*999+7; const rnd=()=>{ r=(r*16807)%2147483647; return (r-1)/2147483646 }
+  const type=Math.abs(seed)%3
   const g=new THREE.Group(); g.position.set(x,0,z); g.scale.setScalar(s)
-  const branches=[], tips=[], up=new THREE.Vector3(0,1,0)
+  const branches=[], tips=[], mids=[], up=new THREE.Vector3(0,1,0)
+  const spread=type===1?.36+rnd()*.28:.62+rnd()*.48 // oval = enger, rund/geschichtet = breiter
   function grow(base,dir,len,rad,depth){
     const end=base.clone().add(dir.clone().multiplyScalar(len))
     const quat=new THREE.Quaternion().setFromUnitVectors(up,dir.clone().normalize())
     branches.push({base:base.clone(),quat,len,rad})
+    if(depth===2) mids.push(end)
     if(depth>=3){ tips.push(end); return }
-    const kids=depth===0?3+((rnd()*2)|0):2
+    const kids=depth===0?(type===1?3:4+((rnd()*2)|0)):2
     for(let i=0;i<kids;i++){
-      const nd=dir.clone().applyAxisAngle(new THREE.Vector3(rnd()-.5,rnd()*.2+.9,rnd()-.5).normalize(),.5+rnd()*.45)
+      const nd=dir.clone().applyAxisAngle(new THREE.Vector3(rnd()-.5,rnd()*.2+.9,rnd()-.5).normalize(),spread)
       nd.y=Math.abs(nd.y)*(.72-depth*.1)+.3; nd.normalize()
       grow(end,nd,len*(.58+rnd()*.12),rad*.52,depth+1)
     }
   }
-  const h0=3.4+rnd()*1.2, r0=.165+rnd()*.05
-  grow(new THREE.Vector3(0,0,0),new THREE.Vector3((rnd()-.5)*.1,1,(rnd()-.5)*.1).normalize(),h0,r0,0)
+  const h0=(type===1?3.2:2.5)+rnd()*.9, r0=.165+rnd()*.05 // rund/geschichtet verzweigen tiefer
+  if(type===2&&rnd()<.5){ /* Stammgabel: zwei Leittriebe ab Bodennähe */
+    grow(new THREE.Vector3(0,0,0),new THREE.Vector3(.16,1,(rnd()-.5)*.14).normalize(),h0*.92,r0*.8,0)
+    grow(new THREE.Vector3(0,0,0),new THREE.Vector3(-.17,1,(rnd()-.5)*.14).normalize(),h0*.82,r0*.7,0) }
+  else grow(new THREE.Vector3(0,0,0),new THREE.Vector3((rnd()-.5)*.1,1,(rnd()-.5)*.1).normalize(),h0,r0,0)
   /* Wurzelanlauf: der Stamm wächst aus dem Boden statt als Zylinder aufzusetzen */
   const flare=new THREE.Mesh(new THREE.CylinderGeometry(r0*.92,r0*1.5,.55,10),BARK)
   flare.position.y=.26; flare.castShadow=true; g.add(flare)
@@ -1044,7 +1073,7 @@ function tree(x,z,s,seed){
   const tint=new THREE.Color().setHSL(.27+rnd()*.04,.3+rnd()*.1,.28+rnd()*.07)
   const lm=foliageShader(new THREE.MeshStandardMaterial({ map:LEAF_TEX, alphaTest:.35, side:THREE.DoubleSide, roughness:1, color:tint, envMapIntensity:sceneConfig.materials.envMapIntensity.leaf }),
     { wind:sceneConfig.wind.leafStrength, translucency:true })
-  const n=tips.length*4+6
+  const n=tips.length*4+mids.length*2+10
   const im=new THREE.InstancedMesh(quadGeo,lm,n)
   const q=new THREE.Quaternion(), e=new THREE.Euler()
   let li=0
@@ -1059,8 +1088,11 @@ function tree(x,z,s,seed){
   }
   const cen=new THREE.Vector3()
   tips.forEach(t=>cen.add(t)); cen.multiplyScalar(1/Math.max(1,tips.length))
-  tips.forEach(t=>{ cluster(t.x,t.y,t.z,1.9); cluster(t.x,t.y+.3,t.z,1.6); cluster(t.x,t.y-.4,t.z,1.5); cluster(t.x,t.y,t.z,1.4) })
-  for(let i2=0;i2<6;i2++) cluster(cen.x,cen.y-.3,cen.z,2.2)
+  tips.forEach(t=>{ cluster(t.x,t.y,t.z,2.1); cluster(t.x,t.y+.3,t.z,1.8); cluster(t.x,t.y-.4,t.z,1.6); cluster(t.x,t.y,t.z,1.5) })
+  if(type===2) mids.forEach(m2=>{ cluster(m2.x,m2.y,m2.z,1.9); cluster(m2.x,m2.y-.3,m2.z,1.5) })      // geschichtet: tiefere Laubetage
+  else mids.forEach((m2,i2)=>{ if(i2%2===0) cluster(m2.x,m2.y,m2.z,1.5) })                            // rund/oval: nur Lückenfüller
+  const cN=type===1?5:8, cS=type===1?1.9:2.5, cY=type===1?cen.y+.35:cen.y-.3
+  for(let i2=0;i2<cN;i2++) cluster(cen.x,cY,cen.z,cS)
   im.count=li; im.castShadow=true; im.customDepthMaterial=LEAF_DEPTH; im.instanceMatrix.needsUpdate=true
   if(im.instanceColor) im.instanceColor.needsUpdate=true
   im.frustumCulled=false; g.add(im); AO_EXCLUDE.push(im)
@@ -1154,6 +1186,7 @@ function bladeTexture(){ const s=128,c=cvs(s),x=c.getContext('2d'); x.clearRect(
     if(Math.abs(px)<AX && Math.abs(pz)<AZ) continue
     if(px>-14&&px<30&&pz<-19.3&&pz>-25.7) continue // Via Dentis (Klinker)
     if(pz<-27&&px>-8&&px<41) continue              // Plaza + Altgebäude + Parkplatz
+    if(px<-12&&pz<-26) continue                    // gelbes Haus + Turm (Westseite)
     if(pz>39+Math.sin(px*.045)*3-4.8&&pz<39+Math.sin(px*.045)*3+4.8) continue
     const d1=Math.abs((px-28)*Math.cos(.32)-(pz-9)*Math.sin(.32))
     const d2=Math.abs((px+26)*Math.cos(1.2)+(pz+12)*Math.sin(1.2))
@@ -1259,7 +1292,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
   /* TU-Altgebäude nach Originalfotos: Rustika, Bogenfenster, Balustrade, Risalit, Glasdach */
   /* Lage nach Street View: Langachse Nord-Süd, SCHMALSEITE (z=-29) gegenüber dem
      Studierendenhaus-Eingang, Portale/Risalit nach Westen zur Plaza (ry=-90°) */
-  { const A=new THREE.Group(); A.position.set(18,0,-60); A.rotation.y=-Math.PI/2; buildingGroup.add(A)
+  { const A=new THREE.Group(); A.position.set(18,0,-60); A.rotation.y=-Math.PI/2; buildingGroup.add(A); SITE.alt=A
     const L2=62, D2=14
     const rustTex=(()=>{ const c2=cvs(512),x2=c2.getContext('2d')
       for(let row=0;row<10;row++){ const y=row*51
@@ -1386,21 +1419,29 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
         gl.position.set(0,13.0,-2.5); R.add(gl)
         const ridge=new THREE.Mesh(new THREE.BoxGeometry(grx*2,.14,.14),trimM); ridge.position.set(0,13.0+gh,-2.5); R.add(ridge)
         const base2=new THREE.Mesh(new THREE.BoxGeometry(gw+.4,.3,gd+.4),trimM); base2.position.set(0,12.95,-2.5); R.add(base2) } } }
-  /* Hochhaus-Turm (Landmarke hinten-links vom Eingang): ~15 Geschosse dunkles Fensterraster */
-  const hh=new THREE.Group(); hh.position.set(44,0,-42); hh.rotation.y=-1; buildingGroup.add(hh)
-  const hhTex=(()=>{ const c2=cvs(256),x2=c2.getContext('2d')
-    x2.fillStyle='#2e3742'; x2.fillRect(0,0,256,256)
-    for(let y=6;y<256;y+=17)for(let xx=6;xx<256;xx+=16){ x2.fillStyle=Math.random()>.82?'#8fa3b8':'#1d242d'
-      x2.fillRect(xx,y,11,12) }
-    const t2=tx(c2); t2.repeat.set(3,10); return t2 })()
-  const hhM=new THREE.MeshStandardMaterial({map:hhTex,roughness:.35,metalness:.3})
-  const hhB=new THREE.Mesh(new THREE.BoxGeometry(15,50,13),hhM); hhB.position.y=25; hhB.castShadow=true; hh.add(hhB)
-  const hhCap=new THREE.Mesh(new THREE.BoxGeometry(15.8,.5,13.8),new THREE.MeshStandardMaterial({color:'#c3cad4',roughness:.6}))
-  hhCap.position.y=50.4; hh.add(hhCap) // schmales Dach-Vordach
-  const tech=new THREE.Mesh(new THREE.BoxGeometry(6,2.2,5),new THREE.MeshStandardMaterial({color:'#8d97a5',roughness:.8})); tech.position.y=51.6; hh.add(tech)
-  const ant=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,4,6),new THREE.MeshStandardMaterial({color:'#5c646e',roughness:.5})); ant.position.y=54.7; hh.add(ant)
+  /* Hochhaus-Turm — bindende Ordnung: ganz links + am weitesten vom Eingang, hinter dem
+     gelben Haus. Fassade nach Referenzfoto: HELLES Beton-/Alu-Raster, dunkle eingesetzte
+     Scheiben, ~17 Geschosse — präzises Gitter, kein Noise. */
+  const hh=new THREE.Group(); hh.position.set(-52,0,-50); hh.rotation.y=.3; buildingGroup.add(hh); SITE.tower=hh
+  const hhTex=(()=>{ const c2=cvs(512),x2=c2.getContext('2d')
+    x2.fillStyle='#c2c7cd'; x2.fillRect(0,0,512,512)                    // helles Rasterskelett
+    const FL=17, CO=9, ch=512/FL, cw=512/CO
+    for(let f=0;f<FL;f++)for(let k=0;k<CO;k++){
+      const lit=((f*7+k*3)%11)<2                                       // wenige erleuchtete Scheiben, deterministisch
+      x2.fillStyle=lit?'#aebfce':'#2f3a45'
+      x2.fillRect(k*cw+5,f*ch+6,cw-10,ch-11)                            // dunkle Scheibe im hellen Rahmen
+      x2.fillStyle='#9aa2ab'                                            // Brüstungsband unter der Scheibe
+      x2.fillRect(k*cw+5,f*ch+ch-5,cw-10,2) }
+    const t2=tx(c2); return t2 })()
+  const hhM=new THREE.MeshStandardMaterial({map:hhTex,roughness:.5,metalness:.12})
+  const hhB=new THREE.Mesh(new THREE.BoxGeometry(16,52,13),hhM); hhB.position.y=26; hhB.castShadow=true; hh.add(hhB)
+  const hhCap=new THREE.Mesh(new THREE.BoxGeometry(17.4,.6,14.4),new THREE.MeshStandardMaterial({color:'#b9bfc7',roughness:.55}))
+  hhCap.position.y=52.5; hh.add(hhCap) // schlank auskragendes Dachvordach
+  const tech=new THREE.Mesh(new THREE.BoxGeometry(6,2.2,5),new THREE.MeshStandardMaterial({color:'#8d97a5',roughness:.8})); tech.position.y=53.8; hh.add(tech)
+  const ant=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,4,6),new THREE.MeshStandardMaterial({color:'#5c646e',roughness:.5})); ant.position.y=56.9; hh.add(ant)
   /* Gelbes 2-geschossiges Giebelhaus (zwischen Eingang und Turm) */
-  { const gb=new THREE.Group(); gb.position.set(38,0,-28.5); gb.rotation.y=.12; buildingGroup.add(gb)
+  /* Gelbes Giebelhaus — bindende Ordnung: ZWISCHEN Turm und Altgebäude, vor dem Turm */
+  { const gb=new THREE.Group(); gb.position.set(-20,0,-33.5); gb.rotation.y=-.12; buildingGroup.add(gb); SITE.yellow=gb
     const body=new THREE.Mesh(new THREE.BoxGeometry(13,6.5,9),new THREE.MeshStandardMaterial({color:'#d9b96a',roughness:.85}))
     body.position.y=3.25; body.castShadow=true; gb.add(body)
     ;[-1,1].forEach(sd=>{ const rf=new THREE.Mesh(new THREE.BoxGeometry(13.6,.22,5.6),roofD)
@@ -1411,13 +1452,13 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     for(let fl=0;fl<2;fl++)for(let k=0;k<5;k++){ const win=new THREE.Mesh(new THREE.BoxGeometry(.9,1.4,.08),winGlass)
       win.position.set(-4.8+k*2.4,1.8+fl*2.6,4.55); gb.add(win) }
     const dr=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.3,.1),doorM); dr.position.set(0,1.15,-4.55); gb.add(dr) }
-  /* Weiße Audimax-Kulisse: zurückgesetztes Glas-EG hinter schlanken Stützen, auskragendes
-     weißes Obergeschoss mit durchlaufendem dunklem Fensterband — Front nach Osten zur Plaza */
-  { const au=new THREE.Group(); au.position.set(-26,0,-58); buildingGroup.add(au)
+  /* Universitätsbibliothek (weiße Moderne): bindende Ordnung — auf der GEGENSEITE des
+     Pavillons, jenseits des breiteren Wegs hinter der Oker; Front nach Süden zum Campus */
+  { const au=new THREE.Group(); au.position.set(24,0,62); au.rotation.y=Math.PI/2; buildingGroup.add(au); SITE.lib=au
     const gfGlass=new THREE.Mesh(new THREE.BoxGeometry(20,4,15),new THREE.MeshStandardMaterial({color:'#20262c',roughness:.15,metalness:.4}))
     gfGlass.position.set(-2,2,0); au.add(gfGlass)
-    const cols2=[] // Stützenreihe entlang der Ostkante (instanced() nutzt Weltkoordinaten)
-    for(let k=0;k<8;k++) cols2.push({x:-26+9.6,y:0,z:-58-7+k*2,sy:4.4})
+    const cols2=[] // Stützenreihe entlang der Südkante (instanced() nutzt Weltkoordinaten)
+    for(let k=0;k<8;k++) cols2.push({x:24-7+k*2,y:0,z:62-9.6,sy:4.4})
     instanced(new THREE.CylinderGeometry(.14,.14,1,10).translate(0,.5,0),new THREE.MeshStandardMaterial({color:'#eef0f1',roughness:.5}),cols2)
     const up=new THREE.Mesh(new THREE.BoxGeometry(26,5.2,19),new THREE.MeshStandardMaterial({color:'#eceff0',roughness:.55}))
     up.position.set(0,7,0); up.castShadow=true; au.add(up)
@@ -1493,10 +1534,22 @@ tree(-24,39+Math.sin(-24*.045)*3+5.6,1.35,24)
         ra.rotation.x=Math.PI/2-slope
         ra.position.set(xs,(ya+yb)/2,(za+zb)/2); ra.castShadow=true; buildingGroup.add(ra) } }) }) }
 /* Menschen im Park */
-standPerson(buildingGroup,25,6,-1.9,5)
-standPerson(buildingGroup,26.5,7,1.4,11)
-standPerson(buildingGroup,-24,-9,.7,8)
-standPerson(buildingGroup,3,16.4,2.6,14)
+standPerson(peopleGroup,21.6,4.6,-1.9,5)
+standPerson(peopleGroup,22.5,6.4,1.4,11)
+standPerson(peopleGroup,-24,-9,.7,8)
+/* Stehtisch-Figur: Unterarm auf der Platte, ohne Hocker-Clipping */
+{ const F=makeFigure(14); F.root.position.set(2.65,0,16.6); F.root.rotation.y=-2.4
+  poseLean(F,'R'); registerFigure(F,'stand'); peopleGroup.add(F.root) }
+/* Kleine Gesprächsgruppe am Plaza-Mund — Körper einander zugewandt, eine Geste */
+{ const G=[[-1.2,-28.2,.9,41],[0,-29.5,-2.2,42],[1.4,-28.4,3.7,43]]
+  G.forEach(([px,pz,ry,sd],i)=>{ const F=makeFigure(sd); F.root.position.set(px,0,pz); F.root.rotation.y=ry
+    poseStand(F); registerFigure(F,i===1?'talk':'stand'); peopleGroup.add(F.root) }) }
+/* Gehende Studierende: Plaza-Promenade, Via Dentis, Ufer, Apron — Ping-Pong-Pfade */
+walker([[1.5,-31],[1.5,-86]],31,1.05)
+walker([[-3.8,-34],[-3.8,-80]],35,1.18)
+walker([[-11,-22.4],[19,-22.4]],32,.95)
+walker([[-14,19.5],[8,19.5]],33,1.0)
+walker([[20.5,-10],[20.5,12]],34,1.1)
 /* Lichterketten & Außenbeleuchtung — romantisch bei Nacht */
 const bulbGeo=new THREE.SphereGeometry(.05,10,8)
 const bulbMat=new THREE.MeshStandardMaterial({color:'#fff1cf',emissive:0xffd9a0,emissiveIntensity:.06,roughness:.4})
@@ -1573,7 +1626,8 @@ const fallLeaves=(()=>{ const c=sceneConfig.particles.leaves
 const _lm4=new THREE.Matrix4(), _lq=new THREE.Quaternion(), _le=new THREE.Euler(), _lv=new THREE.Vector3(), _ls=new THREE.Vector3(1,1,1)
 /* Oszillator-Verhältnisse (0.43/0.61/0.37 …) sind strukturelle Bewegungs-DNA — inkommensurabel,
    damit nichts sichtbar loopt. Tempo/Amplitude kommen aus sceneConfig.particles. */
-function updateLife(t){
+function updateLife(t,dt){
+  peopleGroup.visible=buildingGroup.visible
   if(fireflies.p.visible){ const a=fireflies.attr.array, ts=t*fireflies.speed
     for(let i=0;i<fireflies.ph.length;i++){ const p2=fireflies.ph[i]
       a[i*3]  =fireflies.base[i*3]  +Math.sin(ts*.43+p2*2.1)*fireflies.drift
@@ -1586,9 +1640,33 @@ function updateLife(t){
       a[i*3+1]=motes.base[i*3+1]+Math.sin(ts*.11+p2)*motes.drift*.6
       a[i*3+2]=motes.base[i*3+2]+Math.cos(ts*.13+p2*2.3)*motes.drift }
     motes.attr.needsUpdate=true }
-  for(let i=0;i<PEOPLE_SWAY.length;i++){ const p2=PEOPLE_SWAY[i]; if(p2.dead) continue
-    p2.grp.rotation.z=p2.base+Math.sin(t*.35+p2.ph)*p2.amp        // Gewicht pendelt kaum sichtbar
-    p2.gh.rotation.y=p2.hy+Math.sin(t*.21+p2.ph*1.7)*.06 }        // Kopf driftet langsam
+  /* Figuren: Atmen/Kopfdrift überall; Tippen im Sitzen; Geste im Gespräch; echter Gangzyklus */
+  for(let i=0;i<FIGURES.length;i++){ const e=FIGURES[i]; if(e.dead) continue
+    const B=e.F.B
+    B.torso.rotation.x=(B.torso.userData.rx0||0)+Math.sin(t*.9+e.ph)*.012      // Atmen
+    B.head.rotation.y=Math.sin(t*.17+e.ph*1.9)*.24                              // Kopf wandert
+    if(e.mode==='sit'){ const on=Math.sin(t*.11+e.ph)>.15?1:0                   // Tipp-Phasen kommen und gehen
+      B.elL.rotation.x=-.72-on*Math.max(0,Math.sin(t*4.6+e.ph))*.05
+      B.elR.rotation.x=-.72-on*Math.max(0,Math.sin(t*4.6+e.ph+1.3))*.05 }
+    else if(e.mode==='talk'){ B.torso.rotation.z=Math.sin(t*.4+e.ph)*.012
+      B.elR.rotation.x=Math.sin(t*.23+e.ph)>.82?-.95+Math.sin(t*3.1+e.ph)*.22:-.45 } // gelegentliche Geste
+    else if(e.mode==='stand'){ B.torso.rotation.z=-(e.F.s%2?1:-1)*.02+Math.sin(t*.4+e.ph)*.01 }
+    else if(e.mode==='walk'){
+      e.d=(e.d+e.speed*dt)%e.len2
+      let d=e.d<e.len?e.d:e.len2-e.d, k=0
+      while(k<e.segLen.length-1&&d>e.segLen[k]){ d-=e.segLen[k]; k++ }
+      const a=e.path[k], b=e.path[k+1], tt=Math.min(1,d/e.segLen[k]), fw=e.d<e.len?1:-1
+      e.F.root.position.set(a[0]+(b[0]-a[0])*tt,0,a[1]+(b[1]-a[1])*tt)
+      e.F.root.rotation.y=Math.atan2((b[0]-a[0])*fw,(b[1]-a[1])*fw)
+      const wt=t*6.6*e.speed+e.ph, sL=Math.sin(wt), sR=-sL
+      B.hipL.rotation.x=-.5*sL; B.hipR.rotation.x=-.5*sR                        // Beine wechseln
+      B.knL.rotation.x=.58*Math.max(0,Math.sin(wt+2.4))+.06                     // Knie beugt in der Schwungphase
+      B.knR.rotation.x=.58*Math.max(0,Math.sin(wt+Math.PI+2.4))+.06
+      B.anL.rotation.x=.28*Math.max(0,-sL); B.anR.rotation.x=.28*Math.max(0,-sR)
+      B.shL.rotation.x=.25*sR; B.shR.rotation.x=.25*sL                          // Arme im Gegentakt
+      B.elL.rotation.x=-.25-.1*Math.max(0,sR); B.elR.rotation.x=-.25-.1*Math.max(0,sL)
+      B.pelvis.position.y=.86+.02*Math.abs(Math.cos(wt)) }                      // Körper hebt sich pro Schritt
+  }
   { const c=fallLeaves.cfg
     for(let i=0;i<c.count;i++){ const k=((t+fallLeaves.off[i])%c.fallTime)/c.fallTime
       const ph2=fallLeaves.off[i]*2.4
@@ -2286,10 +2364,10 @@ function table(gp,id,x,z,y,r,color,members,capacity,isFree){
   gp.add(g) }
 /* GPU-Hygiene: Rebuilds entsorgen ihre Geometrien und Einzelmaterialien (geteilte M.*-Materialien bleiben) */
 const SHARED_MATS=new Set([...Object.values(M),CHAIR_BACK,CHAIR_LEG,BARK])
-function disposeGroup(root){ root.traverse(o=>{ if(o.userData.sway) o.userData.sway.dead=true
+function disposeGroup(root){ root.traverse(o=>{ if(o.userData.fig) o.userData.fig.dead=true
   if(o.geometry) o.geometry.dispose()
   if(o.material) (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ if(!SHARED_MATS.has(m)) m.dispose() }) }) }
-function pruneSway(){ for(let i=PEOPLE_SWAY.length-1;i>=0;i--) if(PEOPLE_SWAY[i].dead) PEOPLE_SWAY.splice(i,1) }
+function pruneSway(){ for(let i=FIGURES.length-1;i>=0;i--) if(FIGURES[i].dead) FIGURES.splice(i,1) }
 function rebuildTables(){ clickTargets.length=0
   while(tablesGroup.children.length){ const c=tablesGroup.children[0]; disposeGroup(c); tablesGroup.remove(c) }
   pruneSway()
@@ -2894,7 +2972,7 @@ renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
   if(sc===gearScene){ gears.forEach((gr,i)=>{ gr.g.rotation.z+=(i%2?-1:1)*.008*(14/gr.teeth) }) }
   if(sc===scene){
     windUniform.value=t*sceneConfig.wind.speed
-    updateLife(t)
+    updateLife(t,dt)
     waterTex.offset.x=t*.05
     waterTex.offset.y=t*.016+Math.sin(t*.6)*.02 }
   perfTick(dt) // auf ALLEN Render-Pfaden messen — auch Themenwelten/Effekte-aus müssen DPR-Stufen abwerfen können
@@ -2911,13 +2989,35 @@ buildHedges(); buildGrassClusters()
 /* Statische Kulisse: Weltmatrizen einmal berechnen und einfrieren — spart CPU-Zeit pro Frame.
    (Wind/Partikel animieren über Shader-Uniforms bzw. Instanz-/Positionsattribute, nicht über Matrizen.) */
 ;[buildingGroup,genericGroup].forEach(g=>{ g.updateMatrixWorld(true); g.traverse(o=>o.matrixAutoUpdate=false) })
-/* Figuren mit Idle-Bewegung wieder auftauen — Kinder unter eingefrorenen Eltern updaten sauber */
-PEOPLE_SWAY.forEach(p2=>{ p2.grp.matrixAutoUpdate=true; p2.gh.matrixAutoUpdate=true })
 rebuildTables(); rebuildPartners(); applyMode(); syncScene(); render()
 /* Nacht-IBL nach dem Boot vorwärmen: erspart den einmaligen PMREM-Ruckler beim ersten Moduswechsel */
 setTimeout(()=>{ try{ envFor('nacht') }catch(e){} },sceneConfig.renderer.envPrewarmMs)
+/* Dev-Assertions der Gebäudeordnung — wird ausschließlich vom Headless-Harness aufgerufen,
+   kein Aufruf im Nutzerpfad. Blickpunkt V = Eingang, Blick über die schmale Campusstraße. */
+function verifySitePlan(){
+  const out=[], V=new THREE.Vector3(2,1.7,-16)
+  const cam2=new THREE.PerspectiveCamera(60,16/9,.1,600)
+  cam2.position.copy(V); cam2.lookAt(2,4,-60); cam2.updateMatrixWorld(true)
+  const wp=o=>{ const p=new THREE.Vector3(); o.getWorldPosition(p); return p }
+  const ndc=o=>{ const p=wp(o); p.y=10; return p.project(cam2).x }
+  const chk=(name,cond,vals)=>out.push((cond?'PASS':'FAIL')+' — '+name+' ('+vals+')')
+  const tx2=ndc(SITE.tower), yx=ndc(SITE.yellow), ax=ndc(SITE.alt)
+  chk('Ordnung links→rechts: Turm < Gelbes Haus < Altgebäude', tx2<yx&&yx<ax, `ndcX ${tx2.toFixed(2)} < ${yx.toFixed(2)} < ${ax.toFixed(2)}`)
+  const dT=wp(SITE.tower).distanceTo(V), dY=wp(SITE.yellow).distanceTo(V)
+  chk('Turm weiter entfernt als gelbes Haus', dT>dY, `${dT.toFixed(1)} m > ${dY.toFixed(1)} m`)
+  chk('Gelbes Haus horizontal zwischen beiden', yx>Math.min(tx2,ax)&&yx<Math.max(tx2,ax), `${Math.min(tx2,ax).toFixed(2)} < ${yx.toFixed(2)} < ${Math.max(tx2,ax).toFixed(2)}`)
+  const axis=new THREE.Vector3(1,0,0).applyQuaternion(SITE.alt.quaternion)
+  const dot=Math.abs(axis.dot(new THREE.Vector3(0,0,-1)))
+  chk('Altgebäude-Langachse zeigt von V weg', dot>.7, 'dot='+dot.toFixed(2))
+  const aP=wp(SITE.alt)
+  const dShort=V.distanceTo(new THREE.Vector3(aP.x,V.y,aP.z+31)), dLong=V.distanceTo(new THREE.Vector3(aP.x-7,V.y,aP.z))
+  chk('nächste Fassade zu V ist die Schmalseite', dShort<dLong, `${dShort.toFixed(1)} m < ${dLong.toFixed(1)} m`)
+  const lP=wp(SITE.lib)
+  chk('Bibliothek auf der Gegenseite (hinter V, Vorzeichenwechsel)', (lP.z-V.z)>0 && (wp(SITE.tower).z-V.z)<0, `lib z=+${lP.z.toFixed(0)}, Landmarken z<0, V z=${V.z}`)
+  chk('Oker gegenüber der Straße (Pavillon dazwischen)', SITE.riverZ>0, `Fluss z≈+${SITE.riverZ}, Via Dentis z≈-22.5`)
+  return out }
 /* Einziger 3D-Tuning-Handle: Werte in .config ändern, dann .applyMode() — ersetzt die alten window.__*-Streuungen */
-window.__kommilo3d={ config:sceneConfig, applyMode, setQualityTier, tier:()=>qualityTier, camera, controls, renderer, composer, info:()=>renderer.info.render }
+window.__kommilo3d={ config:sceneConfig, applyMode, setQualityTier, tier:()=>qualityTier, camera, controls, renderer, composer, info:()=>renderer.info.render, verifySitePlan }
 window.__payPoll=0
 if(location.search.indexOf('paid=1')>=0){ history.replaceState({},'',location.pathname)
   toast('Zahlung wird bestätigt …','Einen Moment — deine Credits kommen gleich.')
