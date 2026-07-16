@@ -85,7 +85,11 @@ trees 7–13 m) — no rescale needed. Camera FOV 35° already cinematic.
 - Quality tiers (high/medium/low): pixel ratio 2 / 1.5 / 1.1, shadow map 2048/2048/1024,
   GTAO on / on-half-res / off. Coarse-pointer (mobile) starts at medium.
 - FPS monitor: drop below 45 fps (fast), raise above 57 fps (slow, 3 good windows,
-  session ceiling prevents ping-pong). Runs only on the effects render path.
+  session ceiling prevents ping-pong); outlier frames after tab-backgrounding are
+  discarded. Measures on every render path (campus, theme worlds, effects off) so
+  a struggling HiDPI device always recovers. Tier changes propagate the pixel
+  ratio to the composer (`composer.setPixelRatio`) — its cached ratio otherwise
+  only reflects construction time.
 - Rebuilds now dispose geometries + per-instance materials (shared palette kept).
 - Static building/park world matrices computed once, then frozen.
 

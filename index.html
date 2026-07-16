@@ -204,6 +204,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js'
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 import { VignetteShader } from 'three/addons/shaders/VignetteShader.js'
 
@@ -222,6 +223,7 @@ const sceneConfig = {
   renderer: {
     maxPixelRatio: 2,          // brief: clamp devicePixelRatio to 2; quality tiers may lower it
     anisotropy: 8,             // texture sharpness at grazing angles (grass, pavers)
+    envPrewarmMs: 2500,        // idle delay before pre-baking the night IBL — avoids a hitch on first mode toggle
   },
   camera: {
     fov: 35,                   // long-lens cinematic framing, matches the photos' perspective compression
@@ -231,9 +233,9 @@ const sceneConfig = {
     breatheSpeed: .22,         // Hz-ish speed of the breathing sine — slow enough to not read as a loop
   },
   quality: {                   // tiers applied by the adaptive performance monitor (Phase D)
-    high:   { pixelRatio: 2,   shadowMap: 2048, ao: true,  aoHalfRes: false },
-    medium: { pixelRatio: 1.5, shadowMap: 2048, ao: true,  aoHalfRes: true  },
-    low:    { pixelRatio: 1.1, shadowMap: 1024, ao: false, aoHalfRes: true  },
+    high:   { pixelRatio: 2,   shadowMap: 2048, ao: true,  aoHalfRes: false, smaa: true  },
+    medium: { pixelRatio: 1.5, shadowMap: 2048, ao: true,  aoHalfRes: true,  smaa: true  },
+    low:    { pixelRatio: 1.1, shadowMap: 1024, ao: false, aoHalfRes: true,  smaa: false },
     fpsDrop: 45,               // sustained fps below this → drop one tier
     fpsRaise: 57,              // sustained fps above this → raise one tier (with hysteresis)
     windowSec: 3,              // seconds of fps averaging before a tier decision
@@ -283,7 +285,6 @@ const sceneConfig = {
     blendIntensity: .95,       // how strongly AO multiplies the beauty pass
   },
   vignette: { offset: 1.0, darkness: 1.22 },  // three-VignetteShader-Skala: >1 dunkelt wirklich ab (~0.3 in Postprocessing-Lib-Skala)
-  msaaSamples: 4,              // MSAA on the composer target — geometry edge AA (WebGL2)
   modes: {
     /* ---- TAG: soft late-afternoon sun; photos 2/3 (bright neutral interior) ---- */
     tag: {
@@ -402,9 +403,15 @@ const clickTargets=[]
 function cvs(s){ const c=document.createElement('canvas'); c.width=c.height=s; return c }
 function tx(c){ const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping
   t.anisotropy=Math.min(sceneConfig.renderer.anisotropy,renderer.capabilities.getMaxAnisotropy()); t.colorSpace=THREE.SRGBColorSpace; return t }
-/* Normal-Map aus einer Canvas-Textur (Sobel über Luminanz) — Mikrorelief ohne Netz-Assets */
-function normalFromTex(tex2,strength){ const src=tex2.image, s=src.width
-  const sx=src.getContext('2d').getImageData(0,0,s,src.height), w=s, h=src.height
+/* Normal-Map aus einer Canvas-Textur (Sobel über Luminanz) — Mikrorelief ohne Netz-Assets.
+   Quelle wird auf max. 256² skaliert: Normal-Relief ist niederfrequent, und der JS-Sobel
+   liefe sonst spürbar lange auf dem Boot-Pfad (1024²-Rasen ≈ 100 ms auf Desktop). */
+function normalFromTex(tex2,strength){ const S=Math.min(256,tex2.image.width)
+  let src=tex2.image
+  if(src.width>S){ const dc=document.createElement('canvas'); dc.width=dc.height=S
+    dc.getContext('2d').drawImage(src,0,0,S,S); src=dc }
+  const w=S, h=S
+  const sx=src.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h)
   const lum=new Float32Array(w*h)
   for(let i=0;i<w*h;i++){ const o=i*4; lum[i]=(sx.data[o]*.299+sx.data[o+1]*.587+sx.data[o+2]*.114)/255 }
   const out=document.createElement('canvas'); out.width=w; out.height=h
@@ -1345,12 +1352,14 @@ function updateLife(t){
     fallLeaves.im.instanceMatrix.needsUpdate=true }
 }
 
-/* ===== Postprocessing: Render → GTAO → Bloom → Output(ACES/sRGB) → Vignette ===== */
-let composer=null, bloomPass=null, gtaoPass=null
+/* ===== Postprocessing: Render → GTAO → Bloom → Output(ACES/sRGB) → SMAA → Vignette.
+   Kanten-AA als SMAA-Pass auf dem LDR-Bild statt MSAA-Rendertargets: MSAA auf den
+   Composer-Ping-Pong-Targets würde jeden Fullscreen-Pass 4×-rastern und pro Frame
+   mehrfach resolven — massiv Bandbreite/VRAM für null sichtbaren Gewinn. ===== */
+let composer=null, bloomPass=null, gtaoPass=null, smaaPass=null
 try {
   const vw=innerWidth-264, vh=innerHeight-64
-  /* MSAA auf dem Composer-Target: Geometriekanten bleiben glatt trotz Post-Kette (WebGL2) */
-  composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(vw, vh, { type: THREE.HalfFloatType, samples: sceneConfig.msaaSamples }))
+  composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(vw, vh, { type: THREE.HalfFloatType }))
   composer.addPass(new RenderPass(scene, camera))
   gtaoPass = new GTAOPass(scene, camera, vw, vh)
   gtaoPass.updateGtaoMaterial(sceneConfig.ao)
@@ -1359,6 +1368,8 @@ try {
   bloomPass=new UnrealBloomPass(new THREE.Vector2(vw,vh),sceneConfig.modes.tag.bloom.strength,sceneConfig.modes.tag.bloom.radius,sceneConfig.modes.tag.bloom.threshold)
   composer.addPass(bloomPass)
   composer.addPass(new OutputPass())
+  smaaPass=new SMAAPass(vw, vh) // nach OutputPass: SMAA arbeitet auf dem tonemapped LDR-Bild am besten
+  composer.addPass(smaaPass)
   const vignettePass=new ShaderPass(VignetteShader)
   vignettePass.uniforms.offset.value=sceneConfig.vignette.offset
   vignettePass.uniforms.darkness.value=sceneConfig.vignette.darkness
@@ -1383,6 +1394,7 @@ function setQualityTier(tier){ if(!sceneConfig.quality[tier]) return
   if(sun.shadow.mapSize.x!==q.shadowMap){ sun.shadow.mapSize.set(q.shadowMap,q.shadowMap)
     if(sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map=null } }
   if(gtaoPass) gtaoPass.enabled=q.ao
+  if(smaaPass) smaaPass.enabled=q.smaa
   applyAoSize() }
 setQualityTier(qualityTier)
 /* FPS-Monitor: schnell abstufen, träge heraufstufen; Ceiling verhindert Ping-Pong */
@@ -2632,7 +2644,8 @@ renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
     updateLife(t)
     waterTex.offset.x=t*.05
     waterTex.offset.y=t*.016+Math.sin(t*.6)*.02 }
-  if(sc===scene&&composer&&state.settings.effects){ perfTick(dt); composer.render() } else { renderer.render(sc,camera) }
+  perfTick(dt) // auf ALLEN Render-Pfaden messen — auch Themenwelten/Effekte-aus müssen DPR-Stufen abwerfen können
+  if(sc===scene&&composer&&state.settings.effects){ composer.render() } else { renderer.render(sc,camera) }
   updateLabels() })
 { const bell=document.querySelector('.bellb')
   if(bell){ bell.style.position='relative'
@@ -2643,6 +2656,8 @@ renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
    (Wind/Partikel animieren über Shader-Uniforms bzw. Instanz-/Positionsattribute, nicht über Matrizen.) */
 ;[buildingGroup,genericGroup].forEach(g=>{ g.updateMatrixWorld(true); g.traverse(o=>o.matrixAutoUpdate=false) })
 rebuildTables(); rebuildPartners(); applyMode(); syncScene(); render()
+/* Nacht-IBL nach dem Boot vorwärmen: erspart den einmaligen PMREM-Ruckler beim ersten Moduswechsel */
+setTimeout(()=>{ try{ envFor('nacht') }catch(e){} },sceneConfig.renderer.envPrewarmMs)
 /* Einziger 3D-Tuning-Handle: Werte in .config ändern, dann .applyMode() — ersetzt die alten window.__*-Streuungen */
 window.__kommilo3d={ config:sceneConfig, applyMode, setQualityTier, tier:()=>qualityTier, camera, controls, renderer, composer, info:()=>renderer.info.render }
 window.__payPoll=0
