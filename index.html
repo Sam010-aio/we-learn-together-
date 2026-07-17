@@ -1169,7 +1169,7 @@ function bladeTexture(){ const s=128,c=cvs(s),x=c.getContext('2d'); x.clearRect(
     if(Math.abs(px)<AX && Math.abs(pz)<AZ) continue
     if(px>-46&&px<46&&pz<-15&&pz>-27.2) continue   // E1 Straße + Radweg + Gehweg
     if(px>-28&&px<34&&pz<-29.5&&pz>-59) continue    // E2 Parkplatz
-    if(px>-39&&px<-21&&pz<-29&&pz>-55) continue      // B3 gelbes Haus (24×16 bei -30,-42)
+    if(px>-41&&px<-23&&pz<-21&&pz>-47) continue      // B3 gelbes Haus (24×16 bei -32,-34)
     if(px>34&&px<58&&pz<-30) continue                // Via-Dentis-Weg zwischen Altgebäude und Audimax
     if(pz>39+Math.sin(px*.045)*3-4.8&&pz<39+Math.sin(px*.045)*3+4.8) continue // Oker
     const d2=Math.abs((px+26)*Math.cos(1.2)+(pz+12)*Math.sin(1.2))
@@ -1319,12 +1319,40 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     const barM=new THREE.MeshStandardMaterial({color:'#4a3527',roughness:.6})                // Sprossen (dunkles Holz)
     const washM=new THREE.MeshStandardMaterial({color:'#8f8577',transparent:true,opacity:.14,roughness:1,depthWrite:false}) // Verwitterungsschliere
     /* Material-Array: Südfläche (+z, Index 4) = nicht-kachelnder Mauerwerk-Atlas, übrige = schlicht */
-    const body=new THREE.Mesh(new THREE.BoxGeometry(WF,wallTop,DF),[sandM,sandM,sandM,sandM,masonryM,sandM])
-    body.position.y=wallTop/2; body.castShadow=true; body.receiveShadow=true; A2.add(body)
-    const roofSlab=new THREE.Mesh(new THREE.BoxGeometry(WF-1,.5,DF-1),new THREE.MeshStandardMaterial({color:'#4a463f',roughness:.92})); roofSlab.position.y=wallTop+.3; A2.add(roofSlab)
+    /* ===== Vierflügelanlage (komplettes „Viereck" nach Luftbild): Südflügel trägt die reiche
+       Schaufassade (+z), Nord/Ost/West-Flügel schlicht, offener gepflasterter Innenhof ===== */
+    const WD=14, zN=-zS                                 // Flügeltiefe; Nordfassadenebene (lokal)
+    SITE.altWings=4
+    const sMats=[sandM,sandM,sandM,sandM,masonryM,sandM] // Süd: +z = nicht-kachelnder Mauerwerk-Atlas
+    const wing=(w,d,cx,cz,mats)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,wallTop,d),mats||sandM)
+      m.position.set(cx,wallTop/2,cz); m.castShadow=true; m.receiveShadow=true; A2.add(m); return m }
+    wing(WF, WD, 0, zS-WD/2, sMats)                     // Südflügel (Schaufassade zeigt nach +z/Süden)
+    wing(WF, WD, 0, zN+WD/2, sandM)                     // Nordflügel
+    wing(WD, DF-2*WD, -WF/2+WD/2, 0, sandM)             // Westflügel (verbunden)
+    wing(WD, DF-2*WD,  WF/2-WD/2, 0, sandM)             // Ostflügel (verbunden)
+    /* Flügeldächer (flach) — Innenhof bleibt zum Himmel offen (Silhouette liest sich als Viereck) */
+    const roofM2=new THREE.MeshStandardMaterial({color:'#4a463f',roughness:.92})
+    ;[[WF-1,WD,0,zS-WD/2],[WF-1,WD,0,zN+WD/2],[WD,DF-2*WD,-WF/2+WD/2,0],[WD,DF-2*WD,WF/2-WD/2,0]]
+      .forEach(([w,d,cx,cz])=>{ const r=new THREE.Mesh(new THREE.BoxGeometry(w,.5,d),roofM2); r.position.set(cx,wallTop+.3,cz); A2.add(r) })
+    /* Innenhof — echte Fliesen (Nutzerwunsch „alles mit echtem Fliesen") */
+    const court=new THREE.Mesh(new THREE.PlaneGeometry(WF-2*WD-.4,DF-2*WD-.4),paverMat(5,4)); court.rotation.x=-Math.PI/2; court.position.set(0,.06,0); court.receiveShadow=true; A2.add(court)
+    /* Cornice-/Sockel-Ring-Helfer: 4 Balken entlang der Außenkanten statt Vollplatte → Hof offen */
+    const edgeRing=(y,hh,ov,barD,mat)=>{
+      for(const s of [1,-1]){ const b=new THREE.Mesh(new THREE.BoxGeometry(WF+2*ov,hh,barD),mat); b.position.set(0,y,s*(zS+ov-barD/2)); b.castShadow=true; A2.add(b) }
+      for(const s of [1,-1]){ const b=new THREE.Mesh(new THREE.BoxGeometry(barD,hh,DF+2*ov),mat); b.position.set(s*(WF/2+ov-barD/2),y,0); b.castShadow=true; A2.add(b) } }
+    /* Hofseitige Fenster (schlichte dunkle Rechtecke), instanziert in Weltkoord. (A2 unrotiert @ 3,0,−86) */
+    const cwG_ns=new THREE.BoxGeometry(1.2,2.0,.1), cwG_ew=new THREE.BoxGeometry(.1,2.0,1.2)
+    const cwM=new THREE.MeshStandardMaterial({color:'#2c2a26',roughness:.5,metalness:.25})
+    const cwNS=[], cwEW=[]
+    for(let fl=0;fl<2;fl++){ const wy=H1+2+fl*(H2+HB)*.9
+      for(let k=0;k<5;k++){ const lx=-14+k*7
+        cwNS.push({x:3+lx,y:wy,z:-86+(zS-WD-.02)}, {x:3+lx,y:wy,z:-86+(zN+WD+.02)}) }
+      for(let k=0;k<3;k++){ const lz=-6+k*6
+        cwEW.push({x:3+(-WF/2+WD+.02),y:wy,z:-86+lz}, {x:3+(WF/2-WD-.02),y:wy,z:-86+lz}) } }
+    instanced(cwG_ns,cwM,cwNS,false); instanced(cwG_ew,cwM,cwEW,false)
     /* Zone 1 — Rustika-Sockel: gebänderte Streifen mit Schattennut, nur Südkante sichtbar */
     for(let i=0;i<5;i++){ const band=new THREE.Mesh(new THREE.BoxGeometry(WF+.18,.44,.2),rustM); band.position.set(0,.25+i*.5,zS+.02); A2.add(band) }
-    const plinthTop=new THREE.Mesh(new THREE.BoxGeometry(WF+.34,.16,DF+.34),trim); plinthTop.position.y=H1; A2.add(plinthTop)
+    edgeRing(H1,.16,.17,.7,trim)                        // Sockelgesims-Ring (statt Vollplatte)
     for(let i=0;i<11;i++){ const cell=new THREE.Mesh(new THREE.BoxGeometry(.9,.6,.24),new THREE.MeshStandardMaterial({color:'#3a352c',roughness:.7})) // Kellerfenster
       cell.position.set(-28+i*(56/10),1.3,zS+.03); A2.add(cell) }
     /* Rundbogenfenster (Rechteck-Körper + echter Halbkreis-Kopf), Glas 0.25–0.30 m hinter dem
@@ -1363,14 +1391,15 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     for(const lx of [-(WF/2-.45),-13.5,13.5,WF/2-.45]){ const les=new THREE.Mesh(new THREE.BoxGeometry(.9,wallTop-.4,.24),trim); les.position.set(lx,wallTop/2,zS+.02); A2.add(les) }
     /* Zone 5 — Gebälk: Bettgesims + instanzierte Dentils + auskragende Corona + Kranzgesims */
     const entabY=wallTop
-    const bed=new THREE.Mesh(new THREE.BoxGeometry(WF+.2,.2,DF+.2),trim); bed.position.y=entabY+.1; A2.add(bed)
+    edgeRing(entabY+.1,.2,.1,.8,trim)                                          // Bettgesims-Ring
     const dentGeo=new THREE.BoxGeometry(.12,.18,.16), dent=[]
-    for(let x=-WF/2+.2;x<=WF/2-.2;x+=.25) dent.push({x,y:entabY+.4,z:zS+.06})
+    for(let x=-WF/2+.2;x<=WF/2-.2;x+=.25) dent.push({x,y:entabY+.4,z:zS+.06})  // Dentils nur an der Süd-Schaufassade
     instanced(dentGeo,stoneM,dent.map(p=>({x:3+p.x,y:p.y,z:-86+p.z})),false)   // Weltkoord.: A2 unrotiert bei (3,0,-86)
-    const corona=new THREE.Mesh(new THREE.BoxGeometry(WF+1.1,.5,DF+1.1),trim); corona.position.y=entabY+.85; corona.castShadow=true; A2.add(corona) // 0.55 m Auskragung
-    const crown=new THREE.Mesh(new THREE.BoxGeometry(WF+.5,.16,DF+.5),trim); crown.position.y=entabY+1.18; A2.add(crown)
-    /* Zone 6 — Attika mit Krönungsblöcken über Pfeilerachsen + Ecken */
-    const parap=new THREE.Mesh(new THREE.BoxGeometry(WF,.9,.5),new THREE.MeshStandardMaterial({color:'#c6ba9d',roughness:.9})); parap.position.set(0,entabY+1.7,zS-.15); A2.add(parap)
+    edgeRing(entabY+.85,.5,.55,1.1,trim)                                        // Corona-Ring (0.55 m Auskragung)
+    edgeRing(entabY+1.18,.16,.25,.9,trim)                                       // Kranzgesims-Ring
+    /* Zone 6 — Attika-Ring mit Krönungsblöcken über Pfeilerachsen + Ecken (Blöcke nur Südfront) */
+    const parapM=new THREE.MeshStandardMaterial({color:'#c6ba9d',roughness:.9})
+    edgeRing(entabY+1.7,.9,-.15,.5,parapM)
     for(const bx of [-WF/2+.5,-13.5,13.5,WF/2-.5]){ const blk=new THREE.Mesh(new THREE.BoxGeometry(.9,.7,.7),stoneM); blk.position.set(bx,entabY+2.3,zS-.1); A2.add(blk)
       const cap=new THREE.Mesh(new THREE.BoxGeometry(1.0,.14,.8),trim); cap.position.set(bx,entabY+2.72,zS-.1); A2.add(cap) }
     /* Verwitterung unter der Corona (dezenter Rußwisch) */
@@ -1384,7 +1413,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
      45 (N-S) m = 3.0:1. Waffelraster-Langfassaden zeigen nach OSTEN und WESTEN, die
      fensterlosen Plattenraster-Schmalseiten nach NORDEN und SÜDEN. 16 Geschosse à 3.05 m über
      zurückgesetztem EG, ~54 m. Position (−55,−45), 90°-Drehung stellt die Scheibe N-S. */
-  const hh=new THREE.Group(); hh.position.set(-64,0,-54); hh.rotation.y=Math.PI/2; buildingGroup.add(hh); SITE.tower=hh // weiter NW: mehr Abstand zu gelbem Haus + Altgebäude (Nutzerwunsch)
+  const hh=new THREE.Group(); hh.position.set(-70,0,-60); hh.rotation.y=Math.PI/2; buildingGroup.add(hh); SITE.tower=hh // noch weiter NW + nach Nord gezogen: größerer Abstand zum Altgebäude, längere Brücke (Nutzerwunsch R9)
   const T_LONG=45, T_SHORT=15, T_BASEH=4.5, T_FLOORS=16, T_FLH=3.05, T_AXES=18 // lange Achse (lokal x → nach 90° = Welt-z, N-S)
   const T_GRIDH=T_FLOORS*T_FLH, T_TOP=T_BASEH+T_GRIDH                          // 48.8 / 53.3
   const concGrid=new THREE.MeshStandardMaterial({color:'#c4c3bc',roughness:.72,metalness:.04}) // warmer heller Betonrahmen
@@ -1432,7 +1461,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
      First 13 m, 38°-Stehfalz-Metalldach + Solarfeld. Ridge N-S, Bogengiebel nach Süden (Straße).
      Lokale Achsen (gb rot. −π/2): +x→Süd(Straße, Bogen), −x→Nord(Fassade P, 6 Fenster),
      +z→West(Fassade E „Via Dentis", Tür+Streifen), −z→Ost (Parkseite, schlichte Verkleidung). */
-  { const gb=new THREE.Group(); gb.position.set(-30,0,-42); gb.rotation.y=-Math.PI/2; buildingGroup.add(gb); SITE.yellow=gb
+  { const gb=new THREE.Group(); gb.position.set(-32,0,-34); gb.rotation.y=-Math.PI/2; buildingGroup.add(gb); SITE.yellow=gb // weiter Süd/West gezogen: klarer Abstand zum Altgebäude, näher am Studierendenhaus (Nutzerwunsch R9)
     const GW=24, GD=16, GBODY=7.5, GPEAK=5.9, RIDGE=GBODY+GPEAK // größer/breiter (24×16, First 13.4 m); HAUPTEINGANG am Süd-Giebel (zu B1), klar der Straße entrückt
     SITE.b3=[GW,GD,RIDGE] // für Assertion (Grundriss + Firsthöhe)
     /* Keramik-Paneele: horizontale Läuferverband-Platten (120×30 cm), dünne dunkle Fugen, leichter Glanz */
@@ -1512,30 +1541,62 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     /* ---- Langseiten Ost/West (local ±z): gleichmäßige Fensterraster ---- */
     for(const [fz,ry] of [[GD/2,0],[-GD/2,Math.PI]]){ const near=fz+(fz>0?.02:-.02)
       for(const x of [-8.5,-2.8,2.8,8.5]){ winF(x,2.7,near,1.5,1.7,ry); winF(x,5.7,near,1.3,1.4,ry) } } }
-  /* B5 (weiße Moderne, „Audimax"/Bibliothek) — Fix C: Transform aus git-Historie (Commit 86dead5)
-     VERBATIM wiederhergestellt: position (47,0,−60), rotation.y=π/2 (siehe Decision Log 32). */
-  { const au=new THREE.Group(); au.position.set(66,0,-62); au.rotation.y=Math.PI/2; buildingGroup.add(au); SITE.lib=au // weiter östlich: breiter Via-Dentis-Weg zwischen Altgebäude und Audimax; Glasfront nach WESTEN zum Weg
-    /* Neubau nach Foto: offene Kolonnade im EG (Pilotis, dunkles zurückgesetztes Glas dahinter) +
-       auskragendes verglastes OG (dunkle Vorhangfassade mit vertikalen Pfosten) + weiße Faszien. */
-    const L=30, Dp=18, gH=4.0, uH=4.2, colFront=-Dp/2, upFront=colFront-.8
+  /* ===== B5 Audimax — R9-Neuausrichtung nach Fotos 4/5 (Universitätsplatz-Ecke) =====
+     Fehlerbild vorher: „ohne Dach" + Glasfront nach links/Westen. Jetzt: weiße fensterlose
+     Auditoriumsschale, verglastes EG-Foyer mit Pilotis-Kolonnade + hohes Klerestoriumsband —
+     beide zur PLATZSEITE (Süd, +z) — gekrönt von einem prominenten, allseitig auskragenden
+     FLACHEN WEISSEN Dach. Gruppe unrotiert (Welt = lokal). */
+  { const au=new THREE.Group(); au.position.set(70,0,-64); buildingGroup.add(au); SITE.lib=au
+    const AW=26, AD=20, baseH=4.2, hallH=9.0, totalH=baseH+hallH, front=AD/2
+    SITE.libW=AW; SITE.libFront='S'; SITE.libRoofWhite=true
     const whiteM=new THREE.MeshStandardMaterial({color:'#eceff0',roughness:.55})
     const darkGl=new THREE.MeshStandardMaterial({color:'#20262c',roughness:.14,metalness:.45})
     const mulM=new THREE.MeshStandardMaterial({color:'#c9ccd0',roughness:.5,metalness:.4})
     const fasciaM=new THREE.MeshStandardMaterial({color:'#f0f2f3',roughness:.6})
-    const core=new THREE.Mesh(new THREE.BoxGeometry(L-3,gH,Dp-4),darkGl); core.position.set(0,gH/2,1.2); au.add(core) // EG-Glas zurückgesetzt
-    for(let k=0;k<11;k++){ const c=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,gH+.3,12),whiteM); c.position.set(-L/2+1.5+k*((L-3)/10),(gH+.3)/2,colFront); c.castShadow=true; au.add(c) } // Kolonnade
-    const canopy=new THREE.Mesh(new THREE.BoxGeometry(L,.35,Dp),whiteM); canopy.position.set(0,gH+.18,0); canopy.castShadow=true; au.add(canopy)
-    const upBox=new THREE.Mesh(new THREE.BoxGeometry(L,uH,Dp),whiteM); upBox.position.set(0,gH+.35+uH/2,-.8); upBox.castShadow=true; au.add(upBox) // OG kragt vor
-    const gband=new THREE.Mesh(new THREE.BoxGeometry(L-1,uH-.9,.1),darkGl); gband.position.set(0,gH+.35+uH/2,upFront-.05); au.add(gband)   // dunkle Vorhangfassade
-    for(let x=-L/2+1;x<L/2;x+=1.2){ const m=new THREE.Mesh(new THREE.BoxGeometry(.08,uH-.9,.14),mulM); m.position.set(x,gH+.35+uH/2,upFront+.02); au.add(m) } // vertikale Pfosten
-    ;[gH+.35+.35,gH+.35+uH-.35].forEach(fy=>{ const f=new THREE.Mesh(new THREE.BoxGeometry(L,.42,.24),fasciaM); f.position.set(0,fy,upFront+.02); au.add(f) }) // weiße Faszien oben/unten
-    const roof2=new THREE.Mesh(new THREE.BoxGeometry(L+.6,.4,Dp+1.4),new THREE.MeshStandardMaterial({color:'#3a3f47',roughness:.7})); roof2.position.y=gH+.35+uH+.2; au.add(roof2) }
+    /* Auditoriumsschale (weiß, fensterlos) */
+    const shell=new THREE.Mesh(new THREE.BoxGeometry(AW,hallH,AD),whiteM); shell.position.set(0,baseH+hallH/2,-.4); shell.castShadow=true; shell.receiveShadow=true; au.add(shell)
+    /* Vertikale Betonrippen an den Seitenwänden (O/W) — instanziert in Weltkoord. (au unrotiert @ 70,0,−64) */
+    { const ribs=[]; for(let z=-AD/2+1.4;z<=AD/2-1.4;z+=1.8) ribs.push({x:70-AW/2-.05,y:baseH+hallH/2,z:-64+z},{x:70+AW/2+.05,y:baseH+hallH/2,z:-64+z})
+      instanced(new THREE.BoxGeometry(.22,hallH-.6,.35),whiteM,ribs) }
+    /* Zurückgesetztes verglastes EG-Foyer + Pilotis-Kolonnade an der Südfront */
+    const foyer=new THREE.Mesh(new THREE.BoxGeometry(AW-2.4,baseH,AD-2.2),darkGl); foyer.position.set(0,baseH/2,-.6); au.add(foyer)
+    for(let k=0;k<9;k++){ const c=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,baseH+.3,12),whiteM); c.position.set(-AW/2+1.7+k*((AW-3.4)/8),(baseH+.3)/2,front-.3); c.castShadow=true; au.add(c) } // Kolonnade
+    const canopy=new THREE.Mesh(new THREE.BoxGeometry(AW+.6,.4,AD+.4),whiteM); canopy.position.set(0,baseH+.2,0); canopy.castShadow=true; au.add(canopy) // Vordach über EG
+    /* Klerestoriumsband hoch an der Südfront (nach vorn/Platz) — verglast, mit Pfosten + Faszien */
+    const clerY=baseH+hallH-2.4, clerH=3.0
+    const cler=new THREE.Mesh(new THREE.BoxGeometry(AW-2,clerH,.18),darkGl); cler.position.set(0,clerY,front-.35); cler.userData.glaz=true; au.add(cler)
+    for(let x=-AW/2+1.6;x<AW/2-1;x+=1.4){ const m=new THREE.Mesh(new THREE.BoxGeometry(.1,clerH,.24),mulM); m.position.set(x,clerY,front-.28); au.add(m) } // vertikale Pfosten
+    ;[clerY-clerH/2-.28,clerY+clerH/2+.28].forEach(fy=>{ const f=new THREE.Mesh(new THREE.BoxGeometry(AW-1,.42,.3),fasciaM); f.position.set(0,fy,front-.32); au.add(f) })
+    /* PROMINENTES FLACHES WEISSES DACH — allseitig auskragend (Nutzerwunsch R9) */
+    const roof=new THREE.Mesh(new THREE.BoxGeometry(AW+2.2,.7,AD+2.2),whiteM); roof.position.y=totalH+.35; roof.castShadow=true; roof.receiveShadow=true; au.add(roof); au.userData.roof=roof
+    const roofFascia=new THREE.Mesh(new THREE.BoxGeometry(AW+2.5,.28,AD+2.5),fasciaM); roofFascia.position.y=totalH+.02; au.add(roofFascia) // Faszienband unter dem Dach
+    au.userData.height=totalH+.7 }
+  /* ===== Bib + Forumgebäude — Kulissen-Fassadenkomplex am Universitätsplatz, VERBINDET mit dem
+     Audimax (Nutzerwunsch R9). Einfache Volumina mit gebackenem Glasraster (Textur), Instancing;
+     alle Riegel schließen an den Audimax an → durchlaufende Platzfassade Bib↔Audimax↔Forum. */
+  { const uf=new THREE.Group(); buildingGroup.add(uf)
+    const gridTex=(u,v)=>{ const c=cvs(256),x=c.getContext('2d'); x.fillStyle='#c7ccce'; x.fillRect(0,0,256,256)
+      for(let gy=0;gy<256;gy+=32)for(let gx=0;gx<256;gx+=32){ x.fillStyle='#38454e'; x.fillRect(gx+3,gy+3,26,26) } // getönte Scheiben im hellen Raster
+      const t=tx(c); t.repeat.set(u,v); return t }
+    const gm=(u,v)=>new THREE.MeshStandardMaterial({map:gridTex(u,v),roughness:.32,metalness:.22})
+    const bodyM=new THREE.MeshStandardMaterial({color:'#dde0e1',roughness:.6})
+    const roofM=new THREE.MeshStandardMaterial({color:'#c6c9cb',roughness:.6})
+    /* w,h,d = Maße; long=true → E-W-Riegel: Glasraster auf den Langfassaden ±z; sonst N-S-Riegel: ±x */
+    const block=(w,h,d,px,pz,long)=>{ let mats
+      if(long){ const g=gm(Math.max(3,w/3.5),Math.max(3,h/3.2)); mats=[bodyM,bodyM,roofM,bodyM,g,g] }   // Glas auf ±z (Fläche w×h)
+      else { const g=gm(Math.max(3,d/3.5),Math.max(3,h/3.2)); mats=[g,g,roofM,bodyM,bodyM,bodyM] }        // Glas auf ±x (Fläche d×h)
+      const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mats); b.position.set(px,h/2,pz); b.castShadow=true; b.receiveShadow=true; uf.add(b)
+      const rf=new THREE.Mesh(new THREE.BoxGeometry(w+.6,.5,d+.6),roofM); rf.position.set(px,h+.2,pz); uf.add(rf) }
+    block(8,17,40, 84,-72, false)   // Forumgebäude: N-S-Riegel östlich, schließt an Audimax-Ostseite an
+    block(32,14,12, 72,-90, true)   // Bibliothek: E-W-Riegel nördlich hinter dem Platz
+    block(18,6.5,10, 70,-79, true)  // niedriger Verbindungsbau Audimax ↔ Bibliothek
+  }
 }
 /* ===== Glas-Verbindungsbrücke (Skywalk) Okerhochhaus (B4) ↔ Altgebäude (B2) — Nutzerfoto =====
    Grün getönter, aufgeständerter Glasgang. Maße real: die Gebäude bleiben weit auseinander;
-   die Brücke überbrückt die Lücke zwischen B4-Ostfassade (x=−56.5, Turm nach NW gerückt) und
-   B2-Westfassade (x=−29), größer/breiter, mit Lichterketten wie am Studierendenhaus. */
-{ const bx0=-56.5, bx1=-29, cx=(bx0+bx1)/2, bz=-64, fy=5.0, ch=3.4, bw=4.6, len=(bx1-bx0)+1.0 // breiter/höher, Turm-Ostfassade jetzt x=−56.5
+   die Brücke überbrückt die Lücke zwischen B4-Ostfassade (x=−62.5, Turm weiter NW gerückt) und
+   B2-Westfassade (x=−29), größer/breiter/länger, mit Lichterketten wie am Studierendenhaus. */
+{ const bx0=-62.5, bx1=-29, cx=(bx0+bx1)/2, bz=-64, fy=5.0, ch=3.6, bw=5.2, len=(bx1-bx0)+1.0 // größer/breiter/höher (R9), Turm-Ostfassade jetzt x=−62.5, Spannweite 33.5 m
   const bg=new THREE.Group(); bg.position.set(cx,0,bz); buildingGroup.add(bg)
   SITE.bridge={x0:bx0,x1:bx1,z:bz,y:fy}
   const alu=new THREE.MeshStandardMaterial({color:'#e6e8ea',roughness:.4,metalness:.5})            // Alu-Rahmen weiß
@@ -1558,14 +1619,14 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
    (Foto „21 Pockelsstraße"): KEINE Autos. ===== */
 { const vz0=-32, vz1=-92, vLen=vz1-vz0, vcz=(vz0+vz1)/2
   const way=(cx,w,rx,ry2)=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,-vLen),paverMat(rx,ry2)); m.rotation.x=-Math.PI/2; m.position.set(cx,.012,vcz); m.receiveShadow=true; buildingGroup.add(m) }
-  way(46,10,5,30)                               // zentraler Weg
-  way(37,2.4,1.2,30)                            // Fußweg West (an der Altgebäude-Ostkante)
-  way(55,2.4,1.2,30)                            // Fußweg Ost (an der Audimax-Kolonnade)
-  for(const cx of [40.8,51.2]){ const c=new THREE.Mesh(new THREE.BoxGeometry(.2,.1,-vLen),new THREE.MeshStandardMaterial({color:'#b8b5ac',roughness:.85})); c.position.set(cx,.05,vcz); c.receiveShadow=true; buildingGroup.add(c) } // Bordsteine
-  for(let z=vz0+6;z<=vz1-6;z+=11){ tree(39.5,z,1.8,140+((z*7)&255)); tree(52.5,z,1.8,170+((z*5)&255)) } // Baumreihen (je in Baumscheibe)
-  const vBolls=[]; for(let z=vz0;z<=vz1;z+=4){ vBolls.push({x:41,y:.42,z},{x:51,y:.42,z}) }
-  instanced(new THREE.CylinderGeometry(.05,.055,.84,10),new THREE.MeshStandardMaterial({color:'#2b2b2e',roughness:.55,metalness:.35}),vBolls) // Poller
-  HEDGE_RUNS.push([39.5,-37,5,0,.7],[52.5,-37,5,0,.7],[39.5,-87,5,0,.7],[52.5,-87,5,0,.7]) // Hecken-Inseln
+  way(46,15,7,30)                               // Hauptweg (breiter, echte Fliesen) — 38.5…53.5
+  way(36,3,1.5,30)                              // Fußweg West (an der Altgebäude-Ostkante) — 34.5…37.5
+  way(56,3,1.5,30)                              // Fußweg Ost (an der Audimax-Seite) — 54.5…57.5
+  for(const cx of [38.5,53.5]){ const c=new THREE.Mesh(new THREE.BoxGeometry(.2,.1,-vLen),new THREE.MeshStandardMaterial({color:'#b8b5ac',roughness:.85})); c.position.set(cx,.05,vcz); c.receiveShadow=true; buildingGroup.add(c) } // Bordsteine Hauptweg
+  for(let z=vz0+6;z<=vz1-6;z+=11){ tree(37,z,1.7,140+((z*7)&255)); tree(55,z,1.7,170+((z*5)&255)) } // Baumreihen in den Pflanzstreifen (je in Baumscheibe)
+  const vBolls=[]; for(let z=vz0;z<=vz1;z+=4){ vBolls.push({x:38.6,y:.42,z},{x:53.4,y:.42,z}) }
+  instanced(new THREE.CylinderGeometry(.05,.055,.84,10),new THREE.MeshStandardMaterial({color:'#2b2b2e',roughness:.55,metalness:.35}),vBolls) // Poller entlang der Hauptwegkanten
+  HEDGE_RUNS.push([37,-37,5,0,.7],[55,-37,5,0,.7],[37,-87,5,0,.7],[55,-87,5,0,.7]) // Hecken-Inseln
   SITE.viaDentis={x:46,z0:vz0,z1:vz1} }
 /* Fluss (Oker) mit Ufern und Holzsteg */
 function ribbon(w,yOff){ const segs=160
@@ -3143,8 +3204,13 @@ function verifySitePlan(){
   chk('Null Fenster auf den N/S-Schmalseiten des Okerhochhauses', endWin===0, `Scheiben auf Schmalseiten: ${endWin}`)
   chk('Okerhochhaus-Rasterfassaden zeigen nach O/W', glazNorm&&Math.abs(glazNorm.x)>Math.abs(glazNorm.z), `Rasternormale x=${glazNorm?glazNorm.x.toFixed(2):'?'}`)
   /* 6 — Audimax östlich mit breitem Via-Dentis-Weg zum Altgebäude (Nutzerwunsch: nicht zu nah) */
-  const b2East=wp(SITE.alt).x+SITE.altW/2, b5West=b5.x-9 // Altgebäude-Ostkante, Audimax-Westkante (Dp/2=9)
+  const b2East=wp(SITE.alt).x+SITE.altW/2, b5West=b5.x-SITE.libW/2 // Altgebäude-Ostkante, Audimax-Westkante
   chk('Breiter Via-Dentis-Weg zwischen Altgebäude und Audimax (≥ 18 m)', (b5West-b2East)>=18&&SITE.viaDentis.x>b2East&&SITE.viaDentis.x<b5West, `Audimax-West x=${b5West.toFixed(0)} − Altgebäude-Ost x=${b2East.toFixed(0)} = ${(b5West-b2East).toFixed(1)} m, Weg-Achse x=${SITE.viaDentis.x}`)
+  /* 6b — Audimax korrekt ausgerichtet: Klerestorium/Glasfront nach SÜDEN (+z, zum Platz) + flaches weißes Dach */
+  let clerZ=null,clerN=0; SITE.lib.traverse(o=>{ if(o.userData.glaz){ clerN++; if(clerZ===null)clerZ=o.position.z } })
+  chk('Audimax: verglastes Klerestorium nach Süden zum Platz (nicht nach Westen)', clerN>=1&&clerZ>0, `Klerestorium-Panels=${clerN}, lokal z=${clerZ===null?'?':clerZ.toFixed(1)} (>0 ⇒ Südfront)`)
+  const rf=SITE.lib.userData.roof, rc=rf&&rf.material.color
+  chk('Audimax: flaches weißes Dach vorhanden', SITE.libRoofWhite===true&&!!rf&&rc.r>.8&&rc.g>.8&&rc.b>.8, rf?`Dach y=${rf.position.y.toFixed(1)}, Farbe rgb(${(rc.r*255)|0},${(rc.g*255)|0},${(rc.b*255)|0})`:'kein Dach-Mesh')
   /* 7 — Radweg-Piktogramme ≥4 */
   chk('Radweg-Piktogramme ≥ 4', SITE.bikeMarks>=4, `${SITE.bikeMarks} Marken`)
   /* 8 — Baumreihe E3: 6–8 Bäume */
@@ -3163,6 +3229,8 @@ function verifySitePlan(){
   /* ---- Fix A: Voussoir-Zahl je Bogen (Datenblatt 13 EG / 11 OG) ---- */
   let vEG=0,vOG=0; SITE.alt.traverse(o=>{ if(o.userData.vou===13)vEG++; if(o.userData.vou===11)vOG++ })
   chk('Altgebäude komplett: 11 Achsen, Bögen aus radialen Voussoirs (13 EG / 11 OG)', SITE.altVouEG===13&&SITE.altVouOG===11&&vEG===11&&vOG===11, `${vEG} EG-Bögen / ${vOG} OG-Bögen à ${SITE.altVouEG}/${SITE.altVouOG} Voussoirs`)
+  /* ---- R9: Altgebäude als komplette Vierflügelanlage („Viereck" bis zum Okerhaus) mit offenem Hof ---- */
+  chk('Altgebäude ist Vierflügelanlage mit offenem Innenhof', SITE.altWings===4, `${SITE.altWings} Flügel (Süd/Nord/Ost/West), gepflasterter Hof`)
   /* ---- Glas-Verbindungsbrücke: verbindet B4-Ostfassade ↔ B2-Westfassade, Gebäude bleiben weit ---- */
   const brg=SITE.bridge, b4East=b4.x+7.5, b2West=wp(SITE.alt).x-SITE.altW/2
   chk('Glasbrücke verbindet Okerhochhaus (Ost) ↔ Altgebäude (West)', Math.abs(brg.x0-b4East)<1&&Math.abs(brg.x1-b2West)<1, `Brücke x ${brg.x0}→${brg.x1}; B4-Ost=${b4East.toFixed(1)}, B2-West=${b2West.toFixed(1)}`)

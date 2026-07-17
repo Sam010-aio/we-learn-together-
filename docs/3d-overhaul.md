@@ -590,7 +590,40 @@ B4-Ost ↔ B2-West" PASS (x −47.5→−19), „Gebäude real weit auseinander 
   Lichterketten entlang beider Brückenkanten (wie am Studierendenhaus).
 - 19/19 Assertions PASS, 14/14 Regression, 0 Konsolen-Fehler.
 
-## 19. Files touched
+## 19. Runde 9 — Campus komplett: Altgebäude-Viereck, Audimax-Dach/-Ausrichtung, Bib/Forum, breitere Fliesenwege
+
+Nutzerwunsch (Luftbild + Audimax-Fotos, „null Toleranz"): Campus komplett; Altgebäude als
+komplettes Viereck (Innenhof) bis zum Okerhaus; Audimax mit **flachem weißem Dach** und Glasfront
+**nach vorn/Süden** (nicht nach links/Westen); Fassade zwischen Bib, Audimax und Forum; breiterer
+Hauptweg + echte Fußwege alles in Fliesen; gelbes Haus und Okerhaus **weiter weg** vom Altgebäude.
+
+- **Altgebäude → Vierflügelanlage (B2).** Aus dem Vollblock wird ein Ring aus 4 Flügeln
+  (Süd/Nord/Ost/West, Tiefe 14 m) um einen **offenen, gepflasterten Innenhof** — die Silhouette
+  liest sich im Luftbild als „Viereck". Die reiche Süd-Schaufassade (11 Achsen, Voussoir-Bögen,
+  Gebälk) bleibt unverändert. Gesimse/Sockel/Attika laufen jetzt als **Kantenringe** (4 Balken
+  je Ebene) statt als Vollplatten → Hof bleibt zum Himmel offen. Hofseitige Fenster instanziert.
+  Entscheidung: Außen-Fußabdruck (64×48, Zentroid 3,−86, Südebene z=−62) beibehalten, damit
+  Nachbarabstände/Assertions gültig bleiben; die „Vervollständigung" ist der offene Ring + Hof.
+- **Audimax neu ausgerichtet (B5).** Gruppe unrotiert bei (70,0,−64), 26×20 m. Weiße fensterlose
+  Auditoriumsschale + verglastes EG-Foyer mit Pilotis-Kolonnade + hohes **Klerestoriumsband**,
+  beide zur **Platzseite Süd (+z)**; Betonrippen an den Seitenwänden; gekrönt von einem
+  **prominenten, allseitig auskragenden flachen weißen Dach** (Faszienband). Behebt „ohne Dach"
+  + „falsche Richtung".
+- **Bib + Forumgebäude (Kulisse).** Durchlaufende Platzfassade: Forum-Riegel (N-S) östlich am
+  Audimax, Bibliothek-Riegel (E-W) nördlich, niedriger Verbindungsbau dazwischen — einfache
+  Volumina mit gebackenem Glasraster (Textur) statt Einzelfenster-Meshes.
+- **Wege.** Hauptweg auf **15 m** verbreitert, 2 Fußwege je 3 m, alle mit `paverMat`-Fliesen;
+  Bordsteine an den Hauptwegkanten, Baumreihen + Poller in den Pflanzstreifen. Innenhof gepflastert.
+- **Abstände.** Gelbes Haus B3 → (−32,−34) (weiter Süd/West, näher am Studierendenhaus,
+  Nordkante jetzt ~16 m vom Altgebäude). Okerhaus B4 → (−70,−60) (weiter NW + nach Nord);
+  Brücke nachgeführt: x0=−62.5→x1=−29, **Spannweite 33.5 m**, breiter/höher (bw 5.2, h 3.6).
+
+**Assertions (Headless, verbatim): 22/22 PASS** — neu u. a. „Audimax: verglastes Klerestorium nach
+Süden zum Platz", „Audimax: flaches weißes Dach vorhanden", „Altgebäude ist Vierflügelanlage mit
+offenem Innenhof", „Breiter Via-Dentis-Weg … 22 m", „Glasbrücke … Spannweite 33.5 m".
+14/14 Interaktionsregression, 0 Konsolen-Fehler/-Warnungen.
+
+## 20. Files touched
 
 - `index.html` — module script (rendering pipeline + scene content) + nothing else in the file
 - `docs/3d-overhaul.md` — this document
