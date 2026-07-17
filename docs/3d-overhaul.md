@@ -555,7 +555,31 @@ Verglasung ist in `AO_EXCLUDE` (GTAO kann kein transparentes Glas). **Checks:** 
 B4-Ost ↔ B2-West" PASS (x −47.5→−19), „Gebäude real weit auseinander (Spannweite ≥ 25 m)" PASS
 (28.5 m). +169 Draw Calls (high 7 368 / 1,86 M Dreiecke), 14/14 Regression, 0 Konsolen-Fehler.
 
-## 17. Files touched
+## 17. Runde 7 — keine Autos, Fliesenwege, Rundum-Lichterketten, größeres gelbes Haus, Audimax, komplettes Altgebäude
+
+- **Keine Autos:** alle 14 Autos + Stellplatz-Markierungen entfernt; SITE.carN=0.
+- **Fliesenwege:** Asphaltstraße + Parkplatz → paverMat (Fliesen wie um B1); E1 breiter Fliesenweg
+  + Bordsteine, E2 gefliester Vorplatz.
+- **Lichterketten rund um ALLE Seiten, stärker/lovely:** Festoons an allen 4 Balkonseiten (voll)
+  + zweite tiefere Girlande Süd; 12 warme Perimeter-Punktlichter (an mc.terrasseIntensity);
+  bulbEmissive Tag .05→.38, Nacht 2.8→5.2; terrasseIntensity Nacht 18→24; warmPoints 46→52.
+- **Gelbes Haus größer/breiter/regelmäßig, Front-Eingang zu B1:** 24×16 (First 13.4 m), von der
+  Straße entrückt (−30,−42); Haupteingang (verglaste Tür + Vordach + Stufe + Schild) am
+  Süd-Giebel gegenüber dem Studierendenhaus; Nord-Giebel = 6-Fenster-Fassade (Foto), gleichmäßige
+  Langseiten-Raster, Stehfalzdach + Solarfeld.
+- **Audimax nach Foto:** offene EG-Kolonnade (Pilotis, dunkles zurückgesetztes Glas) + auskragendes
+  verglastes OG (dunkle Vorhangfassade, vertikale Pfosten) + weiße Faszien + Flachdach.
+- **Altgebäude komplett (nicht nur der linke Teil):** auf 64 m verbreitert, **11 Achsen (3–5–3)**
+  mit Eckpavillon-Lesenen, alle Rundbogenfenster mit radialen Voussoirs; Brücke zur neuen
+  Westfassade (x=−29) nachgeführt.
+
+**Assertions (Headless, verbatim): 19/19 PASS** — u. a. „B2-Südfassade: 11 Fensterachsen",
+„Altgebäude komplett: 11 Achsen, Bögen aus radialen Voussoirs (11 EG / 11 OG à 13/11)",
+„B3 Grundriss 24×16 / First 13.4 m", „B3 Fassade E: 1 Tür + 8 kleine Oberfenster",
+„Okerhochhaus schlanke N-S-Scheibe 3.00:1", „Glasbrücke B4-Ost ↔ B2-West (−47.5→−29)",
+„Radweg-Piktogramme ≥ 4". 14/14 Interaktionsregression, 0 Konsolen-Fehler.
+
+## 18. Files touched
 
 - `index.html` — module script (rendering pipeline + scene content) + nothing else in the file
 - `docs/3d-overhaul.md` — this document
