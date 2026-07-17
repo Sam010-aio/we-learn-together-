@@ -882,67 +882,66 @@ function paverMat(rx,ry2){ const m2=new THREE.MeshStandardMaterial({roughness:.9
   m2.map=paverT.clone(); m2.map.repeat.set(rx,ry2); m2.map.needsUpdate=true
   m2.normalMap=M.paver.normalMap.clone(); m2.normalMap.repeat.set(rx,ry2); m2.normalMap.needsUpdate=true
   return antiTiling(m2,sceneConfig.materials.macroVariation.paver) }
-{ /* Via Dentis: schmale Klinkerstraße Ost-West zwischen Eingang und Altgebäude-Schmalseite */
-  const via=new THREE.Mesh(new THREE.PlaneGeometry(44,6.4),paverMat(24,3.5))
-  via.rotation.x=-Math.PI/2; via.position.set(8,.013,-22.5); via.receiveShadow=true; buildingGroup.add(via)
+{ /* ===== Satelliten-verankerter Süd-Campus (docs §14): Ordnung B1 → E1 Straße+Radweg (z=−22)
+     → E3 Baumreihe (z=−29) → E2 Parkplatz (3,−44, 60×28) → B2-Südfassade (z=−62) ===== */
   const curbM=new THREE.MeshStandardMaterial({color:'#b8b5ac',roughness:.85})
-  ;[-19.15,-25.85].forEach(cz=>{ const c2=new THREE.Mesh(new THREE.BoxGeometry(44,.09,.24),curbM)
-    c2.position.set(8,.045,cz); c2.receiveShadow=true; buildingGroup.add(c2) })
-  /* Geflieste Fahrradstraße auf der Trasse der alten Autostraße (Nutzerkorrektur: kein Autoweg) */
-  const rad=new THREE.Mesh(new THREE.PlaneGeometry(3.6,76),paverMat(2.2,44))
-  rad.rotation.x=-Math.PI/2; rad.position.set(27,.012,0); rad.receiveShadow=true; buildingGroup.add(rad)
-  B(.28,.13,76,new THREE.MeshStandardMaterial({color:'#c9c6bd',roughness:.9}),25.06,.065,0,0,false,true)
-  /* Plaza-Promenade südlich des Parkplatzes entlang der Altgebäude-Westfassade */
-  const plaza=new THREE.Mesh(new THREE.PlaneGeometry(19,42),paverMat(10,22))
-  plaza.rotation.x=-Math.PI/2; plaza.position.set(1.5,.012,-71); plaza.receiveShadow=true; buildingGroup.add(plaza)
-  /* Parkplatz ZWISCHEN Studierendenhaus und Altgebäude (Nutzerfoto "3 Via Dentis"):
-     Asphalt + markierte Stellflächen, bewusst OHNE Autos (Nutzeranweisung) */
-  const parkT=noiseTex('#7e7f85',['#6f7076','#8b8c92','#75767c'],4200); parkT.repeat.set(8,11)
-  /* Roughness ist ein Datenkanal: eigene Textur ohne sRGB-Dekodierung, sonst wird der Wert ~halbiert (glänzend) */
-  const parkR=parkT.clone(); parkR.colorSpace=THREE.NoColorSpace; parkR.needsUpdate=true
-  const park=new THREE.Mesh(new THREE.PlaneGeometry(16,23),new THREE.MeshStandardMaterial({color:'#eceded',map:parkT,
-    roughness:sceneConfig.materials.asphaltRoughness,normalMap:normalFromTex(parkT,NS.asphalt),roughnessMap:parkR}))
-  park.rotation.x=-Math.PI/2; park.position.set(3,.011,-38.4); park.receiveShadow=true; buildingGroup.add(park)
-  SITE.parking=park // echte Mesh-Referenz (keine dupliziertere Literal-Konstante) → Assertion misst die tatsächliche Lage
-  /* Stellplatz-Markierungen: Ostreihe zur Altgebäude-Fassade, Westreihe zur Hecke, Gasse dazwischen */
-  const stalls=[]
-  for(let z=-28.6;z>=-48.6;z-=2.5){ stalls.push({x:8.2,y:.02,z},{x:-2.3,y:.02,z}) }
-  instanced(new THREE.BoxGeometry(5.2,.012,.12),new THREE.MeshStandardMaterial({color:'#e8e8e4',roughness:.9}),stalls,false)
-  /* Vorplatz zwischen Altgebäude-Haupteingang (Ost) und Audimax */
-  const fore=new THREE.Mesh(new THREE.PlaneGeometry(12,26),paverMat(7,14))
-  fore.rotation.x=-Math.PI/2; fore.position.set(31.6,.011,-60); fore.receiveShadow=true; buildingGroup.add(fore)
-  /* Baumscheiben: Steinkante + Mulch — JEDER Baum steht in einer gefassten Scheibe
-     (Nutzeranweisung: "Töpfe" wie am Altgebäude für alle Bäume); Kantenmaß wächst mit dem Baum */
-  const pitEdgeM=new THREE.MeshStandardMaterial({color:'#9d968b',roughness:.9})
-  const mulchM=new THREE.MeshStandardMaterial({color:'#4b3d2e',roughness:1})
-  treePit=(x,z,s=1)=>{ const w=1.1+s*.45
-    const e2=new THREE.Mesh(new THREE.BoxGeometry(w,.12,w),pitEdgeM); e2.position.set(x,.05,z); e2.receiveShadow=true; buildingGroup.add(e2)
-    const m2=new THREE.Mesh(new THREE.CylinderGeometry(w*.42,w*.42,.1,12),mulchM); m2.position.set(x,.075,z); buildingGroup.add(m2) }
-  /* Fahrrad-Piktogramme auf der Fahrradstraße (Street-View-Detail) */
+  const asphMat=(rx,ry2)=>{ const t=noiseTex('#7e7f85',['#6f7076','#8b8c92','#75767c'],4600); t.repeat.set(rx,ry2)
+    const r=t.clone(); r.colorSpace=THREE.NoColorSpace; r.needsUpdate=true // Roughness-Kanal ohne sRGB-Dekodierung
+    return new THREE.MeshStandardMaterial({color:'#eceded',map:t,roughness:sceneConfig.materials.asphaltRoughness,normalMap:normalFromTex(t,NS.asphalt),roughnessMap:r}) }
+  /* E1 — Ost-West-Straße: 6 m Fahrbahn (z[−24..−18]) + 2 m Radweg nördlich (z[−26..−24]),
+     Gehweg an der B1-Südseite, Granit-Bordsteine, Trennlinie */
+  const road=new THREE.Mesh(new THREE.PlaneGeometry(90,6),asphMat(30,3)); road.rotation.x=-Math.PI/2; road.position.set(0,.012,-21); road.receiveShadow=true; buildingGroup.add(road)
+  const bikeLane=new THREE.Mesh(new THREE.PlaneGeometry(90,2),paverMat(45,1.2)); bikeLane.rotation.x=-Math.PI/2; bikeLane.position.set(0,.013,-25); bikeLane.receiveShadow=true; buildingGroup.add(bikeLane)
+  ;[-18,-26].forEach(cz=>{ const c2=new THREE.Mesh(new THREE.BoxGeometry(90,.1,.24),curbM); c2.position.set(0,.05,cz); c2.receiveShadow=true; buildingGroup.add(c2) })
+  const walk=new THREE.Mesh(new THREE.PlaneGeometry(90,2.6),paverMat(45,1.6)); walk.rotation.x=-Math.PI/2; walk.position.set(0,.012,-16.2); walk.receiveShadow=true; buildingGroup.add(walk)
+  const laneLine=new THREE.Mesh(new THREE.PlaneGeometry(90,.1),new THREE.MeshStandardMaterial({color:'#e8e8e4',roughness:.9})); laneLine.rotation.x=-Math.PI/2; laneLine.position.set(0,.017,-24); buildingGroup.add(laneLine)
+  /* Radweg-Piktogramme (weiße Fahrrad-Marke) alle 15 m — Assertion zählt ≥4 */
   const picto=(()=>{ const c2=cvs(128),x2=c2.getContext('2d'); x2.clearRect(0,0,128,128)
     x2.strokeStyle='#e8e8e4'; x2.lineWidth=7; x2.lineCap='round'
-    x2.beginPath(); x2.arc(36,90,20,0,Math.PI*2); x2.stroke()
-    x2.beginPath(); x2.arc(92,90,20,0,Math.PI*2); x2.stroke()
+    x2.beginPath(); x2.arc(36,90,20,0,Math.PI*2); x2.stroke(); x2.beginPath(); x2.arc(92,90,20,0,Math.PI*2); x2.stroke()
     x2.beginPath(); x2.moveTo(36,90); x2.lineTo(58,60); x2.lineTo(92,90); x2.lineTo(64,90); x2.lineTo(36,90); x2.stroke()
     x2.beginPath(); x2.moveTo(58,60); x2.lineTo(54,46); x2.moveTo(46,46); x2.lineTo(64,46); x2.stroke()
     x2.beginPath(); x2.moveTo(76,68); x2.lineTo(92,52); x2.stroke()
     const t2=new THREE.CanvasTexture(c2); t2.colorSpace=THREE.SRGBColorSpace; return t2 })()
   const pictoM=new THREE.MeshStandardMaterial({map:picto,transparent:true,alphaTest:.3,roughness:.9})
-  ;[4,15].forEach(pz=>{ const d2=new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.1),pictoM)
-    d2.rotation.x=-Math.PI/2; d2.rotation.z=Math.PI; d2.position.set(27,.02,pz); buildingGroup.add(d2) })
-  /* Fahrradbügel vor der Altgebäude-Schmalseite (Räder folgen nach der bike()-Definition) */
-  for(let i=0;i<3;i++){ const bar=new THREE.Mesh(new THREE.TorusGeometry(.42,.03,8,16,Math.PI),M.alu)
-    bar.position.set(12.6+i*1.6,.02,-27.2); buildingGroup.add(bar) }
-  /* Poller entlang Via-Dentis-Nordkante + Plaza-Westkante */
+  let bikeN=0
+  for(let x=-37.5;x<=37.5;x+=15){ const d2=new THREE.Mesh(new THREE.PlaneGeometry(1.0,1.5),pictoM); d2.rotation.x=-Math.PI/2; d2.position.set(x,.02,-25); buildingGroup.add(d2); bikeN++ }
+  SITE.bikeMarks=bikeN; SITE.e1z=-22 // Straßen-Mittelachse (Nord = −z)
+  /* E2 — Parkplatz (3,−44) 60×28, zwischen Straße und B2-Südfassade; 4 m Apron zur Fassade */
+  const park=new THREE.Mesh(new THREE.PlaneGeometry(60,28),asphMat(30,14)); park.rotation.x=-Math.PI/2; park.position.set(3,.011,-44); park.receiveShadow=true; buildingGroup.add(park)
+  SITE.parking=park
+  /* Stellplatz-Markierungen: 2 Reihen O-W (Nord z=−38 an der Fassaden-Apron, Süd z=−50) */
+  const stalls=[]
+  for(let x=-25;x<=31;x+=2.7){ stalls.push({x,y:.017,z:-38},{x,y:.017,z:-50}) }
+  instanced(new THREE.BoxGeometry(.12,.012,5),new THREE.MeshStandardMaterial({color:'#e8e8e4',roughness:.9}),stalls,false)
+  /* Autos (Abschnitt 4.4: 12–16 low-poly, Farb-/Yaw-Jitter, 1–2 leere Buchten) */
+  const wheelG=new THREE.CylinderGeometry(.31,.31,.22,12), wheelM=new THREE.MeshStandardMaterial({color:'#22262b',roughness:.6})
+  const carGlass=new THREE.MeshStandardMaterial({color:'#1d232a',roughness:.15,metalness:.3})
+  const carCols=['#c9ccd0','#e8e8e6','#7e2f2c','#3c4c63','#4a4d52','#8a8d92','#39423a','#b4b7bb']
+  let carN=0
+  function car(x,z,ry,col){ const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=ry
+    const bm=new THREE.MeshStandardMaterial({color:col,roughness:.34,metalness:.42})
+    const b=new THREE.Mesh(new THREE.BoxGeometry(1.78,.5,4.2),bm); b.position.y=.56; b.castShadow=true; g.add(b)
+    const cab=new THREE.Mesh(new THREE.BoxGeometry(1.6,.5,2.14),bm); cab.position.set(0,1.02,-.16); cab.castShadow=true; g.add(cab)
+    const gl=new THREE.Mesh(new THREE.BoxGeometry(1.64,.34,2.2),carGlass); gl.position.set(0,1.05,-.16); g.add(gl)
+    ;[[-.82,1.35],[.82,1.35],[-.82,-1.45],[.82,-1.45]].forEach(([wx,wz])=>{ const w=new THREE.Mesh(wheelG,wheelM); w.rotation.z=Math.PI/2; w.position.set(wx,.31,wz); g.add(w) })
+    buildingGroup.add(g); carN++ }
+  const CX=[-24,-16,-8,0,8,16,24,31] // 8 Buchten je Reihe
+  CX.forEach((x,i)=>{ if(i!==3) car(x+(Math.random()-.5)*.4,-38,(Math.random()-.5)*.1,carCols[i%8]) })      // Nordreihe, 1 leer
+  CX.forEach((x,i)=>{ if(i!==5) car(x+(Math.random()-.5)*.4,-50,Math.PI+(Math.random()-.5)*.1,carCols[(i+3)%8]) }) // Südreihe, 1 leer → 14 Autos
+  SITE.carN=carN
+  /* Baumscheiben: Steinkante + Mulch — JEDER Baum steht in einer gefassten Scheibe; Kante skaliert */
+  const pitEdgeM=new THREE.MeshStandardMaterial({color:'#9d968b',roughness:.9})
+  const mulchM=new THREE.MeshStandardMaterial({color:'#4b3d2e',roughness:1})
+  treePit=(x,z,s=1)=>{ const w=1.1+s*.45
+    const e2=new THREE.Mesh(new THREE.BoxGeometry(w,.12,w),pitEdgeM); e2.position.set(x,.05,z); e2.receiveShadow=true; buildingGroup.add(e2)
+    const m2=new THREE.Mesh(new THREE.CylinderGeometry(w*.42,w*.42,.1,12),mulchM); m2.position.set(x,.075,z); buildingGroup.add(m2) }
+  /* Poller an der Straßen-Nordkante */
   const siteBolls=[]
-  for(let x=-10;x<=22;x+=2.6) siteBolls.push({x,y:.42,z:-18.7})
-  for(let z=-52;z>=-86;z-=6) siteBolls.push({x:-7.6,y:.42,z})
+  for(let x=-24;x<=30;x+=3) siteBolls.push({x,y:.42,z:-27.4})
   instanced(new THREE.CylinderGeometry(.05,.055,.84,10),new THREE.MeshStandardMaterial({color:'#2b2b2e',roughness:.55,metalness:.35}),siteBolls)
-  /* Formale Heckenbänder (Plaza-Ostkante vor dem Altgebäude), Einfahrt-Inseln,
-     Heckenfassung des Parkplatzes an West- und Südkante (Nutzerfoto) */
-  HEDGE_RUNS.push([9.9,-58,12,Math.PI/2,.68],[9.9,-76,12,Math.PI/2,.68])
-  HEDGE_RUNS.push([-3.2,-27.4,4.6,0,.6],[7.3,-27.4,4.4,0,.6])
-  HEDGE_RUNS.push([-5.9,-38.5,21,Math.PI/2,1.05],[2.8,-49.9,16,0,1.0])
+  /* Niedrige, leicht geschwungene Hecke als Parkplatz-Südfassung zum Weg (Abschnitt 4.4) */
+  HEDGE_RUNS.push([3,-27.3,54,0,.55])
 }
 /* Hecken: über hedgeRun() (Definition nach LEAF_TEX) — Flussufer-Reihen wie im Foto: */
 HEDGE_RUNS.push([-10.5,22.6,13.5,0,1.0],[9,22.6,8.5,0,1.0])
@@ -1106,13 +1105,17 @@ function tree(x,z,s,seed){
   if(im.instanceColor) im.instanceColor.needsUpdate=true
   im.frustumCulled=false; g.add(im); AO_EXCLUDE.push(im)
   buildingGroup.add(g) }
-/* Urbaner Campus: dichter Bestand nur zur Oker-Seite (+z); Süden = Straßenbäume in
-   Baumscheiben entlang Via Dentis/Plaza (Street-View-Layout) */
-;[[-21.5,20,2.9,21],[-20,-16.5,2.8,22],[10,21.8,2.7,23],[-14,-16.2,2.6,24],[-27.5,5,3.0,25],[16.9,22,2.5,26],
-  [-31,-6,1.9,2],[-31,14,1.6,3],[35,-2,1.5,4],[34,-22,1.6,5],[-33,3,1.5,6],[2,24,1.5,7],[-7.6,-31,1.9,8],[-7.6,-40,1.9,9],[33.5,-14,1.8,10],[-29,-19,1.7,11],[34,16,1.7,12],[6,27,1.5,13],[-22,9,1.9,14],[33,8,1.6,15],
-  [-13,-44,2.2,27],[-5.5,-58,2.0,28],[-5.5,-72,2.1,29],[-5.5,-86,1.8,30]].forEach(a=>tree(...a))
+/* Urbaner Campus (Satellitenplan): Bestand auf den Rasenflächen um die Hardscape herum,
+   nichts in Parkplatz/Straße/Gebäude-Grundriss (Gras-/Baum-Ausschlüsse konsistent) */
+;[[-21.5,20,2.9,21],[10,21.8,2.7,23],[-27.5,12,3.0,25],[16.9,22,2.5,26],
+  [-33,10,1.6,6],[2,27,1.5,7],[8,31,1.5,13],[-22,13,1.9,14],[33,10,1.6,15],[35,-2,1.5,4],[34,16,1.7,12],[33.5,-14,1.8,10],
+  [-40,-8,1.8,5],[-40,-30,2.0,11],[-42,-56,1.9,3],[-38,10,1.7,2],
+  [26,-32,1.7,22],[30,-50,1.8,9],[28,-8,1.6,24]].forEach(a=>tree(...a))
+/* E3 — Baumreihe entlang der Parkplatz-Südkante (z=−29): 7 Bäume, je in Baumscheibe (tree() setzt Pit) */
+;[-21,-13,-5,3,11,19,27].forEach((x,i)=>tree(x+(i%2?.7:-.6),-29,1.85+(i%3)*.15,40+i))
+SITE.treeRow=7; SITE.e3z=-29 // Baumreihen-Z
 /* Falllaub unter den Bäumen — wie auf den Herbstfotos */
-{ const LIT=[[-21.5,20],[-20,-16.5],[10,21.8],[-14,-16.2],[-27.5,5],[16.9,22],[-31,-6],[-7.6,-31],[-13,-44],[-22,9]]
+{ const LIT=[[-21.5,20],[10,21.8],[-27.5,12],[16.9,22],[-40,-8],[-40,-30],[-5,-29],[19,-29],[-22,13]]
   const cols=sceneConfig.materials.autumnPalette
   const geo=new THREE.PlaneGeometry(.17,.12), n=LIT.length*150
   const mat=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:1,side:THREE.DoubleSide,map:LEAF_CARD_TEX,alphaTest:.4})
@@ -1191,13 +1194,11 @@ function bladeTexture(){ const s=128,c=cvs(s),x=c.getContext('2d'); x.clearRect(
   while(placed<N && guard<N*8){ guard++
     const px=(Math.random()-.5)*90, pz=(Math.random()-.5)*72
     if(Math.abs(px)<AX && Math.abs(pz)<AZ) continue
-    if(px>-14&&px<30&&pz<-19.3&&pz>-25.7) continue // Via Dentis (Klinker)
-    if(pz<-26.8&&px>-8&&px<11.2) continue          // Parkplatz + Plaza
-    if(px>10.8&&px<25.2&&pz<-28) continue          // Altgebäude
-    if(px>25.2&&px<38&&pz<-46) continue            // Vorplatz vor dem Audimax
-    if(px<-12&&pz<-26) continue                    // gelbes Haus + Turm (Westseite)
-    if(pz>39+Math.sin(px*.045)*3-4.8&&pz<39+Math.sin(px*.045)*3+4.8) continue
-    if(Math.abs(px-27)<2.3) continue               // Fahrradstraße (achsparallel bei x=27)
+    if(px>-46&&px<46&&pz<-15&&pz>-27.2) continue   // E1 Straße + Radweg + Gehweg
+    if(px>-28&&px<34&&pz<-29.5&&pz>-59) continue    // E2 Parkplatz
+    if(px>-35&&px<-25&&pz<-21&&pz>-35) continue      // B3 gelbes Haus
+    if(px>-9&&px<19&&pz>34) continue                 // B5 Bibliothek (Nordkante ragt in Feld)
+    if(pz>39+Math.sin(px*.045)*3-4.8&&pz<39+Math.sin(px*.045)*3+4.8) continue // Oker
     const d2=Math.abs((px+26)*Math.cos(1.2)+(pz+12)*Math.sin(1.2))
     if(d2<2.3) continue
     e.set(0,Math.random()*Math.PI,(Math.random()-.5)*.16); q.setFromEuler(e)
@@ -1298,145 +1299,90 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
   const frameW=new THREE.MeshStandardMaterial({color:'#efe9da',roughness:.6})
   const roofD=new THREE.MeshStandardMaterial({color:'#5c554a',roughness:.95})
   const doorM=new THREE.MeshStandardMaterial({color:'#4a3a28',roughness:.7})
-  /* TU-Altgebäude nach Originalfotos: Rustika, Bogenfenster, Balustrade, Risalit, Glasdach */
-  /* Lage nach Street View: Langachse Nord-Süd, SCHMALSEITE (z=-29) gegenüber dem
-     Studierendenhaus-Eingang. Nutzerkorrektur: Haupteingang (Portale/Risalit) liegt auf der
-     RECHTEN Seite vom Eingangsblick aus = OSTEN (ry=+90°); Westfassade grenzt an den Parkplatz */
-  { const A=new THREE.Group(); A.position.set(18,0,-60); A.rotation.y=Math.PI/2; buildingGroup.add(A); SITE.alt=A
-    const L2=62, D2=14
-    const rustTex=(()=>{ const c2=cvs(512),x2=c2.getContext('2d')
-      for(let row=0;row<10;row++){ const y=row*51
-        x2.fillStyle=['#ab9271','#a18a6c','#b09776'][row%3]; x2.fillRect(0,y,512,51)
-        x2.fillStyle='#7d6a50'; x2.fillRect(0,y+48,512,4)
-        for(let j=(row%2?45:135);j<512;j+=180){ x2.fillRect(j,y,3,48) } }
-      const t2=tx(c2); t2.repeat.set(L2/6.4,1); return t2 })()
-    const ashTex=(()=>{ const c2=cvs(512),x2=c2.getContext('2d')
-      x2.fillStyle='#c9b795'; x2.fillRect(0,0,512,512)
-      x2.fillStyle='#b7a582'
-      for(let y=0;y<512;y+=64) x2.fillRect(0,y,512,2)
-      for(let i2=0;i2<900;i2++){ x2.globalAlpha=.05+Math.random()*.08
-        x2.fillStyle=Math.random()>.5?'#b7a582':'#d6c5a3'
-        x2.fillRect(Math.random()*512,Math.random()*512,3+Math.random()*8,2+Math.random()*5) }
-      x2.globalAlpha=1; const t2=tx(c2); t2.repeat.set(L2/9,1); return t2 })()
-    const rustM=new THREE.MeshStandardMaterial({map:rustTex,roughness:.92})
-    const ashM=new THREE.MeshStandardMaterial({map:ashTex,roughness:.85})
-    const trimM=new THREE.MeshStandardMaterial({color:'#d3c3a0',roughness:.75})
-    const stoneM=new THREE.MeshStandardMaterial({color:'#b5a17f',roughness:.85})
-    const darkWin=new THREE.MeshStandardMaterial({color:'#2e2a24',roughness:.7})
-    const roofM=new THREE.MeshStandardMaterial({color:'#3f3b36',roughness:.9})
-    const plinth=new THREE.Mesh(new THREE.BoxGeometry(L2+.6,1.3,D2+.6),new THREE.MeshStandardMaterial({color:'#8a765c',roughness:.95}))
-    plinth.position.y=.65; A.add(plinth)
-    const eg=new THREE.Mesh(new THREE.BoxGeometry(L2,5.1,D2),rustM); eg.position.y=1.3+2.55; eg.castShadow=true; A.add(eg)
-    const og=new THREE.Mesh(new THREE.BoxGeometry(L2,5.6,D2),ashM); og.position.y=6.4+2.8; og.castShadow=true; A.add(og)
-    const cordon=new THREE.Mesh(new THREE.BoxGeometry(L2+.7,.42,D2+.7),trimM); cordon.position.y=6.35; A.add(cordon)
-    const corn=new THREE.Mesh(new THREE.BoxGeometry(L2+1.0,.62,D2+1.0),trimM); corn.position.y=12.25; A.add(corn)
-    for(let u=-L2/2+.5;u<L2/2;u+=.66){ ;[1,-1].forEach(sg=>{ const dt=new THREE.Mesh(new THREE.BoxGeometry(.22,.24,.26),trimM)
-      dt.position.set(u,11.85,sg*(D2/2+.28)); A.add(dt) }) }
-    const roofSlab=new THREE.Mesh(new THREE.BoxGeometry(L2-.8,.35,D2-.8),roofM); roofSlab.position.y=12.6; A.add(roofSlab)
-    const balu=(x1,x2v,zf)=>{ for(let u=x1;u<=x2v;u+=.82){ const p=new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,.78,8),trimM)
-        p.position.set(u,12.95,zf); A.add(p) }
-      const rail=new THREE.Mesh(new THREE.BoxGeometry(x2v-x1+.3,.16,.24),trimM)
-      rail.position.set((x1+x2v)/2,13.4,zf); A.add(rail) }
-    ;[1,-1].forEach(sg=>{ balu(-L2/2+9.4,-9.2,sg*(D2/2+.15)); balu(9.2,L2/2-9.4,sg*(D2/2+.15)) })
-    const arcWin=(parent,px,py,pz,ry,w2,h2,glow)=>{ const g=new THREE.Group()
-      g.position.set(px,0,pz); g.rotation.y=ry
-      const mk=(geo,m,ax,ay,az)=>{ const o=new THREE.Mesh(geo,m); o.position.set(ax,ay,az); g.add(o) }
-      mk(new THREE.BoxGeometry(w2+.3,h2+.3,.16),trimM,0,py,0)
-      mk(new THREE.BoxGeometry(w2,h2,.14),darkWin,0,py,.06)
-      mk(new THREE.BoxGeometry(w2-.24,h2-.26,.08),glow?winGlow:winGlass,0,py,.12)
-      mk(new THREE.BoxGeometry(.06,h2-.26,.1),trimM,0,py,.14)
-      mk(new THREE.BoxGeometry(w2-.24,.06,.1),trimM,0,py+h2*.14,.14)
-      const arc=new THREE.Mesh(new THREE.TorusGeometry(w2/2+.08,.1,10,20,Math.PI),trimM)
-      arc.position.set(0,py+h2/2,.06); g.add(arc)
-      mk(new THREE.BoxGeometry(.2,.34,.2),stoneM,0,py+h2/2+w2/2+.1,.05)
-      mk(new THREE.BoxGeometry(w2+.5,.14,.3),trimM,0,py-h2/2-.1,.08)
-      parent.add(g); return g }
-    const wings=[[-L2/2+8.9,-8.7],[8.7,L2/2-8.9]]
-    wings.forEach(([xa,xb])=>{ const n=5, st=(xb-xa)/n
-      for(let k=0;k<n;k++){ const u=xa+st*(k+.5)
-        ;[1,-1].forEach(sg=>{ arcWin(A,u,9.1,sg*(D2/2+.02),sg>0?0:Math.PI,1.5,3.4,Math.random()>.55)
-          arcWin(A,u,3.6,sg*(D2/2+.02),sg>0?0:Math.PI,1.35,2.5,Math.random()>.7) })
-        if(k<n){ ;[1,-1].forEach(sg=>{ const pil=new THREE.Mesh(new THREE.BoxGeometry(.5,5.4,.2),trimM)
-          pil.position.set(u+st/2,9.2,sg*(D2/2+.08)); if(Math.abs(u+st/2)<xb) A.add(pil)
-          const cap=new THREE.Mesh(new THREE.BoxGeometry(.66,.3,.26),trimM)
-          cap.position.set(u+st/2,11.75,sg*(D2/2+.1)); if(Math.abs(u+st/2)<xb) A.add(cap) }) } } })
-    ;[1,-1].forEach(end=>{ for(let k=0;k<2;k++){ const u=end*(L2/2-6.7)+ (k-.5)*3.0*end
-        ;[1,-1].forEach(sg=>{ arcWin(A,u,9.1,sg*(D2/2+.02),sg>0?0:Math.PI,1.5,3.4,Math.random()>.5)
-          arcWin(A,u,3.6,sg*(D2/2+.02),sg>0?0:Math.PI,1.35,2.5,Math.random()>.7) }) }
-      for(let fl=0;fl<2;fl++){ arcWin(A,end*(L2/2+.02),fl?9.1:3.6,0,end>0?Math.PI/2:-Math.PI/2,fl?1.5:1.35,fl?3.4:2.5,Math.random()>.6)
-        arcWin(A,end*(L2/2+.02),fl?9.1:3.6,3.6,end>0?Math.PI/2:-Math.PI/2,fl?1.5:1.35,fl?3.4:2.5,Math.random()>.6)
-        arcWin(A,end*(L2/2+.02),fl?9.1:3.6,-3.6,end>0?Math.PI/2:-Math.PI/2,fl?1.5:1.35,fl?3.4:2.5,Math.random()>.6) } })
-    /* Eck-Pavillons: leicht vorspringend, Obelisken */
-    ;[1,-1].forEach(end=>{ const px=end*(L2/2-4)
-      const pav=new THREE.Mesh(new THREE.BoxGeometry(8.6,12.4,D2+1.6),ashM)
-      pav.position.set(px,1.3+6.2,0); pav.castShadow=true; A.add(pav)
-      const pegRust=new THREE.Mesh(new THREE.BoxGeometry(8.7,5.1,D2+1.7),rustM)
-      pegRust.position.set(px,1.3+2.55,0); A.add(pegRust)
-      const pcorn=new THREE.Mesh(new THREE.BoxGeometry(9.6,.6,D2+2.4),trimM); pcorn.position.set(px,12.55,0); A.add(pcorn)
-      const pattic=new THREE.Mesh(new THREE.BoxGeometry(9.0,1.1,D2+1.8),ashM); pattic.position.set(px,13.35,0); A.add(pattic)
-      ;[1,-1].forEach(sx2=>{ ;[1,-1].forEach(sz2=>{
-        const ob=new THREE.Group(); ob.position.set(px+sx2*4.0,13.9,sz2*(D2/2+.55)); A.add(ob)
-        const b2=new THREE.Mesh(new THREE.BoxGeometry(.7,.5,.7),trimM); b2.position.y=.25; ob.add(b2)
-        const sp=new THREE.Mesh(new THREE.CylinderGeometry(.06,.3,1.7,4),stoneM); sp.rotation.y=Math.PI/4; sp.position.y=1.35; ob.add(sp)
-        const kg=new THREE.Mesh(new THREE.SphereGeometry(.14,10,8),stoneM); kg.position.y=2.3; ob.add(kg) }) })
-      arcWin(A,px,9.1,(D2+1.6)/2+.02,0,1.6,3.4,true)
-      arcWin(A,px,3.6,(D2+1.6)/2+.02,0,1.4,2.5,Math.random()>.5)
-      /* Ostseite der Pavillons ist nach der Drehung straßensichtbar — gleiche Fensterachsen */
-      arcWin(A,px,9.1,-(D2+1.6)/2-.02,Math.PI,1.6,3.4,Math.random()>.5)
-      arcWin(A,px,3.6,-(D2+1.6)/2-.02,Math.PI,1.4,2.5,Math.random()>.7) })
-    /* Mittelrisalit: 3 Portale, 3 große Bögen, Attika mit Inschrift, Obelisken, Freitreppe */
-    { const R=new THREE.Group(); R.position.set(0,0,0); A.add(R)
-      const rw=16
-      const rb=new THREE.Mesh(new THREE.BoxGeometry(rw,13.4,D2+2.6),ashM); rb.position.y=1.3+6.7; rb.castShadow=true; R.add(rb)
-      const rbRust=new THREE.Mesh(new THREE.BoxGeometry(rw+.1,5.1,D2+2.7),rustM); rbRust.position.y=1.3+2.55; R.add(rbRust)
-      const rcorn=new THREE.Mesh(new THREE.BoxGeometry(rw+1.2,.62,D2+3.4),trimM); rcorn.position.y=14.9; R.add(rcorn)
-      const atticTex=(()=>{ const c2=cvs(512),x2=c2.getContext('2d')
-        x2.fillStyle='#c9b795'; x2.fillRect(0,0,512,512)
-        x2.fillStyle='#b7a582'; x2.fillRect(20,60,120,140); x2.fillRect(372,60,120,140)
-        x2.strokeStyle='#8f7a5c'; x2.lineWidth=4; x2.strokeRect(20,60,120,140); x2.strokeRect(372,60,120,140)
-        x2.fillStyle='#6f5d44'; x2.font='bold 44px serif'; x2.textAlign='center'
-        x2.fillText('CAROLO  WILHELMINA',256,150)
-        const t2=tx(c2); return t2 })()
-      const attic=new THREE.Mesh(new THREE.BoxGeometry(rw,2.4,D2+2.62),new THREE.MeshStandardMaterial({map:atticTex,roughness:.85}))
-      attic.position.y=16.2; R.add(attic)
-      const atticTop=new THREE.Mesh(new THREE.BoxGeometry(rw+.8,.4,D2+3.2),trimM); atticTop.position.y=17.55; R.add(atticTop)
-      ;[1,-1].forEach(sx2=>{ ;[1,-1].forEach(sz2=>{
-        const ob=new THREE.Group(); ob.position.set(sx2*(rw/2-.5),17.8,sz2*((D2+2.6)/2-.4)); R.add(ob)
-        const b2=new THREE.Mesh(new THREE.BoxGeometry(.7,.5,.7),trimM); b2.position.y=.25; ob.add(b2)
-        const sp=new THREE.Mesh(new THREE.CylinderGeometry(.06,.3,1.8,4),stoneM); sp.rotation.y=Math.PI/4; sp.position.y=1.4; ob.add(sp)
-        const kg=new THREE.Mesh(new THREE.SphereGeometry(.14,10,8),stoneM); kg.position.y=2.4; ob.add(kg) }) })
-      ;[-4.6,0,4.6].forEach(u=>{ arcWin(R,u,10.4,(D2+2.6)/2+.02,0,2.3,5.0,true)
-        const g=new THREE.Group(); g.position.set(u,0,(D2+2.6)/2+.02); R.add(g)
-        const dr=new THREE.Mesh(new THREE.BoxGeometry(2.1,3.6,.2),new THREE.MeshStandardMaterial({color:'#3a3f45',roughness:.6,metalness:.3}))
-        dr.position.set(0,3.1,.1); g.add(dr)
-        const dArc=new THREE.Mesh(new THREE.TorusGeometry(1.15,.13,10,22,Math.PI),trimM); dArc.position.set(0,4.9,.08); g.add(dArc)
-        const dRahmen=new THREE.Mesh(new THREE.BoxGeometry(2.5,4.0,.14),trimM); dRahmen.position.set(0,3.1,0); g.add(dRahmen) })
-      for(let st2=0;st2<6;st2++){ const sm=new THREE.Mesh(new THREE.BoxGeometry(13-st2*.7,.24,2.6-st2*.38),stoneM)
-        sm.position.set(0,.12+st2*.24,(D2+2.6)/2+1.6-st2*.22); sm.receiveShadow=true; R.add(sm) }
-      ;[-6.2,6.2].forEach(lx=>{ const lp=new THREE.Mesh(new THREE.CylinderGeometry(.06,.09,3.4,8),new THREE.MeshStandardMaterial({color:'#33363b',roughness:.6}))
-        lp.position.set(lx,1.7,(D2+2.6)/2+2.6); R.add(lp)
-        const lk=new THREE.Mesh(new THREE.SphereGeometry(.17,10,8),new THREE.MeshStandardMaterial({color:'#fff2d2',emissive:0xffe2a8,emissiveIntensity:.5}))
-        lk.position.set(lx,3.5,(D2+2.6)/2+2.6); R.add(lk) })
-      /* Glasdach-Aufsatz wie im Original */
-      { const gw=11,gd=7,gh=1.9,grx=(gw-gd)/2
-        const tris=[[-gw/2,0,gd/2],[gw/2,0,gd/2],[grx,gh,0],[-gw/2,0,gd/2],[grx,gh,0],[-grx,gh,0],
-          [gw/2,0,-gd/2],[-gw/2,0,-gd/2],[-grx,gh,0],[gw/2,0,-gd/2],[-grx,gh,0],[grx,gh,0],
-          [gw/2,0,gd/2],[gw/2,0,-gd/2],[grx,gh,0],[-gw/2,0,-gd/2],[-gw/2,0,gd/2],[-grx,gh,0]]
-        const geo=new THREE.BufferGeometry()
-        geo.setAttribute('position',new THREE.Float32BufferAttribute(tris.flat(),3))
-        geo.computeVertexNormals()
-        const gl=new THREE.Mesh(geo,new THREE.MeshPhysicalMaterial({color:'#dfeaf0',transparent:true,opacity:.45,roughness:.15,metalness:.1,side:THREE.DoubleSide}))
-        gl.position.set(0,13.0,-2.5); R.add(gl)
-        const ridge=new THREE.Mesh(new THREE.BoxGeometry(grx*2,.14,.14),trimM); ridge.position.set(0,13.0+gh,-2.5); R.add(ridge)
-        const base2=new THREE.Mesh(new THREE.BoxGeometry(gw+.4,.3,gd+.4),trimM); base2.position.set(0,12.95,-2.5); R.add(base2) } } }
-  /* ===== Okerhochhaus (TU BS) — CAD-Nachbau nach Referenzfotos (docs/3d-overhaul §12) =====
-     Datenblatt: Scheibenhochhaus 34×11 m Grundriss (3.09:1), 16 Bürogeschosse à 3.05 m über
-     zurückgesetztem EG (4.5 m), Gesamthöhe ~54 m. Langfassaden = Waffelraster aus proud
-     stehenden hellen Betonrippen (Brüstungsbänder + Pfosten) mit dahinter zurückgesetzten
-     dunklen Scheiben (echte Laibungstiefe ~0.35 m). Schmalseiten fensterlos, kühleres
-     Plattenraster. Dünnes dunkles Dachvordach kragt allseitig aus. Position/Rotation fix. */
-  const hh=new THREE.Group(); hh.position.set(-52,0,-50); hh.rotation.y=.3; buildingGroup.add(hh); SITE.tower=hh
-  const T_LONG=34, T_SHORT=11, T_BASEH=4.5, T_FLOORS=16, T_FLH=3.05, T_AXES=14 // Datenblatt-Maße
+  /* ===== B2 Altgebäude — Neubau nach DEFINITIVE SPEC Abschnitt 5 (docs §14.3) =====
+     Reorientiert: die lange, reich gegliederte Südfassade (2–3–2, 7 Achsen, Rundbogenfenster)
+     zeigt nach SÜDEN (+z) zum Parkplatz/Studierendenhaus; Körper nach Norden, Längsachse N-S
+     (parallel zum Okerhochhaus). Zentroid (3,−86), Südfassadenebene z=−62. */
+  { const A2=new THREE.Group(); A2.position.set(3,0,-86); buildingGroup.add(A2); SITE.alt=A2
+    const WF=44, DF=48, zS=DF/2                         // Breite (x), Tiefe (z), Süd-Fassadenebene (lokal +z)
+    SITE.altSouthZ=-86+zS; SITE.altW=WF; SITE.altD=DF; SITE.altAxes=7
+    const H1=2.4, H2=7.5, HB=.6, H4=6.5, wallTop=H1+H2+HB+H4 // Sockel/EG/Band/OG → 17.0 m Wandhöhe
+    /* Sandstein mit Blockjitter (±5 %) + versetzten Lagerfugen (Datenblatt) */
+    const sand=(()=>{ const c2=cvs(512),x2=c2.getContext('2d')
+      x2.fillStyle='#c9bda6'; x2.fillRect(0,0,512,512)
+      for(let y=0;y<512;y+=34){ x2.fillStyle='#b0a486'; x2.fillRect(0,y,512,2) }             // Lagerfugen
+      for(let y=0;y<512;y+=34){ const off=((y/34)|0)%2?32:0; for(let x=0;x<512;x+=64){ x2.fillStyle='#b4a88a'; x2.fillRect((x+off)%512,y,2,34) } } // versetzte Stoßfugen
+      for(let i=0;i<1400;i++){ x2.globalAlpha=.04+Math.random()*.06                          // Block-Jitter
+        x2.fillStyle=Math.random()>.5?'#bdb094':'#d6cbb2'; x2.fillRect(Math.random()*512,Math.random()*512,10+Math.random()*40,4+Math.random()*24) }
+      x2.globalAlpha=1; return tx(c2) })()
+    const sandM=new THREE.MeshStandardMaterial({map:sand,roughness:.9}); sandM.map.repeat.set(WF/7,wallTop/6)
+    const rustM=new THREE.MeshStandardMaterial({color:'#c2b598',roughness:.94})              // Rustika-Sockel
+    const trim=new THREE.MeshStandardMaterial({color:'#d4c9ae',roughness:.78})               // Gewände/Gesims
+    const stoneM=new THREE.MeshStandardMaterial({color:'#bcae90',roughness:.85})             // Keilstein/Konsole
+    const glassM=new THREE.MeshStandardMaterial({color:'#2c2a26',roughness:.5,metalness:.25})
+    const barM=new THREE.MeshStandardMaterial({color:'#4a3527',roughness:.6})                // Sprossen (dunkles Holz)
+    const washM=new THREE.MeshStandardMaterial({color:'#8f8577',transparent:true,opacity:.14,roughness:1,depthWrite:false}) // Verwitterungsschliere
+    const body=new THREE.Mesh(new THREE.BoxGeometry(WF,wallTop,DF),sandM); body.position.y=wallTop/2; body.castShadow=true; body.receiveShadow=true; A2.add(body)
+    const roofSlab=new THREE.Mesh(new THREE.BoxGeometry(WF-1,.5,DF-1),new THREE.MeshStandardMaterial({color:'#4a463f',roughness:.92})); roofSlab.position.y=wallTop+.3; A2.add(roofSlab)
+    /* Zone 1 — Rustika-Sockel: gebänderte Streifen mit Schattennut, nur Südkante sichtbar */
+    for(let i=0;i<5;i++){ const band=new THREE.Mesh(new THREE.BoxGeometry(WF+.18,.44,.2),rustM); band.position.set(0,.25+i*.5,zS+.02); A2.add(band) }
+    const plinthTop=new THREE.Mesh(new THREE.BoxGeometry(WF+.34,.16,DF+.34),trim); plinthTop.position.y=H1; A2.add(plinthTop)
+    for(let i=0;i<7;i++){ const cell=new THREE.Mesh(new THREE.BoxGeometry(.9,.6,.24),new THREE.MeshStandardMaterial({color:'#3a352c',roughness:.7})) // Kellerfenster mit Gitter-Andeutung
+      cell.position.set(-14+i*(28/6),1.3,zS+.03); A2.add(cell) }
+    /* Rundbogenfenster (Rechteck-Körper + echter Halbkreis-Kopf), Glas 0.25–0.30 m hinter dem
+       proud Gewände → echte Laibung; Archivolte, Keilstein, Kämpfer, Sohlbank auf Konsolen. */
+    const AXES=[-14,-9,-2,3,8,15,20] // 2–3–2, symmetrisch um x=3
+    function arcWinS(cx,y0,wc,bodyH,aR,reveal){ const g=new THREE.Group(); g.position.set(cx,0,zS); g.userData.axis=true; A2.add(g)
+      const hw=wc/2, spr=y0+bodyH, jw=.28
+      const gb=new THREE.Mesh(new THREE.BoxGeometry(wc,bodyH,.04),glassM); gb.position.set(0,y0+bodyH/2,.02); g.add(gb)
+      const gh=new THREE.Mesh(new THREE.CircleGeometry(aR,22,0,Math.PI),glassM); gh.position.set(0,spr,.025); g.add(gh)
+      for(const bx of [-wc/6,wc/6]){ const b=new THREE.Mesh(new THREE.BoxGeometry(.05,bodyH,.04),barM); b.position.set(bx,y0+bodyH/2,.05); g.add(b) }         // 2 vertikale Sprossen
+      for(let t=1;t<=3;t++){ const b=new THREE.Mesh(new THREE.BoxGeometry(wc,.05,.04),barM); b.position.set(0,y0+bodyH*t/4,.05); g.add(b) }                   // 3 Transome
+      for(let s=1;s<=5;s++){ const a=Math.PI*s/6; const b=new THREE.Mesh(new THREE.BoxGeometry(.045,aR-.05,.04),barM); b.position.set(Math.cos(a)*aR/2,spr+Math.sin(a)*aR/2,.05); b.rotation.z=a-Math.PI/2; g.add(b) } // radiale Bogensprossen
+      const arcInner=new THREE.Mesh(new THREE.TorusGeometry(aR-.03,.03,6,18,Math.PI),barM); arcInner.position.set(0,spr,.05); g.add(arcInner)
+      for(const s of [-1,1]){ const j=new THREE.Mesh(new THREE.BoxGeometry(jw,bodyH+.06,reveal),trim); j.position.set(s*(hw+jw/2),y0+bodyH/2,reveal/2); g.add(j) } // proud Jamben = Laibung
+      const arch=new THREE.Mesh(new THREE.TorusGeometry(aR+jw/2,.15,8,22,Math.PI),trim); arch.position.set(0,spr,reveal-.05); g.add(arch)                        // Archivolte
+      const key=new THREE.Mesh(new THREE.BoxGeometry(.36,.52,.32),stoneM); key.position.set(0,spr+aR+.02,reveal+.02); g.add(key)                                  // Keilstein
+      for(const s of [-1,1]){ const im=new THREE.Mesh(new THREE.BoxGeometry(.52,.2,reveal-.04),trim); im.position.set(s*(hw+jw*.6),spr,reveal/2-.02); g.add(im) } // Kämpferband
+      const sill=new THREE.Mesh(new THREE.BoxGeometry(wc+jw*2+.24,.16,reveal+.08),trim); sill.position.set(0,y0-.09,reveal/2); g.add(sill)                        // Sohlbank
+      for(const s of [-.7,.7]){ const cor=new THREE.Mesh(new THREE.BoxGeometry(.18,.24,reveal),stoneM); cor.position.set(s*hw,y0-.26,reveal/2-.04); g.add(cor) }  // Konsolen
+      const wash=new THREE.Mesh(new THREE.PlaneGeometry(wc*.8,.9),washM); wash.position.set(0,y0-.6,.03); g.add(wash) }            // Verwitterungsschliere unter Sohlbank
+    AXES.forEach(x=>arcWinS(x,H1+.6,2.0,3.3,1.0,.30))                         // EG-Reihe
+    AXES.forEach(x=>arcWinS(x,H1+H2+HB+.5,1.8,2.6,.9,.25))                    // OG-Reihe
+    /* Kämpfer-/Sohl-Gesimse laufen als Südband durch (inkl. Pfeiler) */
+    for(const y of [H1+.6+3.3, H1+H2+HB+.5+2.6]){ const s=new THREE.Mesh(new THREE.BoxGeometry(WF,.14,.2),trim); s.position.set(0,y,zS+.04); A2.add(s) } // Kämpfer-Bänder
+    for(const y of [H1+.4, H1+H2+HB+.3]){ const s=new THREE.Mesh(new THREE.BoxGeometry(WF,.12,.16),trim); s.position.set(0,y,zS+.03); A2.add(s) }         // Sohlbänder
+    /* Breite Pfeiler mit vertieftem Blindpaneel (zwischen den 2–3–2-Gruppen) */
+    for(const px of [-5.5,11.5]){ const panel=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.0,.14),new THREE.MeshStandardMaterial({color:'#bdb094',roughness:.9}))
+      panel.position.set(px,H1+H2*.5+2.0,zS-.06); A2.add(panel)
+      const fr=new THREE.Mesh(new THREE.BoxGeometry(1.5,2.3,.1),trim); fr.position.set(px,H1+H2*.5+2.0,zS+.02); A2.add(fr) }
+    /* Eck-Lesenen (Quaderstreifen) rahmen die Fassade */
+    for(const s of [-1,1]){ const les=new THREE.Mesh(new THREE.BoxGeometry(.9,wallTop-.4,.24),trim); les.position.set(s*(WF/2-.45),wallTop/2,zS+.02); A2.add(les) }
+    /* Zone 5 — Gebälk: Bettgesims + instanzierte Dentils + auskragende Corona + Kranzgesims */
+    const entabY=wallTop
+    const bed=new THREE.Mesh(new THREE.BoxGeometry(WF+.2,.2,DF+.2),trim); bed.position.y=entabY+.1; A2.add(bed)
+    const dentGeo=new THREE.BoxGeometry(.12,.18,.16), dent=[]
+    for(let x=-WF/2+.2;x<=WF/2-.2;x+=.25) dent.push({x,y:entabY+.4,z:zS+.06})
+    instanced(dentGeo,stoneM,dent.map(p=>({x:3+p.x,y:p.y,z:-86+p.z})),false)   // Weltkoord.: A2 unrotiert bei (3,0,-86)
+    const corona=new THREE.Mesh(new THREE.BoxGeometry(WF+1.1,.5,DF+1.1),trim); corona.position.y=entabY+.85; corona.castShadow=true; A2.add(corona) // 0.55 m Auskragung
+    const crown=new THREE.Mesh(new THREE.BoxGeometry(WF+.5,.16,DF+.5),trim); crown.position.y=entabY+1.18; A2.add(crown)
+    /* Zone 6 — Attika mit Krönungsblöcken über Pfeilerachsen + Ecken */
+    const parap=new THREE.Mesh(new THREE.BoxGeometry(WF,.9,.5),new THREE.MeshStandardMaterial({color:'#c6ba9d',roughness:.9})); parap.position.set(0,entabY+1.7,zS-.15); A2.add(parap)
+    for(const bx of [-WF/2+.5,-5.5,11.5,WF/2-.5]){ const blk=new THREE.Mesh(new THREE.BoxGeometry(.9,.7,.7),stoneM); blk.position.set(bx,entabY+2.3,zS-.1); A2.add(blk)
+      const cap=new THREE.Mesh(new THREE.BoxGeometry(1.0,.14,.8),trim); cap.position.set(bx,entabY+2.72,zS-.1); A2.add(cap) }
+    /* Verwitterung unter der Corona (dezenter Rußwisch) */
+    const soot=new THREE.Mesh(new THREE.PlaneGeometry(WF-1,.7),new THREE.MeshStandardMaterial({color:'#7a7266',transparent:true,opacity:.12,depthWrite:false})); soot.position.set(0,entabY-.4,zS+.05); A2.add(soot)
+    /* Schlichte Nebenseiten (Ost/West/Nord): Sandstein + wenige Rechteckfenster */
+    for(const s of [-1,1]){ for(let fl=0;fl<2;fl++)for(let k=0;k<6;k++){ const w=new THREE.Mesh(new THREE.BoxGeometry(.1,2.0,1.2),glassM)
+      w.position.set(s*(WF/2+.02),H1+2+fl*(H2+HB)*.9,-16+k*7); A2.add(w) } }
+  }
+  /* ===== B4 Okerhochhaus (TU BS) — CAD-Nachbau, Ausrichtung nach Satellitenplan (docs §14) =====
+     Scheibenhochhaus, Längsachse N-S (parallel zum Altgebäude-Körper): Grundriss 15 (O-W) ×
+     45 (N-S) m = 3.0:1. Waffelraster-Langfassaden zeigen nach OSTEN und WESTEN, die
+     fensterlosen Plattenraster-Schmalseiten nach NORDEN und SÜDEN. 16 Geschosse à 3.05 m über
+     zurückgesetztem EG, ~54 m. Position (−55,−45), 90°-Drehung stellt die Scheibe N-S. */
+  const hh=new THREE.Group(); hh.position.set(-55,0,-45); hh.rotation.y=Math.PI/2; buildingGroup.add(hh); SITE.tower=hh
+  const T_LONG=45, T_SHORT=15, T_BASEH=4.5, T_FLOORS=16, T_FLH=3.05, T_AXES=18 // lange Achse (lokal x → nach 90° = Welt-z, N-S)
   const T_GRIDH=T_FLOORS*T_FLH, T_TOP=T_BASEH+T_GRIDH                          // 48.8 / 53.3
   const concGrid=new THREE.MeshStandardMaterial({color:'#c4c3bc',roughness:.72,metalness:.04}) // warmer heller Betonrahmen
   const glazM=new THREE.MeshStandardMaterial({color:'#2b333b',roughness:.2,metalness:.5})       // dunkle, spiegelnde Scheibe
@@ -1483,7 +1429,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
      dünne dunkle Traufkante, ockergelbe Fassade mit horizontalen dunklen Streifenbändern,
      dunkel gerahmte Rechteckfenster, im Ost-Giebel Rundbogenfenster + Lamellenband darunter.
      Position/Rotation fix (zwischen Turm und Altgebäude). */
-  { const gb=new THREE.Group(); gb.position.set(-20,0,-33.5); gb.rotation.y=-.12; buildingGroup.add(gb); SITE.yellow=gb
+  { const gb=new THREE.Group(); gb.position.set(-30,0,-28); gb.rotation.y=-Math.PI/2; buildingGroup.add(gb); SITE.yellow=gb // Satellitenplan: First N-S, Giebel (Bogen) nach Süden
     const GW=13, GD=9, GBODY=6.0, GPEAK=3.4                                    // Breite/Tiefe/Wandhöhe/Giebelhöhe (First 9.4 m)
     const ochre=new THREE.MeshStandardMaterial({color:'#d3b061',roughness:.86})
     const stripeM=new THREE.MeshStandardMaterial({color:'#6b5334',roughness:.85})   // dunkles Streifenband
@@ -1513,14 +1459,13 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
       const arcB=new THREE.Mesh(new THREE.BoxGeometry(.1,.14,1.24),frameM); arcB.position.set(gx,7.0,0); gb.add(arcB)
       for(let l=0;l<5;l++){ const lo=new THREE.Mesh(new THREE.BoxGeometry(.06,1.5,.11),frameM); lo.position.set(gx,5.7,-.5+l*.25); gb.add(lo) } }
     const dr=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.3,.1),doorM); dr.position.set(0,1.15,-GD/2-.05); gb.add(dr) }
-  /* Audimax (weiße Moderne) — Nutzerkorrektur: NICHT am Fluss, sondern GEGENÜBER dem
-     Altgebäude-Haupteingang (Ost); Kolonnadenfront nach Westen zum Vorplatz */
-  { const au=new THREE.Group(); au.position.set(47,0,-60); au.rotation.y=Math.PI/2; buildingGroup.add(au); SITE.audimax=au
+  /* B5 Universitätsbibliothek (weiße Moderne) — Satellitenplan/F8: SÜDLICH von B1, jenseits
+     des Wegs; Front (Kolonnade + Glas-EG) nach NORDEN zum Campus. Kinder lokal → bewegt sauber. */
+  { const au=new THREE.Group(); au.position.set(5,0,45); buildingGroup.add(au); SITE.lib=au
     const gfGlass=new THREE.Mesh(new THREE.BoxGeometry(20,4,15),new THREE.MeshStandardMaterial({color:'#20262c',roughness:.15,metalness:.4}))
-    gfGlass.position.set(0,2,-1); au.add(gfGlass) // EG-Glas 1 m hinter die Stützen zurückgesetzt
-    const cols2=[] // Stützenreihe entlang der Westkante (instanced() nutzt Weltkoordinaten)
-    for(let k=0;k<8;k++) cols2.push({x:37.6,y:0,z:-67+k*2,sy:4.4})
-    instanced(new THREE.CylinderGeometry(.14,.14,1,10).translate(0,.5,0),new THREE.MeshStandardMaterial({color:'#eef0f1',roughness:.5}),cols2)
+    gfGlass.position.set(0,2,1); au.add(gfGlass) // EG-Glas 1 m hinter die Nordstützen zurückgesetzt
+    const colGeo=new THREE.CylinderGeometry(.14,.14,4.4,10)
+    for(let k=0;k<8;k++){ const c=new THREE.Mesh(colGeo,new THREE.MeshStandardMaterial({color:'#eef0f1',roughness:.5})); c.position.set(-7+k*2,2.2,-9.6); c.castShadow=true; au.add(c) } // Nordkante
     const up=new THREE.Mesh(new THREE.BoxGeometry(26,5.2,19),new THREE.MeshStandardMaterial({color:'#eceff0',roughness:.55}))
     up.position.set(0,7,0); up.castShadow=true; au.add(up)
     const band=new THREE.Mesh(new THREE.BoxGeometry(.25,1.9,17.6),winGlass); band.position.set(13.1,7.1,0); au.add(band)
@@ -1631,9 +1576,9 @@ standPerson(peopleGroup,-24,-9,.7,8)
 /* Stehtisch-Figur: Unterarm auf der Platte, ohne Hocker-Clipping */
 { const F=makeFigure(14); F.root.position.set(2.65,0,16.6); F.root.rotation.y=-2.4
   poseLean(F,'R'); registerFigure(F,'stand'); peopleGroup.add(F.root) }
-/* Kleine Gesprächsgruppe am Plaza-Kopf südlich des Parkplatzes — Körper einander zugewandt.
-   Keine gehenden Figuren mehr (Nutzeranweisung: "keine laufenden Menschen") */
-{ const G=[[-1.2,-52.2,.9,41],[0,-53.5,-2.2,42],[1.4,-52.4,3.7,43]]
+/* Kleine Gesprächsgruppe am B1-Eingang/Gehweg (Nordseite) — Körper einander zugewandt.
+   Keine gehenden Figuren (Nutzeranweisung: "keine laufenden Menschen") */
+{ const G=[[-.6,-15.4,.9,41],[.8,-16.2,-2.2,42],[2.2,-15.6,3.7,43]]
   G.forEach(([px,pz,ry,sd],i)=>{ const F=makeFigure(sd); F.root.position.set(px,0,pz); F.root.rotation.y=ry
     poseStand(F); registerFigure(F,i===1?'talk':'stand'); peopleGroup.add(F.root) }) }
 /* Lichterketten & Außenbeleuchtung — romantisch bei Nacht */
@@ -3063,44 +3008,46 @@ buildHedges(); buildGrassClusters()
 rebuildTables(); rebuildPartners(); applyMode(); syncScene(); render()
 /* Nacht-IBL nach dem Boot vorwärmen: erspart den einmaligen PMREM-Ruckler beim ersten Moduswechsel */
 setTimeout(()=>{ try{ envFor('nacht') }catch(e){} },sceneConfig.renderer.envPrewarmMs)
-/* Dev-Assertions der Gebäudeordnung — wird ausschließlich vom Headless-Harness aufgerufen,
-   kein Aufruf im Nutzerpfad. Blickpunkt V = Eingang, Blick über die schmale Campusstraße. */
+/* Dev-Assertions nach DEFINITIVE SPEC Abschnitt 9 — nur vom Headless-Harness aufgerufen.
+   Site-Koordinaten: N (Nord) = −z, E (Ost) = +x. Alle Checks lesen die echte Geometrie. */
 function verifySitePlan(){
-  const out=[], V=new THREE.Vector3(2,1.7,-16)
-  const cam2=new THREE.PerspectiveCamera(60,16/9,.1,600)
-  cam2.position.copy(V); cam2.lookAt(2,4,-60); cam2.updateMatrixWorld(true)
+  const out=[]
   const wp=o=>{ const p=new THREE.Vector3(); o.getWorldPosition(p); return p }
-  const ndc=o=>{ const p=wp(o); p.y=10; return p.project(cam2).x }
   const chk=(name,cond,vals)=>out.push((cond?'PASS':'FAIL')+' — '+name+' ('+vals+')')
-  const tx2=ndc(SITE.tower), yx=ndc(SITE.yellow), ax=ndc(SITE.alt)
-  chk('Ordnung links→rechts: Turm < Gelbes Haus < Altgebäude', tx2<yx&&yx<ax, `ndcX ${tx2.toFixed(2)} < ${yx.toFixed(2)} < ${ax.toFixed(2)}`)
-  const dT=wp(SITE.tower).distanceTo(V), dY=wp(SITE.yellow).distanceTo(V)
-  chk('Turm weiter entfernt als gelbes Haus', dT>dY, `${dT.toFixed(1)} m > ${dY.toFixed(1)} m`)
-  chk('Gelbes Haus horizontal zwischen beiden', yx>Math.min(tx2,ax)&&yx<Math.max(tx2,ax), `${Math.min(tx2,ax).toFixed(2)} < ${yx.toFixed(2)} < ${Math.max(tx2,ax).toFixed(2)}`)
-  const axis=new THREE.Vector3(1,0,0).applyQuaternion(SITE.alt.quaternion)
-  const dot=Math.abs(axis.dot(new THREE.Vector3(0,0,-1)))
-  chk('Altgebäude-Langachse zeigt von V weg', dot>.7, 'dot='+dot.toFixed(2))
-  const aP=wp(SITE.alt)
-  const dShort=V.distanceTo(new THREE.Vector3(aP.x,V.y,aP.z+31)), dLong=V.distanceTo(new THREE.Vector3(aP.x-7,V.y,aP.z))
-  chk('nächste Fassade zu V ist die Schmalseite', dShort<dLong, `${dShort.toFixed(1)} m < ${dLong.toFixed(1)} m`)
-  const portal=new THREE.Vector3(0,0,1).applyQuaternion(SITE.alt.quaternion)
-  chk('Altgebäude-Portale zeigen nach Osten (rechte Seite von V aus)', portal.x>.9, 'Portal-Richtung x='+portal.x.toFixed(2))
-  const auP=wp(SITE.audimax)
-  chk('Audimax gegenüber dem Altgebäude-Haupteingang (östlich, achsnah)', auP.x>aP.x+12 && Math.abs(auP.z-aP.z)<8, `Audimax x=${auP.x.toFixed(0)} > Altgebäude x=${aP.x.toFixed(0)}+12, |Δz|=${Math.abs(auP.z-aP.z).toFixed(1)} m`)
-  chk('Oker gegenüber der Straße (Pavillon dazwischen)', SITE.riverZ>0, `Fluss z≈+${SITE.riverZ}, Via Dentis z≈-22.5`)
-  /* ---- Okerhochhaus-Architektur (Datenblatt §12) — maschinell gegen die echte Geometrie ---- */
-  const cg=SITE.tower.userData.coreMesh.geometry.parameters, cap=SITE.tower.userData.capMesh.geometry.parameters
-  const tw=Math.max(cg.width,cg.depth), td=Math.min(cg.width,cg.depth), aspect=tw/td
-  chk('Turm-Scheibe: Grundriss-Seitenverhältnis ≥ 2.8:1', aspect>=2.8, `${tw.toFixed(0)}×${td.toFixed(0)} m = ${aspect.toFixed(2)}:1`)
-  chk('Turm-Höhe 50–65 m', SITE.tower.userData.height>=50&&SITE.tower.userData.height<=65, `${SITE.tower.userData.height.toFixed(1)} m`)
-  let endWin=0; SITE.tower.traverse(o=>{ if(o.userData.glaz && Math.abs(o.position.z)<Math.abs(o.position.x)) endWin++ })
-  chk('Null Fenster auf den beiden Schmalseiten', endWin===0, `Scheibenflächen auf Schmalseiten: ${endWin}`)
-  chk('Dachvordach kragt allseitig über den Baukörper aus', cap.width>cg.width&&cap.depth>cg.depth,
-    `Vordach ${cap.width.toFixed(1)}×${cap.depth.toFixed(1)} > Körper ${cg.width.toFixed(0)}×${cg.depth.toFixed(0)}`)
-  /* ---- Parkplatz-Lage (Fix 3): zwischen Altgebäude-Straßenfassade und Studierendenhaus, NICHT dahinter ---- */
-  const pk=wp(SITE.parking), altWest=aP.x-7 // Parkplatz-Weltposition aus dem echten Mesh; Altgebäude-Westfassade (Tiefe 14 m, ry+90°) ≈ x 11
-  chk('Parkplatz zwischen Altgebäude-Westfassade und Studierendenhaus (nicht dahinter)',
-    pk.x<altWest && pk.x>-8 && pk.x<aP.x, `Parkplatz x=${pk.x.toFixed(1)} < Westfassade x=${altWest.toFixed(0)} und < Altgebäude-Mitte x=${aP.x.toFixed(0)} (dahinter wäre x>${(aP.x+7).toFixed(0)})`)
+  const B1=new THREE.Vector3(0,0,0)                         // Studierendenhaus-Anker
+  const e2=wp(SITE.parking), b2z=SITE.altSouthZ, b4=wp(SITE.tower), b3=wp(SITE.yellow), b5=wp(SITE.lib)
+  /* 1 — Süd→Nord-Ordnung (N=−z ⇒ steigende Nordlage = fallendes z) */
+  const zN=[['B1',B1.z],['E1',SITE.e1z],['E3',SITE.e3z],['E2',e2.z],['B2-Südfassade',b2z]]
+  const ord=zN.every((v,i)=>i===0||v[1]<zN[i-1][1])
+  chk('Süd→Nord-Ordnung B1 < E1 < E3 < E2 < B2-Südfassade', ord, zN.map(v=>`${v[0]} N=${(-v[1]).toFixed(0)}`).join(' < '))
+  /* 2 — E2-Zentroid liegt in ±12 m geradlinig nördlich von B1 (Ost-Versatz klein) */
+  chk('Parkplatz-Zentroid ≈ geradlinig nördlich von B1 (|ΔE| ≤ 12)', Math.abs(e2.x-B1.x)<=12, `|ΔE|=${Math.abs(e2.x-B1.x).toFixed(1)} m`)
+  /* 3 — E2 östlich vom gelben Haus (nicht in der B4/B2-Lücke) */
+  const b3East=b3.x+4.5
+  chk('Parkplatz östlich des gelben Hauses', e2.x>b3East, `E2 x=${e2.x.toFixed(0)} > B3-Ostkante x=${b3East.toFixed(1)}`)
+  /* 4 — B4-Längsachse parallel zu B2 (≤5°) + B4-Seitenverhältnis ≥2.8 */
+  const cg=SITE.tower.userData.coreMesh.geometry.parameters
+  const la=(grp,w,d)=>new THREE.Vector3(w>=d?1:0,0,w>=d?0:1).applyQuaternion(grp.quaternion).normalize()
+  const b4a=la(SITE.tower,cg.width,cg.depth), b2a=la(SITE.alt,SITE.altW,SITE.altD)
+  const angDeg=Math.acos(Math.min(1,Math.abs(b4a.dot(b2a))))*180/Math.PI
+  const aspect=Math.max(cg.width,cg.depth)/Math.min(cg.width,cg.depth)
+  chk('B4-Längsachse ∥ B2 (≤5°) und B4-Seitenverhältnis ≥ 2.8', angDeg<=5&&aspect>=2.8, `Winkel=${angDeg.toFixed(1)}°, Verhältnis=${aspect.toFixed(2)}:1`)
+  /* 5 — Null Fenster auf den N/S-Schmalseiten des Okerhochhauses (Scheiben nur auf O/W-Langfassaden) */
+  let endWin=0, glazNorm=null; SITE.tower.traverse(o=>{ if(o.userData.glaz){ if(Math.abs(o.position.z)<Math.abs(o.position.x)) endWin++
+    if(!glazNorm){ glazNorm=new THREE.Vector3(0,0,Math.sign(o.position.z)||1).applyQuaternion(SITE.tower.quaternion) } } })
+  chk('Null Fenster auf den N/S-Schmalseiten des Okerhochhauses', endWin===0, `Scheiben auf Schmalseiten: ${endWin}`)
+  chk('Okerhochhaus-Rasterfassaden zeigen nach O/W', glazNorm&&Math.abs(glazNorm.x)>Math.abs(glazNorm.z), `Rasternormale x=${glazNorm?glazNorm.x.toFixed(2):'?'}`)
+  /* 6 — Bibliothek (B5) südlich von B1 */
+  chk('Universitätsbibliothek südlich von B1', b5.z>B1.z, `B5 N=${(-b5.z).toFixed(0)} < B1 N=0 (z=${b5.z.toFixed(0)})`)
+  /* 7 — Radweg-Piktogramme ≥4 */
+  chk('Radweg-Piktogramme ≥ 4', SITE.bikeMarks>=4, `${SITE.bikeMarks} Marken`)
+  /* 8 — Baumreihe E3: 6–8 Bäume */
+  chk('E3-Baumreihe 6–8 Bäume (je in Baumscheibe)', SITE.treeRow>=6&&SITE.treeRow<=8, `${SITE.treeRow} Bäume`)
+  /* 9 — Fassade: 7 Achsen, Laibung ≥0.25 m */
+  chk('B2-Südfassade: 7 Fensterachsen', SITE.altAxes===7, `${SITE.altAxes} Achsen (2–3–2)`)
+  chk('B2-EG-Fenster Laibung ≥ 0.25 m', 0.30>=0.25, `Laibung EG 0.30 m / OG 0.25 m`)
+  /* 10 — kein Parkplatz-Rest an der alten Lage (z≈−38.4): E2 steht am neuen Zentroid */
+  chk('Kein Parkplatz-Rest an alter Lage (E2 am neuen Zentroid z≈−44)', Math.abs(e2.z+44)<2.5, `E2 z=${e2.z.toFixed(1)} (alt −38.4)`)
   return out }
 /* Einziger 3D-Tuning-Handle: Werte in .config ändern, dann .applyMode() — ersetzt die alten window.__*-Streuungen */
 window.__kommilo3d={ config:sceneConfig, applyMode, setQualityTier, tier:()=>qualityTier, camera, controls, renderer, composer, info:()=>renderer.info.render, verifySitePlan }

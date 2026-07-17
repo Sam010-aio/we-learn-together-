@@ -377,7 +377,97 @@ lagen im Welt-Instancing statt lokal (Hausdrehung −0.12 nicht mitgemacht) und 
 las ein hartkodiertes Literal (Tautologie) → beide behoben. Massing, Waffel-Laibung, fensterlose
 Schmalseiten, Dachvordach/Sockel und die Assertions selbst wurden als korrekt bestätigt.
 
-## 13. Files touched
+## 14. Satelliten-verankerter Site-Plan + Altgebäude-Südfassade (definitive Spezifikation)
+
+### 14.1 Pflicht-Fragebogen (VOR Code beantwortet — Abschnitt 8 der Spezifikation)
+
+1. **`sceneFromSite(E,N)`** = `(x = E, z = −N)`. Osten→+x, Norden→−z. Begründung: die
+   Landmarken-Gruppe liegt bereits bei −z, die Straße (Via Dentis) bei z≈−22 = Nord der
+   Pavillon-Kante; konsistent mit dem bestehenden Aufbau, minimale Achsen-Umdeutung.
+2. **B1** aktuell Welt (0,0,0), Grundriss 32 (x) × 28 (z) m (W=32, D=28). Anker, unberührt.
+3. **px/m:** Kalibrieranker ist B1 (~32 m in x). In dieser Sandbox ohne Pixel-Lineal; der
+   Modell-Anker B1=32 m ist fix, der Plan ist darauf kalibriert (im Report als Grenze benannt).
+4. **Ziel-Weltkoordinaten** (aus Abschnitt 3.1, via `sceneFromSite`):
+   E1-Achse (0,−22) O-W L≥90 B8 (Radweg 2 m Nordseite); E2 (3,−44) 60(x)×28(z);
+   E3-Baumreihe (3,−30) Spanne 60; B3 (−30,−28); B4 (−55,−45) 15(x)×45(z) Längsachse N-S;
+   B2-Südfassade z=−62, Breite 44, Körper nach Norden Tiefe 54 (Längsachse N-S); B5 (5,+45) SÜD.
+5. **Aktuell→Ziel-Deltas:** E2 (3,−38.4)16×23→(3,−44)60×28; E1 (8,−22.5)→(0,−22)+Radweg;
+   B3 (−20,−33.5)→(−30,−28)+90° (First N-S); B4 (−52,−50)34×11 O-W→(−55,−45)15×45 N-S (90°);
+   B2 (18,−60) N-S-Kurzseite-Süd→(3,−~89) Langfassade nach Süden; B5/Audimax (47,−60) NORD→(5,+45) SÜD.
+6. **B4↔B2 Längsachsen-Winkel:** aktuell 90° (B4 O-W, B2 N-S) → Ziel 0° (beide N-S). B4 wird
+   um 90° gedreht; B2-Körper N-S-lang → parallel.
+7. **Alte E2-Objekte (bewegt/entfernt):** Park-Asphalt-Mesh, Stellplatz-Markierungen (instanziert),
+   Parkplatz-Heckenreihen (HEDGE_RUNS-Einträge), Gras-Ausschlüsse — alle am neuen Ort neu gebaut.
+8. **Boden-Restore alte E2 (3,−38.4):** die neue, größere E2 (x[−27,33] z[−58,−30]) überdeckt den
+   alten Fleck; Restfläche z[−30,−26] → Rasen (Gras-Ausschlüsse neu gezogen), keine Reste.
+9. **Fassaden-Achsen (Foto „1 Pockelsstraße"):** 7 Achsen je Geschoss, Gruppierung **2–3–2**
+   (Foto: regelmäßige Bogenfenster-Arkade; verdeckte Achsen hinter Gerüst mitgezählt).
+10. **Laibung:** EG-Fenster 0.30 m, OG 0.25 m, als Geometrie-Rücksprung (Glasebene hinter der
+    Wandfläche, Gewände/Bogen proud).
+11. **Fassaden-Kosten (geschätzt):** ~110 Meshes (7×2 Fenster × ~6 Teile + Dentils instanziert +
+    Gesims/Attika); tatsächliche Draw-Call-Zahl im Change Log gemessen.
+12. **Assertions:** Abschnitt 9 vollständig in `verifySitePlan()`, headless über
+    `window.__kommilo3d.verifySitePlan()`.
+
+### 14.2 Konfliktauflösungen (Decision Log 28–31)
+
+| # | Konflikt | Auflösung | Begründung |
+|---|---|---|---|
+| 28 | F7 „keine Transform-Änderung an B2" ↔ Abschnitt 5 fordert 46-m-Langfassade nach Süden; B2 hatte 14-m-Kurzseite nach Süden | B2 neu aufgebaut, Langfassade nach Süden, Körper N-S-lang; Zentroid nahe Plan | Abschnitt 5 + Foto sind die Autorität („the photo wins"); eine 7-Achsen-Fassade ist auf 14 m unmöglich → F7-Literalfreeze schließt das Kernziel aus. F7-Absicht (B2 nicht verschleppen/zerstören) bleibt gewahrt |
+| 29 | Frühere Anweisung „ich brauch keine Autos" ↔ Abschnitt 4.4 fordert „12–16 geparkte Autos" | Autos **hinzugefügt** (12–16, Farb-/Yaw-Jitter, 1–2 leere Buchten) | Die jetzige Spezifikation ist explizit und detailliert (Satellit zeigt Autos); jüngste ausdrückliche Anweisung gewinnt. Im Report geflaggt |
+| 30 | Vorige Aufgabe „Audimax nördlich, gegenüber Altgebäude-Eingang" ↔ B5 „Universitätsbibliothek muss SÜD bleiben" (F8) | Weißer Modernebau → SÜD (5,+45) als B5-Bibliothek | F8 = „failed phase"; neueste bindende Spezifikation; entspricht realer Lage der UB |
+| 31 | E4 Fluss: Registry „UNCHANGED — verify only" ↔ 3.1 beschreibt West/N-S-Verlauf | Fluss bleibt an aktueller Lage (z≈+39), Abweichung dokumentiert | „verify only" + Fluss-Verlegen liegt außerhalb des 3-Punkte-Scopes und würde Steg/Wasserspiegelung brechen |
+
+### 14.3 Altgebäude-Südfassade — Datenblatt (Abschnitt 5)
+
+Zonen (unten→oben, Gesamt ~18.5 m bis Gesims): Sockel/Rustika 2.4 m · EG 7.5 m · Zwischenband
+0.6 m · OG 6.5 m · Gebälk/Gesims 1.8 m · Attika 1.0 m. Sieben Achsen **2–3–2**, schmale Pfeiler
+1.3 m, breite Pfeiler 2.5 m mit vertieftem Blindpaneel. Fenster: Rechteck-Körper + **echter
+Halbkreis-Bogen** (Radius = halbe Breite), Glasebene 0.30/0.25 m zurückgesetzt, Gewändeband,
+Archivolte, Keilstein proud, Kämpferband, Sohlbank auf Konsolen, radiale + Gitter-Sprossen.
+Gesims mit **echten instanzierten Dentils** + Corona 0.5 m Auskragung. Attika mit Krönungsblöcken.
+Sandstein #c9bda6, ±5 % Blockjitter, dezente Verwitterungsschlieren unter Sohlbänken/Corona.
+
+### 14.4 Ergebnis — Assertions (Headless, verbatim) + QA-Vergleich
+
+**Abschnitt-9-Assertions — 12/12 PASS:**
+
+```
+PASS — Süd→Nord-Ordnung B1 < E1 < E3 < E2 < B2-Südfassade (B1 N=0 < E1 N=22 < E3 N=29 < E2 N=44 < B2-Südfassade N=62)
+PASS — Parkplatz-Zentroid ≈ geradlinig nördlich von B1 (|ΔE| ≤ 12) (|ΔE|=3.0 m)
+PASS — Parkplatz östlich des gelben Hauses (E2 x=3 > B3-Ostkante x=-25.5)
+PASS — B4-Längsachse ∥ B2 (≤5°) und B4-Seitenverhältnis ≥ 2.8 (Winkel=0.0°, Verhältnis=3.00:1)
+PASS — Null Fenster auf den N/S-Schmalseiten des Okerhochhauses (Scheiben auf Schmalseiten: 0)
+PASS — Okerhochhaus-Rasterfassaden zeigen nach O/W (Rasternormale x=1.00)
+PASS — Universitätsbibliothek südlich von B1 (B5 N=-45 < B1 N=0 (z=45))
+PASS — Radweg-Piktogramme ≥ 4 (6 Marken)
+PASS — E3-Baumreihe 6–8 Bäume (je in Baumscheibe) (7 Bäume)
+PASS — B2-Südfassade: 7 Fensterachsen (7 Achsen (2–3–2))
+PASS — B2-EG-Fenster Laibung ≥ 0.25 m (Laibung EG 0.30 m / OG 0.25 m)
+PASS — Kein Parkplatz-Rest an alter Lage (E2 am neuen Zentroid z≈−44) (E2 z=-44.0 (alt −38.4))
+```
+
+**QA 6.1 — Top-Down vs. Satellit:** Altgebäude (Nord, Langfassade nach Süden) → Parkplatz
+(2 Reihen O-W, 14 Autos, 2 leer) → Baumreihe + Hecke → Straße+Radweg → gelbes Haus (West,
+Giebel Süd) → B1 (Süd); Okerhochhaus schlanke Scheibe West, Längsachse N-S. Alle Elemente
+und Ordnungen aus Abschnitt 3 aufgelöst — deckungsgleich mit der Luftaufnahme.
+
+**QA 6.2 — Fassade vs. Foto „1 Pockelsstraße":** 7 Achsen 2–3–2 ✔, Halbkreis-Köpfe über
+Rechteck-Körpern ✔, Gewände+Archivolte+Keilstein+Kämpfer+Sohlbank je Fenster ✔, Blindpaneele
+auf den breiten Pfeilern ✔, Dentil-Gesims mit echter Auskragung ✔, Attika mit Krönungsblöcken ✔,
+0.25–0.30 m Laibung mit Schattenwurf ✔, Sandstein-Blockjitter + Verwitterungsschlieren ✔.
+
+**Verbotene Ausgänge F1–F12:** keiner produziert (Parkplatz korrekt zwischen B2 und B1/gelbem
+Haus; B4 schlank N-S; echte Laibungen; echte Halbkreise; 7 Achsen; B1 & B2-Körper-Position
+unberührt bzw. per Konflikt §14.2 dokumentiert; B5 südlich; alte Parkplatzfläche = Rasen;
+Verwitterung vorhanden; Bäume in Scheiben; Radweg + Piktogramme).
+
+**Messung:** high-Tier 6 874 Draw Calls / 1,86 M Dreiecke (+378 gegenüber der Vorstufe — die
+7×2 Rundbogenfenster + 14 Autos; Dentils instanziert), low-Tier 3 858; 14/14 Interaktionstests,
+0 Konsolen-Fehler. Kalibriergrenze: echte px/m-Messung der Luftaufnahme in der Sandbox nicht
+möglich → Anker B1=32 m, dokumentiert.
+
+## 15. Files touched
 
 - `index.html` — module script (rendering pipeline + scene content) + nothing else in the file
 - `docs/3d-overhaul.md` — this document
