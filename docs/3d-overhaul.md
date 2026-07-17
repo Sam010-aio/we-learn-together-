@@ -623,7 +623,31 @@ Süden zum Platz", „Audimax: flaches weißes Dach vorhanden", „Altgebäude i
 offenem Innenhof", „Breiter Via-Dentis-Weg … 22 m", „Glasbrücke … Spannweite 33.5 m".
 14/14 Interaktionsregression, 0 Konsolen-Fehler/-Warnungen.
 
-## 20. Files touched
+## 20. Runde 10 — Luftbild-Treue: offener Universitätsplatz + reale Abstände (2 Google-Maps-Fotos)
+
+Nutzerwunsch (2 Luftbilder): (1) die Abstände Studierendenhaus ↔ gelbes Haus ↔ Okerhaus „100 %"
+wie Luftbild 1; (2) die **leere Fläche zum Sitzen/Quatschen** zwischen Bib, Forum und Audimax
+wie Luftbild 2.
+
+- **Universitätsplatz (Luftbild 2).** Statt Bib/Forum als Blöcke am Audimax gibt es jetzt einen
+  **offenen, gepflasterten Platz** (30×32 m, echte Fliesen), gerahmt von **Audimax (Süd),
+  Bibliothek (Nord), Forumgebäude (Ost)** und nach **Westen zum Weg offen**. Möblierung: 4 Bänke
+  nach innen, 2 Schattenbäume, mehrere stehende/quatschende Studierendengruppen (keine Läufer).
+- **Audimax dreht sich zum Platz.** Gruppe um π gedreht (Position 70,−56): die verglaste Front
+  (Foyer + Pilotis-Kolonnade + Klerestorium) blickt nach **Norden in den Platz** (Front-Normale
+  z=−1.00), flaches weißes Dach bleibt. Die Betonrippen sind jetzt eine **lokale** InstancedMesh
+  (drehen mit dem Gebäude, kein Weltkoord.-Bug mehr).
+- **Reale Abstände (Luftbild 1).** Gelbes Haus „3a" als **enger SE-Nachbar des Okerhochhauses**
+  neu gesetzt: (−44,−34), ~10 m Lücke zur Turm-Ostkante, Parkplatz östlich, weit vom Altgebäude —
+  entspricht der Google-Maps-Anordnung (Turm+gelb im Westen, Parkplatz+Altgebäude im Osten).
+  Okerhochhaus + Brücke unverändert (−70,−60 / Spannweite 33.5 m).
+- **Weg.** Hauptweg 14 m + 2 Fußwege, alles Fliesen; der Ostfußweg (x=54) **mündet in den Platz**.
+
+**Assertions (Headless, verbatim): 23/23 PASS** — neu: „Audimax: verglaste Front/Klerestorium
+zeigt zum Platz (Norden −z)", „Offener Universitätsplatz (Audimax Süd / Bib Nord / Forum Ost,
+Westseite offen) 30×32 m". 14/14 Interaktionsregression, 0 Konsolen-Fehler/-Warnungen.
+
+## 21. Files touched
 
 - `index.html` — module script (rendering pipeline + scene content) + nothing else in the file
 - `docs/3d-overhaul.md` — this document
