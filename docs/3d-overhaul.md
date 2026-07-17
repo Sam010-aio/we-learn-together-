@@ -579,7 +579,18 @@ B4-Ost ↔ B2-West" PASS (x −47.5→−19), „Gebäude real weit auseinander 
 „Okerhochhaus schlanke N-S-Scheibe 3.00:1", „Glasbrücke B4-Ost ↔ B2-West (−47.5→−29)",
 „Radweg-Piktogramme ≥ 4". 14/14 Interaktionsregression, 0 Konsolen-Fehler.
 
-## 18. Files touched
+## 18. Runde 8 — Via Dentis, Audimax versetzt, gelber Eingang nach Foto 3, Turm+Brücke
+
+- Via-Dentis-Fußweg (KEINE Autos) zwischen Altgebäude (Ost x=35) und Audimax: zentraler
+  Klinkerweg + 2 seitliche Fußwege, Baumreihen, Poller, Hecken.
+- Audimax nach Osten versetzt (66,-62), Glasfront nach WESTEN zum Weg; 22 m breiter Weg dazwischen.
+- Gelber Haupteingang exakt nach Foto 3: 2 hohe Fensterstreifen (3x2 + 2x2), dunkle Doppeltür,
+  Betonstufen + Metallgeländer-Rampe, rot-weißes Institutsschild, brauner Sockelstreifen.
+- Okerhochhaus weiter NW (-64,-52); Brücke breiter/höher (bw 4.6, h 3.4), Spannweite 27.5 m,
+  Lichterketten entlang beider Brückenkanten (wie am Studierendenhaus).
+- 19/19 Assertions PASS, 14/14 Regression, 0 Konsolen-Fehler.
+
+## 19. Files touched
 
 - `index.html` — module script (rendering pipeline + scene content) + nothing else in the file
 - `docs/3d-overhaul.md` — this document
