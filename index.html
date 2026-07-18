@@ -373,7 +373,7 @@ function envFor(modeKey){
   u.turbidity.value = sk.turbidity; u.rayleigh.value = sk.rayleigh
   u.mieCoefficient.value = sk.mieCoefficient; u.mieDirectionalG.value = sk.mieG
   dirFromAngles(sk.sunAzimuthDeg ?? mc.sun.azimuthDeg, sk.sunElevationDeg ?? mc.sun.elevationDeg, u.sunPosition.value)
-  const gnd = new THREE.Mesh(new THREE.CircleGeometry(150, 24).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: mc.groundBounce }))
+  const gnd = new THREE.Mesh(new THREE.CircleGeometry(260, 24).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: mc.groundBounce }))
   gnd.position.y = -2; es.add(gnd)
   envCache[modeKey] = pmrem.fromScene(es, .04).texture
   gnd.geometry.dispose(); gnd.material.dispose(); esky.geometry.dispose(); esky.material.dispose()
@@ -484,7 +484,7 @@ setTimeout(()=>{ try{ const TL=new THREE.TextureLoader(); TL.crossOrigin='anonym
     t.repeat.set(rx,ry2); t.anisotropy=sceneConfig.renderer.anisotropy; mat.map=t
     if(mat.normalMap) mat.normalMap.repeat.set(rx,ry2)
     mat.needsUpdate=true },undefined,()=>{}) }
-  swap('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r169/examples/textures/terrain/grasslight-big.jpg',M.grass,26,20)
+  swap('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r169/examples/textures/terrain/grasslight-big.jpg',M.grass,46,34)
   swap('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r169/examples/textures/hardwood2_diffuse.jpg',M.woodCeil,1/1.7,1/1.7)
 }catch(e){} },800)
 const towerT=towerTex(); towerT.repeat.set(3,8)
@@ -848,7 +848,7 @@ function standPerson(gp,x,z,ry,seed){ const F=makeFigure(seed)
   poseStand(F); registerFigure(F,'stand')
   gp.add(F.root) }
 /* ===== Park: entsättigt, große Parkbäume mit hoher Krone ===== */
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(180,210),M.grass); ground.rotation.x=-Math.PI/2; ground.position.y=-.002; ground.position.z=-25; ground.receiveShadow=true; buildingGroup.add(ground)
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(320,340),M.grass); ground.rotation.x=-Math.PI/2; ground.position.y=-.002; ground.position.z=-45; ground.receiveShadow=true; buildingGroup.add(ground) // Bible: vergrößert für Nord/Ost-Campus (B2 bis z≈−158, Audimax x≈140, Forum z≈−168)
 const apron=new THREE.Mesh(new THREE.PlaneGeometry(W+2*OV+3.4,D+2*OV+3.4),M.paver); apron.rotation.x=-Math.PI/2; apron.position.y=.015; apron.receiveShadow=true; buildingGroup.add(apron)
 const bolls=[]
 for(let x=-19;x<=19;x+=2.4){ bolls.push({x,y:.42,z:D/2+OV+3.9},{x,y:.42,z:-18.6}) }
@@ -1272,156 +1272,181 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
   const frameW=new THREE.MeshStandardMaterial({color:'#efe9da',roughness:.6})
   const roofD=new THREE.MeshStandardMaterial({color:'#5c554a',roughness:.95})
   const doorM=new THREE.MeshStandardMaterial({color:'#4a3a28',roughness:.7})
-  /* ===== B2 Altgebäude — Neubau nach DEFINITIVE SPEC Abschnitt 5 (docs §14.3) =====
-     Reorientiert: die lange, reich gegliederte Südfassade (2–3–2, 7 Achsen, Rundbogenfenster)
-     zeigt nach SÜDEN (+z) zum Parkplatz/Studierendenhaus; Körper nach Norden, Längsachse N-S
-     (parallel zum Okerhochhaus). Zentroid (3,−86), Südfassadenebene z=−62. */
-  { const A2=new THREE.Group(); A2.position.set(-3,0,-91); buildingGroup.add(A2); SITE.alt=A2
-    const AX0=A2.position.x, AZ0=A2.position.z          // Gruppen-Weltanker für instanzierte Weltkoordinaten
-    const WF=76, DF=58, zS=DF/2                          // R11: VIEL GRÖSSER + unregelmäßig; Südfassadenebene bleibt z=−62 (−91+29)
-    SITE.altSouthZ=AZ0+zS; SITE.altW=WF; SITE.altD=DF; SITE.altAxes=11
-    const H1=2.4, H2=7.5, HB=.6, H4=6.5, wallTop=H1+H2+HB+H4 // Sockel/EG/Band/OG → 17.0 m Wandhöhe
-    /* Stone-True-Mauerwerk (Fix A, docs §16): EIN prozeduraler, NICHT kachelnder Atlas über die
-       ganze Südfläche (repeat 1,1, ClampToEdge). Läuferverband je Zone, Kursgrenzen auf die
-       Architektur-Höhen (Sohl/Kämpfer/Zonen/Gesims) gerastet → kein Block quert ein Element. */
-    const masonry=(()=>{ const s=1536/WF, PW=1536, PH=Math.round(wallTop*s)
+  /* ===== B2 ALTGEBÄUDE — CAMPUS BIBLE Kapitel 2: 90°-KORREKTUR (F19 behoben) =====
+     Langer N-S-Block. Die LANGE Ostfront mit dem Drei-Portal-Eingangsrisalit zeigt nach OSTEN zum
+     Platz; die SIEBEN-Achsen-Steinfassade (2-3-2) ist die KURZE Südstirn zum Parkplatz/Studierenden-
+     haus. Site (E10,N112) → Szene (10,−110). Grundriss 40 (O-W) × 96 (N-S). */
+  { const A2=new THREE.Group(); A2.position.set(10,0,-110); buildingGroup.add(A2); SITE.alt=A2
+    const AX0=A2.position.x, AZ0=A2.position.z
+    const WE=40, NL=96, hE=WE/2, hN=NL/2               // O-W-Breite / N-S-Länge; Ostfront +hE, Südstirn +hN
+    const H1=2.4, H2=7.5, HB=.6, H4=6.5, wallTop=H1+H2+HB+H4
+    SITE.altW=WE; SITE.altN=NL; SITE.altEastX=AX0+hE; SITE.altSouthZ=AZ0+hN; SITE.altAxes=7
+    /* Ostfront-Normale (nach +x/Osten) — für Assertion */
+    SITE.altEastNormal=new THREE.Vector3(1,0,0)
+    /* --- Stone-True-Mauerwerk-Generator, verallgemeinert auf beliebige Fassadenbreite --- */
+    const mkMasonry=(faceW)=>{ const s=1536/faceW, PW=1536, PH=Math.max(2,Math.round(wallTop*s))
       const c2=document.createElement('canvas'); c2.width=PW; c2.height=PH; const x2=c2.getContext('2d')
-      const Y=m=>PH-m*s // Meter→px (unten = y0)
+      const Y=m=>PH-m*s
       x2.fillStyle='#c9bda6'; x2.fillRect(0,0,PW,PH)
-      const bounds=new Set([0,+wallTop.toFixed(2)])
-      ;[H1,3.0,6.3,9.9,10.5,11.0,13.6].forEach(v=>bounds.add(+v.toFixed(2)))               // Snap-Linien: Sohl/Kämpfer/Zonen
+      const bounds=new Set([0,+wallTop.toFixed(2)]); [H1,3.0,6.3,9.9,10.5,11.0,13.6].forEach(v=>bounds.add(+v.toFixed(2)))
       const addC=(a,b,ch)=>{ const n=Math.max(1,Math.round((b-a)/ch)); for(let i=1;i<n;i++) bounds.add(+(a+i*(b-a)/n).toFixed(2)) }
-      addC(0,H1,.5); addC(H1,9.9,.52); addC(9.9,wallTop,.43)                                // Zone 1/2/3 Kurse
-      const bl=[...bounds].sort((a,b)=>a-b)
-      let sd=12345; const rnd=()=>{ sd=(sd*16807)%2147483647; return sd/2147483647 }
+      addC(0,H1,.5); addC(H1,9.9,.52); addC(9.9,wallTop,.43)
+      const bl=[...bounds].sort((a,b)=>a-b); let sd=(faceW*97+13)|0; const rnd=()=>{ sd=(sd*16807)%2147483647; return sd/2147483647 }
       for(let i=0;i<bl.length-1;i++){ const yA=bl[i], yB=bl[i+1], zone=yA<H1?1:(yA<9.9?2:3)
         const bLen=zone===1?1.8:(zone===2?1.2:1.1), off=(i%2)*bLen*.5
-        x2.fillStyle='#a89c80'; x2.fillRect(0,Y(yB),PW,Math.max(1,s*.03))                    // Lagerfuge
-        for(let bx=-off;bx<WF;){ const w=bLen*(.72+rnd()*.56)
+        x2.fillStyle='#a89c80'; x2.fillRect(0,Y(yB),PW,Math.max(1,s*.03))
+        for(let bx=-off;bx<faceW;){ const w=bLen*(.72+rnd()*.56)
           const dark=rnd()<1/12, hj=(rnd()-.5)*.12, vj=(rnd()-.5)*.10
           const R=dark?150:Math.max(150,Math.min(216,201+hj*44)), G=dark?132:Math.max(140,Math.min(205,189+hj*44)), Bc=dark?104:Math.max(120,Math.min(190,166+vj*44))
-          x2.fillStyle=`rgb(${R|0},${G|0},${Bc|0})`; x2.fillRect(Math.round(bx*s)+1,Y(yB)+1,Math.round(w*s)-2,Y(yA)-Y(yB)-2)
-          x2.fillStyle='#9a8e72'; x2.fillRect(Math.round(bx*s),Y(yB),Math.max(1,s*.028),Y(yA)-Y(yB)) // Stoßfuge
-          bx+=w }
-      }
-      x2.globalAlpha=.12; x2.fillStyle='#6f675a'; [3.0,11.0].forEach(yy=>x2.fillRect(0,Y(yy),PW,s*.6)) // Schliere unter Sohlbänken
-      x2.fillStyle='#6f675a'; x2.fillRect(0,Y(.5),PW,s*.5)                                   // Feuchtezone unten 50 cm
-      x2.globalAlpha=.10; x2.fillStyle='#5a5348'; x2.fillRect(0,Y(wallTop-.05),PW,s*.7)      // Rußwisch unter Corona
-      x2.globalAlpha=1
-      const t=new THREE.CanvasTexture(c2); t.colorSpace=THREE.SRGBColorSpace; t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping; t.anisotropy=8; return t })()
-    const masonryM=new THREE.MeshStandardMaterial({map:masonry,roughness:.9,normalMap:normalFromTex(masonry,NS.bark)})
-    const sandPlain=(()=>{ const c2=cvs(256),x2=c2.getContext('2d'); x2.fillStyle='#c4b89f'; x2.fillRect(0,0,256,256)
-      for(let y=0;y<256;y+=26){ x2.fillStyle='#b0a486'; x2.fillRect(0,y,256,1.5) }; return tx(c2) })()
-    const sandM=new THREE.MeshStandardMaterial({map:sandPlain,roughness:.9}); sandM.map.repeat.set(WF/6,wallTop/6)
-    const rustM=new THREE.MeshStandardMaterial({color:'#c2b598',roughness:.94})              // Rustika-Sockel
-    const trim=new THREE.MeshStandardMaterial({color:'#d4c9ae',roughness:.78})               // Gewände/Gesims
-    const stoneM=new THREE.MeshStandardMaterial({color:'#bcae90',roughness:.85})             // Keilstein/Konsole
+          x2.fillStyle='rgb('+(R|0)+','+(G|0)+','+(Bc|0)+')'; x2.fillRect(Math.round(bx*s)+1,Y(yB)+1,Math.round(w*s)-2,Y(yA)-Y(yB)-2)
+          x2.fillStyle='#9a8e72'; x2.fillRect(Math.round(bx*s),Y(yB),Math.max(1,s*.028),Y(yA)-Y(yB)); bx+=w } }
+      x2.globalAlpha=.12; x2.fillStyle='#6f675a'; [3.0,11.0].forEach(function(yy){ x2.fillRect(0,Y(yy),PW,s*.6) })
+      x2.fillStyle='#6f675a'; x2.fillRect(0,Y(.5),PW,s*.5); x2.globalAlpha=.10; x2.fillStyle='#5a5348'; x2.fillRect(0,Y(wallTop-.05),PW,s*.7); x2.globalAlpha=1
+      const t=new THREE.CanvasTexture(c2); t.colorSpace=THREE.SRGBColorSpace; t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping; t.anisotropy=8; return t }
+    const eastTex=mkMasonry(NL), southTex=mkMasonry(WE)
+    const eastM=new THREE.MeshStandardMaterial({map:eastTex,roughness:.9,normalMap:normalFromTex(eastTex,NS.bark)})
+    const southM=new THREE.MeshStandardMaterial({map:southTex,roughness:.9,normalMap:normalFromTex(southTex,NS.bark)})
+    const sandPlain=(function(){ const c2=cvs(256),x2=c2.getContext('2d'); x2.fillStyle='#c4b89f'; x2.fillRect(0,0,256,256)
+      for(let y=0;y<256;y+=26){ x2.fillStyle='#b0a486'; x2.fillRect(0,y,256,1.5) } return tx(c2) })()
+    const sandM=new THREE.MeshStandardMaterial({map:sandPlain,roughness:.9}); sandM.map.repeat.set(NL/6,wallTop/6)
+    const trim=new THREE.MeshStandardMaterial({color:'#d4c9ae',roughness:.78})
+    const stoneM=new THREE.MeshStandardMaterial({color:'#bcae90',roughness:.85})
+    const rustM=new THREE.MeshStandardMaterial({color:'#c2b598',roughness:.94})
     const glassM=new THREE.MeshStandardMaterial({color:'#2c2a26',roughness:.5,metalness:.25})
-    const barM=new THREE.MeshStandardMaterial({color:'#4a3527',roughness:.6})                // Sprossen (dunkles Holz)
-    const washM=new THREE.MeshStandardMaterial({color:'#8f8577',transparent:true,opacity:.14,roughness:1,depthWrite:false}) // Verwitterungsschliere
-    /* Material-Array: Südfläche (+z, Index 4) = nicht-kachelnder Mauerwerk-Atlas, übrige = schlicht */
-    /* ===== OFFENE U-Anlage (Luftbild R11): kein geschlossenes Viereck — die Westseite ist OFFEN
-       („es endet am Okerhaus"), Basis = tiefer Ostflügel (Zentral-Campus), zwei Arme (Süd-Schau-
-       fassade + Nord), unregelmäßige Längen. Innenhof öffnet sich nach Westen zum Okerhochhaus. */
-    const WDs=15, WDn=13, WDe=18, zN=-zS                 // Arm-/Basistiefen unterschiedlich → unregelmäßig
-    SITE.altWings=3
-    const sMats=[sandM,sandM,sandM,sandM,masonryM,sandM] // Süd: +z = nicht-kachelnder Mauerwerk-Atlas
-    const wing=(w,d,cx,cz,mats)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,wallTop,d),mats||sandM)
-      m.position.set(cx,wallTop/2,cz); m.castShadow=true; m.receiveShadow=true; A2.add(m); return m }
-    wing(WF, WDs, 0, zS-WDs/2, sMats)                    // Süd-Arm (Schaufassade zeigt nach +z/Süden), voll breit
-    wing(WF, WDn, 0, zN+WDn/2, sandM)                    // Nord-Arm, voll breit (schmaler)
-    wing(WDe, DF, WF/2-WDe/2, 0, sandM)                  // Ost-Basis (tief), Zentral-Campus-Block
-    // KEIN Westflügel → U offen nach Westen zum Okerhochhaus
-    /* Flügeldächer (flach) — Innenhof bleibt zum Himmel offen */
-    const roofM2=new THREE.MeshStandardMaterial({color:'#4a463f',roughness:.92})
-    ;[[WF,WDs,0,zS-WDs/2],[WF,WDn,0,zN+WDn/2],[WDe,DF,WF/2-WDe/2,0]]
-      .forEach(([w,d,cx,cz])=>{ const r=new THREE.Mesh(new THREE.BoxGeometry(w-.5,.5,d-.5),roofM2); r.position.set(cx,wallTop+.3,cz); A2.add(r) })
-    /* Innenhof — echte Fliesen, öffnet sich nach Westen */
-    const court=new THREE.Mesh(new THREE.PlaneGeometry(WF-WDe+2,DF-WDs-WDn-.4),paverMat(6,4)); court.rotation.x=-Math.PI/2; court.position.set(-(WDe)/2+ .5,.06,(WDn-WDs)/2); court.receiveShadow=true; A2.add(court)
-    /* Architekturpavillon im Hof (kleiner Glaskubus, Foto) */
-    { const pav=new THREE.Mesh(new THREE.BoxGeometry(6,3.2,6),new THREE.MeshStandardMaterial({color:'#2f3a3e',roughness:.2,metalness:.35})); pav.position.set(-6,1.6,(WDn-WDs)/2); pav.castShadow=true; A2.add(pav)
-      const pcap=new THREE.Mesh(new THREE.BoxGeometry(6.8,.3,6.8),new THREE.MeshStandardMaterial({color:'#dcdedf',roughness:.6})); pcap.position.set(-6,3.35,(WDn-WDs)/2); A2.add(pcap) }
-    /* Cornice-/Sockel-Ring-Helfer: Balken nur an Süd/Nord/Ost-Außenkanten (West offen) */
-    const edgeRing=(y,hh,ov,barD,mat)=>{
-      for(const s of [1,-1]){ const b=new THREE.Mesh(new THREE.BoxGeometry(WF+2*ov,hh,barD),mat); b.position.set(0,y,s*(zS+ov-barD/2)); b.castShadow=true; A2.add(b) } // Süd + Nord
-      const be=new THREE.Mesh(new THREE.BoxGeometry(barD,hh,DF+2*ov),mat); be.position.set(WF/2+ov-barD/2,y,0); be.castShadow=true; A2.add(be) }                        // nur Ost (+x)
-    /* Hofseitige Fenster (schlichte dunkle Rechtecke), instanziert in Weltkoord. (A2 unrotiert @ AX0,AZ0) */
-    const cwG_ns=new THREE.BoxGeometry(1.2,2.0,.1), cwG_ew=new THREE.BoxGeometry(.1,2.0,1.2)
-    const cwM=new THREE.MeshStandardMaterial({color:'#2c2a26',roughness:.5,metalness:.25})
-    const cwNS=[], cwEW=[]
-    for(let fl=0;fl<2;fl++){ const wy=H1+2+fl*(H2+HB)*.9
-      for(let k=0;k<7;k++){ const lx=-27+k*9
-        cwNS.push({x:AX0+lx,y:wy,z:AZ0+(zS-WDs-.02)}, {x:AX0+lx,y:wy,z:AZ0+(zN+WDn+.02)}) }
-      for(let k=0;k<5;k++){ const lz=-16+k*8
-        cwEW.push({x:AX0+(WF/2-WDe-.02),y:wy,z:AZ0+lz}) } }                                    // Ost-Basis hofseitig (−x)
-    instanced(cwG_ns,cwM,cwNS,false); instanced(cwG_ew,cwM,cwEW,false)
-    /* Zone 1 — Rustika-Sockel: gebänderte Streifen mit Schattennut, nur Südkante sichtbar */
-    for(let i=0;i<5;i++){ const band=new THREE.Mesh(new THREE.BoxGeometry(WF+.18,.44,.2),rustM); band.position.set(0,.25+i*.5,zS+.02); A2.add(band) }
-    edgeRing(H1,.16,.17,.7,trim)                        // Sockelgesims-Ring (statt Vollplatte)
-    for(let i=0;i<11;i++){ const cell=new THREE.Mesh(new THREE.BoxGeometry(.9,.6,.24),new THREE.MeshStandardMaterial({color:'#3a352c',roughness:.7})) // Kellerfenster
-      cell.position.set(-33+i*(66/10),1.3,zS+.03); A2.add(cell) }
-    /* Rundbogenfenster (Rechteck-Körper + echter Halbkreis-Kopf), Glas 0.25–0.30 m hinter dem
-       proud Gewände → echte Laibung; Archivolte, Keilstein, Kämpfer, Sohlbank auf Konsolen. */
-    const AXES=[-33,-27,-21, -12,-6,0,6,12, 21,27,33] // 11 Achsen, 3–5–3 (Eckpavillons + Mittelarkade), über die breitere Fassade gespreizt
-    function arcWinS(cx,y0,wc,bodyH,aR,reveal,nV){ const g=new THREE.Group(); g.position.set(cx,0,zS); g.userData.axis=true; g.userData.vou=nV; A2.add(g)
-      const hw=wc/2, spr=y0+bodyH, jw=.28
-      const gb=new THREE.Mesh(new THREE.BoxGeometry(wc,bodyH,.04),glassM); gb.position.set(0,y0+bodyH/2,.02); g.add(gb)
-      const gh=new THREE.Mesh(new THREE.CircleGeometry(aR,22,0,Math.PI),glassM); gh.position.set(0,spr,.025); g.add(gh)
-      for(const bx of [-wc/6,wc/6]){ const b=new THREE.Mesh(new THREE.BoxGeometry(.05,bodyH,.04),barM); b.position.set(bx,y0+bodyH/2,.05); g.add(b) }         // 2 vertikale Sprossen
-      for(let t=1;t<=3;t++){ const b=new THREE.Mesh(new THREE.BoxGeometry(wc,.05,.04),barM); b.position.set(0,y0+bodyH*t/4,.05); g.add(b) }                   // 3 Transome
-      for(let s=1;s<=5;s++){ const a=Math.PI*s/6; const b=new THREE.Mesh(new THREE.BoxGeometry(.045,aR-.05,.04),barM); b.position.set(Math.cos(a)*aR/2,spr+Math.sin(a)*aR/2,.05); b.rotation.z=a-Math.PI/2; g.add(b) } // radiale Bogensprossen
-      const arcInner=new THREE.Mesh(new THREE.TorusGeometry(aR-.03,.03,6,18,Math.PI),barM); arcInner.position.set(0,spr,.05); g.add(arcInner)
-      for(const s of [-1,1]){ const j=new THREE.Mesh(new THREE.BoxGeometry(jw,bodyH+.06,reveal),trim); j.position.set(s*(hw+jw/2),y0+bodyH/2,reveal/2); g.add(j) } // proud Jamben = Laibung
-      /* Archivolte aus radialen Keilsteinen (Voussoirs) — der Mittelkeil ist der proud Keilstein */
+    const barM=new THREE.MeshStandardMaterial({color:'#4a3527',roughness:.6})
+    const doorM=new THREE.MeshStandardMaterial({color:'#1c2026',roughness:.3,metalness:.4})
+    const railM=new THREE.MeshStandardMaterial({color:'#9a9ea3',roughness:.5,metalness:.5})
+    /* Körper: Ost(+x)=Ostfassaden-Atlas, Süd(+z)=7-Achsen-Atlas, übrige Sandstein */
+    const body=new THREE.Mesh(new THREE.BoxGeometry(WE,wallTop,NL),[eastM,sandM,sandM,sandM,southM,sandM])
+    body.position.y=wallTop/2; body.castShadow=true; body.receiveShadow=true; A2.add(body)
+    const roofSlab=new THREE.Mesh(new THREE.BoxGeometry(WE-1.5,.6,NL-1.5),new THREE.MeshStandardMaterial({color:'#5a564d',roughness:.92})); roofSlab.position.y=wallTop+.3; A2.add(roofSlab)
+    /* Dachlaterne mittig (Foto Eckansicht) */
+    const lant=new THREE.Mesh(new THREE.BoxGeometry(6,2.2,5),new THREE.MeshStandardMaterial({color:'#8a8578',roughness:.7})); lant.position.set(0,wallTop+1.6,0); A2.add(lant)
+    const lantGl=new THREE.Mesh(new THREE.BoxGeometry(5.6,1.2,4.6),glassM); lantGl.position.set(0,wallTop+1.5,0); A2.add(lantGl)
+    /* --- Rundbogenfenster (Standing-Window-Law): Rechteck + Halbkreis, Voussoirs, Kämpfer, Sohlbank; ry orientiert die Front --- */
+    const arcWin=(px,py,pz,ry,wc,bodyH,aR,reveal,nV)=>{ const g=new THREE.Group(); g.position.set(px,py,pz); g.rotation.y=ry; g.userData.arc=true; g.userData.vou=nV; A2.add(g)
+      const hw=wc/2, jw=.26
+      const gb=new THREE.Mesh(new THREE.BoxGeometry(wc,bodyH,.04),glassM); gb.position.set(0,bodyH/2,.02); g.add(gb)
+      const gh=new THREE.Mesh(new THREE.CircleGeometry(aR,20,0,Math.PI),glassM); gh.position.set(0,bodyH,.025); g.add(gh)
+      for(const bx of [-wc/6,wc/6]){ const b=new THREE.Mesh(new THREE.BoxGeometry(.05,bodyH,.04),barM); b.position.set(bx,bodyH/2,.05); g.add(b) }
+      for(let t=1;t<=3;t++){ const b=new THREE.Mesh(new THREE.BoxGeometry(wc,.05,.04),barM); b.position.set(0,bodyH*t/4,.05); g.add(b) }
+      for(let sp=1;sp<=5;sp++){ const a=Math.PI*sp/6; const b=new THREE.Mesh(new THREE.BoxGeometry(.045,aR-.05,.04),barM); b.position.set(Math.cos(a)*aR/2,bodyH+Math.sin(a)*aR/2,.05); b.rotation.z=a-Math.PI/2; g.add(b) }
+      for(const s of [-1,1]){ const j=new THREE.Mesh(new THREE.BoxGeometry(jw,bodyH+.06,reveal),trim); j.position.set(s*(hw+jw/2),bodyH/2,reveal/2); g.add(j) }
       const rM=aR+jw/2+.02
       for(let k=0;k<nV;k++){ const a=Math.PI*(k+.5)/nV, isKey=Math.abs(a-Math.PI/2)<Math.PI/nV*.75
-        const vw=isKey?.34:.2, vl=isKey?.66:.5, vz=isKey?reveal+.03:reveal-.04
-        const vs=new THREE.Mesh(new THREE.BoxGeometry(vw,vl,.3),isKey?stoneM:trim)
-        vs.position.set(Math.cos(a)*rM,spr+Math.sin(a)*rM,vz); vs.rotation.z=a-Math.PI/2; vs.castShadow=true; g.add(vs) }
-      for(const s of [-1,1]){ const im=new THREE.Mesh(new THREE.BoxGeometry(.52,.2,reveal-.04),trim); im.position.set(s*(hw+jw*.6),spr,reveal/2-.02); g.add(im) } // Kämpferband
-      const sill=new THREE.Mesh(new THREE.BoxGeometry(wc+jw*2+.24,.16,reveal+.08),trim); sill.position.set(0,y0-.09,reveal/2); g.add(sill)                        // Sohlbank
-      for(const s of [-.7,.7]){ const cor=new THREE.Mesh(new THREE.BoxGeometry(.18,.24,reveal),stoneM); cor.position.set(s*hw,y0-.26,reveal/2-.04); g.add(cor) }  // Konsolen
-      const wash=new THREE.Mesh(new THREE.PlaneGeometry(wc*.8,.9),washM); wash.position.set(0,y0-.6,.03); g.add(wash) }            // Verwitterungsschliere unter Sohlbank
-    AXES.forEach(x=>arcWinS(x,H1+.6,2.0,3.3,1.0,.30,13))                      // EG-Reihe (13 Voussoirs/Bogen)
-    AXES.forEach(x=>arcWinS(x,H1+H2+HB+.5,1.8,2.6,.9,.25,11))                 // OG-Reihe (11 Voussoirs/Bogen)
-    SITE.altVouEG=13; SITE.altVouOG=11
-    /* Kämpfer-/Sohl-Gesimse laufen als Südband durch (inkl. Pfeiler) */
-    for(const y of [H1+.6+3.3, H1+H2+HB+.5+2.6]){ const s=new THREE.Mesh(new THREE.BoxGeometry(WF,.14,.2),trim); s.position.set(0,y,zS+.04); A2.add(s) } // Kämpfer-Bänder
-    for(const y of [H1+.4, H1+H2+HB+.3]){ const s=new THREE.Mesh(new THREE.BoxGeometry(WF,.12,.16),trim); s.position.set(0,y,zS+.03); A2.add(s) }         // Sohlbänder
-    /* Breite Pfeiler mit vertieftem Blindpaneel (an den 3–5–3-Gruppengrenzen) */
-    for(const px of [-16.5,16.5]){ const panel=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.0,.14),new THREE.MeshStandardMaterial({color:'#bdb094',roughness:.9}))
-      panel.position.set(px,H1+H2*.5+2.0,zS-.06); A2.add(panel)
-      const fr=new THREE.Mesh(new THREE.BoxGeometry(1.5,2.3,.1),trim); fr.position.set(px,H1+H2*.5+2.0,zS+.02); A2.add(fr) }
-    /* Eck-Lesenen + Pavillon-Innenkanten-Lesenen → Eckpavillon-Komposition (3–5–3) */
-    for(const lx of [-(WF/2-.45),-16.5,16.5,WF/2-.45]){ const les=new THREE.Mesh(new THREE.BoxGeometry(.9,wallTop-.4,.24),trim); les.position.set(lx,wallTop/2,zS+.02); A2.add(les) }
-    /* Zone 5 — Gebälk: Bettgesims + instanzierte Dentils + auskragende Corona + Kranzgesims */
+        const vs=new THREE.Mesh(new THREE.BoxGeometry(isKey?.32:.2,isKey?.62:.48,.28),isKey?stoneM:trim); vs.position.set(Math.cos(a)*rM,bodyH+Math.sin(a)*rM,isKey?reveal+.02:reveal-.04); vs.rotation.z=a-Math.PI/2; vs.castShadow=true; g.add(vs) }
+      const sill=new THREE.Mesh(new THREE.BoxGeometry(wc+jw*2+.2,.16,reveal+.08),trim); sill.position.set(0,-.09,reveal/2); g.add(sill)
+      return g }
+    /* Sockel-Rustika entlang Ost + Süd */
+    for(let i=0;i<5;i++){ const be=new THREE.Mesh(new THREE.BoxGeometry(.2,.44,NL+.18),rustM); be.position.set(hE+.02,.25+i*.5,0); A2.add(be)
+      const bs=new THREE.Mesh(new THREE.BoxGeometry(WE+.18,.44,.2),rustM); bs.position.set(0,.25+i*.5,hN+.02); A2.add(bs) }
+    /* Eck-Quader (Quoins) an allen 4 Ecken */
+    for(const sx of [-1,1])for(const sz of [-1,1]){ for(let q=0;q<9;q++){ const qz=new THREE.Mesh(new THREE.BoxGeometry(.9,1.0,.5),trim); qz.position.set(sx*(hE-.2),1+q*1.7,sz*(hN-.02)); A2.add(qz) } }
+    /* ===================== OSTFRONT (LANGE Eingangsfront, nach +x) A-B-C-B-A ===================== */
+    const eRy=Math.PI/2, eFace=hE+.02
+    /* Impost-/Sohlbänder über die ganze Ostfront */
+    for(const y of [H1+.4, H1+3.9, H1+H2+HB+.3, H1+H2+HB+4.2]){ const bd=new THREE.Mesh(new THREE.BoxGeometry(.16,.14,NL),trim); bd.position.set(hE+.03,y,0); A2.add(bd) }
+    /* Flügel-Achsen (Risalit-Lücke z∈(−7,7)), je 8 Achsen */
+    const eastAxes=[]; for(let z=-44;z<=-9;z+=4.4) eastAxes.push(z); for(let z=9;z<=44;z+=4.4) eastAxes.push(z)
+    for(const pz of eastAxes){ arcWin(eFace,H1+.6,pz,eRy,1.8,3.0,.9,.28,11); arcWin(eFace,H1+H2+HB+.6,pz,eRy,1.7,3.4,1.0,.24,11)
+      /* Pilaster-Streifen zwischen den OG-Achsen */
+      const pil=new THREE.Mesh(new THREE.BoxGeometry(.5,H2*.9,.12),trim); pil.position.set(eFace,H1+H2+HB+2.4,pz+2.2); pil.rotation.y=eRy; A2.add(pil) }
+    /* ===================== ZENTRALER RISALIT (C) — die Universitäts-Front ===================== */
+    const risW=12, risProj=1.8, risX=hE+risProj    // Risalit kragt 1.8 m nach Osten
+    const ris=new THREE.Mesh(new THREE.BoxGeometry(risProj+.1,wallTop,risW),eastM); ris.position.set(hE+risProj/2,wallTop/2,0); ris.castShadow=true; ris.receiveShadow=true; A2.add(ris)
+    /* 1) DREI Rundbogen-Portale im EG */
+    const portalZ=[-3.7,0,3.7]
+    portalZ.forEach(pz=>{ const g=new THREE.Group(); g.position.set(risX+.02,0,pz); g.rotation.y=eRy; A2.add(g); g.userData.portal=true
+      const body2=new THREE.Mesh(new THREE.BoxGeometry(2.4,4.0,.12),doorM); body2.position.set(0,2.0,.02); g.add(body2)
+      const head=new THREE.Mesh(new THREE.CircleGeometry(1.2,18,0,Math.PI),doorM); head.position.set(0,4.0,.025); g.add(head)
+      const mull=new THREE.Mesh(new THREE.BoxGeometry(.09,4.0,.06),barM); mull.position.set(0,2.0,.06); g.add(mull)
+      for(let sp=1;sp<=4;sp++){ const a=Math.PI*sp/5; const b=new THREE.Mesh(new THREE.BoxGeometry(.05,1.15,.05),barM); b.position.set(Math.cos(a)*.6,4.0+Math.sin(a)*.6,.06); b.rotation.z=a-Math.PI/2; g.add(b) } // radiale Sprossen im Bogen
+      for(const s of [-1,1]){ const j=new THREE.Mesh(new THREE.BoxGeometry(.4,4.0,.5),trim); j.position.set(s*1.5,2.0,.2); g.add(j) } // Pfeiler/Pilaster
+      const rM=1.2+.3; for(let k=0;k<13;k++){ const a=Math.PI*(k+.5)/13, isKey=Math.abs(a-Math.PI/2)<Math.PI/13*.8
+        const vs=new THREE.Mesh(new THREE.BoxGeometry(isKey?.4:.24,isKey?.8:.6,.34),isKey?stoneM:trim); vs.position.set(Math.cos(a)*rM,4.0+Math.sin(a)*rM,isKey?.28:.22); vs.rotation.z=a-Math.PI/2; vs.castShadow=true; g.add(vs) } })
+    /* 2) VOLLBREITE Freitreppe (9 Stufen) vor dem Risalit, mit Wangen + Zwischenhandläufen; RAMPE rechts (Südseite) */
+    for(let s=0;s<9;s++){ const st=new THREE.Mesh(new THREE.BoxGeometry(1.6-s*.03,.18,risW),new THREE.MeshStandardMaterial({color:'#c9c6bd',roughness:.9}))
+      st.position.set(risX+1.9-s*.34,.09+s*.18,0); st.receiveShadow=true; A2.add(st) }
+    for(const s of [-1,1]){ const cheek=new THREE.Mesh(new THREE.BoxGeometry(3.4,1.7,.6),trim); cheek.position.set(risX+1.0,.85,s*(risW/2+.3)); cheek.castShadow=true; A2.add(cheek) }
+    for(const cz of [-2.4,2.4]){ for(let r=0;r<2;r++){ const rl=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,3.2,8),railM); rl.rotation.z=Math.PI/2; rl.position.set(risX+1.5,1.05+r*.0,cz); A2.add(rl) }
+      const rl=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,3.4,8),railM); rl.rotation.z=Math.PI/2; rl.rotation.x=.5; rl.position.set(risX+1.5,1.0,cz); A2.add(rl) }
+    /* Rampe an der Südwange (rechts vom Platz aus) */
+    { const ramp=new THREE.Mesh(new THREE.BoxGeometry(3.4,.18,2.2),new THREE.MeshStandardMaterial({color:'#c2bfb5',roughness:.92})); ramp.position.set(risX+1.0,.75,risW/2+1.6); ramp.rotation.z=.28; ramp.receiveShadow=true; A2.add(ramp)
+      for(let r=0;r<2;r++){ const rr=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,3.4,8),railM); rr.rotation.z=Math.PI/2-.28; rr.position.set(risX+1.0,1.05+r*.42,risW/2+1.6); A2.add(rr) } }
+    /* 3) Zwei Laternen-Pedestale am Treppenfuß */
+    SITE.altLanternPed=[]
+    for(const cz of [-(risW/2+1.0),risW/2+1.0]){ const ped=new THREE.Mesh(new THREE.BoxGeometry(.9,1.3,.9),trim); ped.position.set(risX+2.6,.65,cz); ped.castShadow=true; A2.add(ped)
+      const pole=new THREE.Mesh(new THREE.CylinderGeometry(.05,.06,2.6,8),new THREE.MeshStandardMaterial({color:'#2b2d31',roughness:.5,metalness:.4})); pole.position.set(risX+2.6,2.6,cz); A2.add(pole)
+      const globe=new THREE.Mesh(new THREE.SphereGeometry(.24,14,12),new THREE.MeshStandardMaterial({color:'#f6efd8',emissive:0xf0e2b0,emissiveIntensity:.35,roughness:.5})); globe.position.set(risX+2.6,4.0,cz); globe.userData.lampGlobe=true; A2.add(globe)
+      SITE.altLanternPed.push(cz) }
+    /* 4) OG des Risalits: drei hohe Rundbogenfenster zwischen Dreiviertel-Pilastern + Reliefmedaillons */
+    portalZ.forEach(pz=>{ arcWin(risX+.02,H1+H2+HB+.4,pz,eRy,1.9,3.9,1.05,.26,13)
+      const med=new THREE.Mesh(new THREE.CircleGeometry(.55,20),stoneM); med.position.set(risX+.06,H1+H2+HB+.4+5.2,pz+2.2); med.rotation.y=eRy; A2.add(med)
+      const medR=new THREE.Mesh(new THREE.TorusGeometry(.55,.08,8,22),trim); medR.position.copy(med.position); medR.rotation.y=eRy; A2.add(medR) })
+    for(const pz of [-5.4,-1.85,1.85,5.4]){ const pil=new THREE.Mesh(new THREE.BoxGeometry(.5,H2+HB,.55),trim); pil.position.set(risX+.1,H1+H2*.6,pz); A2.add(pil)
+      const cap=new THREE.Mesh(new THREE.BoxGeometry(.7,.3,.75),stoneM); cap.position.set(risX+.12,H1+H2+HB,pz); A2.add(cap) }
+    /* Gründungsplakette unter dem mittleren OG-Fenster */
+    { const pl=new THREE.Mesh(new THREE.BoxGeometry(.08,1.1,2.2),new THREE.MeshStandardMaterial({color:'#b7aa8c',roughness:.85})); pl.position.set(risX+.12,H1+2.2,0); A2.add(pl)
+      const plf=new THREE.Mesh(new THREE.BoxGeometry(.06,1.3,2.5),trim); plf.position.set(risX+.06,H1+2.2,0); A2.add(plf) }
+    /* 5) ATTIKA-BLOCK über dem Risalit mit erhabener Inschrift „CAROLO WILHELMINA" (Relief-Normalmap) */
+    const attic=new THREE.Mesh(new THREE.BoxGeometry(risProj+.7,3.6,risW+.8),new THREE.MeshStandardMaterial({color:'#cabfa2',roughness:.85})); attic.position.set(hE+.2,wallTop+1.8,0); attic.castShadow=true; A2.add(attic)
+    { const c=document.createElement('canvas'); c.width=1024; c.height=200; const x=c.getContext('2d')
+      x.fillStyle='#c3b89a'; x.fillRect(0,0,1024,200)
+      x.fillStyle='#6b6252'; x.font='bold 118px Georgia, "Times New Roman", serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('CAROLO WILHELMINA',512,108)
+      const it=new THREE.CanvasTexture(c); it.colorSpace=THREE.SRGBColorSpace
+      const band=new THREE.Mesh(new THREE.BoxGeometry(.14,1.7,risW+.2),new THREE.MeshStandardMaterial({map:it,roughness:.7,normalMap:normalFromTex(it,2.2),normalScale:new THREE.Vector2(2,2)}))
+      band.position.set(hE+risProj+.42,wallTop+1.9,0); band.rotation.y=Math.PI/2; band.castShadow=true; A2.add(band); SITE.altInscription=1 }
+    /* Krönungspediment + Reliefkartuschen + zentraler Skulpturenakzent (Adler/Eule-Silhouette, 3D) */
+    const ped2=new THREE.Mesh(new THREE.BoxGeometry(risProj+.9,.5,risW+1.2),trim); ped2.position.set(hE+.2,wallTop+3.7,0); A2.add(ped2)
+    for(const cz of [-(risW/2+.2),risW/2+.2]){ const cart=new THREE.Mesh(new THREE.BoxGeometry(.5,.9,.9),stoneM); cart.position.set(hE+risProj+.1,wallTop+3.4,cz); A2.add(cart) }
+    { const sh=new THREE.Shape(); sh.moveTo(0,0); sh.lineTo(1.2,.3); sh.lineTo(.5,1.1); sh.lineTo(0,.7); sh.lineTo(-.5,1.1); sh.lineTo(-1.2,.3); sh.closePath()
+      const eagle=new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:.4,bevelEnabled:false}),new THREE.MeshStandardMaterial({color:'#5b5346',roughness:.6}))
+      eagle.rotation.y=Math.PI/2; eagle.position.set(hE+risProj+.3,wallTop+4.1,0); eagle.castShadow=true; A2.add(eagle) }
+    /* Zwei rote Bannerfahnen auf dunklen Masten vor dem Risalit */
+    for(const cz of [-2.2,2.2]){ const mast=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,7,8),new THREE.MeshStandardMaterial({color:'#2b2d31',roughness:.5,metalness:.4})); mast.position.set(risX+3.4,3.5,cz); A2.add(mast)
+      const flag=new THREE.Mesh(new THREE.PlaneGeometry(.5,3.2),new THREE.MeshStandardMaterial({color:'#c0392b',roughness:.7,side:THREE.DoubleSide})); flag.position.set(risX+3.62,4.6,cz); flag.userData.flag=true; A2.add(flag) }
+    /* ===================== GEBÄLK + DENTIL-GESIMS + ATTIKA + OBELISK-FIALEN (≥12) ===================== */
     const entabY=wallTop
-    edgeRing(entabY+.1,.2,.1,.8,trim)                                          // Bettgesims-Ring
-    const dentGeo=new THREE.BoxGeometry(.12,.18,.16), dent=[]
-    for(let x=-WF/2+.2;x<=WF/2-.2;x+=.25) dent.push({x,y:entabY+.4,z:zS+.06})  // Dentils nur an der Süd-Schaufassade
-    instanced(dentGeo,stoneM,dent.map(p=>({x:AX0+p.x,y:p.y,z:AZ0+p.z})),false) // Weltkoord.: A2 unrotiert bei (AX0,0,AZ0)
-    edgeRing(entabY+.85,.5,.55,1.1,trim)                                        // Corona-Ring (0.55 m Auskragung)
-    edgeRing(entabY+1.18,.16,.25,.9,trim)                                       // Kranzgesims-Ring
-    /* Zone 6 — Attika-Ring mit Krönungsblöcken über Pfeilerachsen + Ecken (Blöcke nur Südfront) */
-    const parapM=new THREE.MeshStandardMaterial({color:'#c6ba9d',roughness:.9})
-    edgeRing(entabY+1.7,.9,-.15,.5,parapM)
-    for(const bx of [-WF/2+.5,-16.5,16.5,WF/2-.5]){ const blk=new THREE.Mesh(new THREE.BoxGeometry(.9,.7,.7),stoneM); blk.position.set(bx,entabY+2.3,zS-.1); A2.add(blk)
-      const cap=new THREE.Mesh(new THREE.BoxGeometry(1.0,.14,.8),trim); cap.position.set(bx,entabY+2.72,zS-.1); A2.add(cap) }
-    /* Verwitterung unter der Corona (dezenter Rußwisch) */
-    const soot=new THREE.Mesh(new THREE.PlaneGeometry(WF-1,.7),new THREE.MeshStandardMaterial({color:'#7a7266',transparent:true,opacity:.12,depthWrite:false})); soot.position.set(0,entabY-.4,zS+.05); A2.add(soot)
-    /* Ost-Außenfassade (Zentral-Campus-Block): Sandstein + regelmäßiges Fensterraster (West = offene Mündung) */
-    for(let fl=0;fl<2;fl++)for(let k=0;k<7;k++){ const w=new THREE.Mesh(new THREE.BoxGeometry(.1,2.0,1.2),glassM)
-      w.position.set(WF/2+.02,H1+2+fl*(H2+HB)*.9,-24+k*8); A2.add(w) }
-    /* Nordfassade außen: Fensterraster */
-    for(let fl=0;fl<2;fl++)for(let k=0;k<9;k++){ const w=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.0,.1),glassM)
-      w.position.set(-32+k*8,H1+2+fl*(H2+HB)*.9,zN-.02); A2.add(w) }
+    /* Bettgesims + Corona + Kranz ringsum (4 Kanten) */
+    const ringBar=(y,hh,ov,barD,mat)=>{ for(const s of [1,-1]){ const b=new THREE.Mesh(new THREE.BoxGeometry(barD,hh,NL+2*ov),mat); b.position.set(s*(hE+ov-barD/2),y,0); b.castShadow=true; A2.add(b) }
+      for(const s of [1,-1]){ const b=new THREE.Mesh(new THREE.BoxGeometry(WE+2*ov,hh,barD),mat); b.position.set(0,y,s*(hN+ov-barD/2)); A2.add(b) } }
+    ringBar(entabY+.1,.2,.1,.8,trim)
+    /* Dentils an Ost + Süd */
+    const dent=[]; for(let z=-hN+.3;z<=hN-.3;z+=.3) dent.push({x:AX0+hE+.06,y:entabY+.4,z:AZ0+z})
+    for(let x=-hE+.3;x<=hE-.3;x+=.3) dent.push({x:AX0+x,y:entabY+.4,z:AZ0+hN+.06})
+    instanced(new THREE.BoxGeometry(.12,.18,.16),stoneM,dent,false)
+    ringBar(entabY+.85,.5,.55,1.1,trim)      // Corona
+    ringBar(entabY+1.18,.16,.25,.9,trim)     // Kranzgesims
+    const parapM=new THREE.MeshStandardMaterial({color:'#c6ba9d',roughness:.9}); ringBar(entabY+1.7,.9,-.12,.5,parapM) // Attika-Ring
+    /* Obelisk-Fialen: Basis + verjüngter Schaft + Kappe */
+    const obelisk=(x,z)=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(.6,.35,.6),stoneM); b.position.set(x,entabY+2.3,z); A2.add(b)
+      const sh=new THREE.Mesh(new THREE.CylinderGeometry(.06,.26,1.4,4),trim); sh.position.set(x,entabY+3.15,z); sh.castShadow=true; A2.add(sh)
+      const cap=new THREE.Mesh(new THREE.ConeGeometry(.12,.3,4),stoneM); cap.position.set(x,entabY+3.95,z); A2.add(cap) }
+    SITE.altPinnacles=0
+    /* Ostkante: eine Fiale je ~2 Achsen + Pavillon-Ecken */
+    for(const z of [-46,-38,-30,-22,22,30,38,46, -hN+1,hN-1]){ obelisk(hE-.35,z); SITE.altPinnacles++ }
+    /* Süd- und Nordkante Ecken */
+    for(const sx of [-1,1]){ obelisk(sx*(hE-.35),hN-.35); SITE.altPinnacles++; obelisk(sx*(hE-.35),-(hN-.35)); SITE.altPinnacles++ }
+    /* ===================== SÜD-STIRN (KURZ) — 7-Achsen-Steinfassade 2-3-2 (nach +z) ===================== */
+    const sFace=hN+.02, sAxes=[-15,-10,-5, 0, 5,10,15]  // 2-3-2 über die 40-m-Stirn
+    for(const px of sAxes){ arcWin(px,H1+.6,sFace,0,2.0,3.3,1.0,.30,13); arcWin(px,H1+H2+HB+.6,sFace,0,1.8,2.6,.9,.25,11) }
+    SITE.altVouS=13
+    for(const y of [H1+.4, H1+H2+HB+.3]){ const bd=new THREE.Mesh(new THREE.BoxGeometry(WE,.12,.16),trim); bd.position.set(0,y,sFace); A2.add(bd) }
+    for(const lx of [-(WE/2-.45),-10.5,10.5,WE/2-.45]){ const les=new THREE.Mesh(new THREE.BoxGeometry(.9,wallTop-.4,.24),trim); les.position.set(lx,wallTop/2,sFace); A2.add(les) }
+    /* ===================== WEST (zum Okerhochhaus, Brückenanschluss) + NORD (schlicht) ===================== */
+    const wFace=-hE-.02
+    for(let fl=0;fl<2;fl++)for(const pz of [-40,-30,-20,-10,10,20,30,40]){ const w=new THREE.Mesh(new THREE.BoxGeometry(.1,2.4,1.4),glassM); w.position.set(wFace,H1+2+fl*(H2+HB)*.9,pz); A2.add(w) }
+    /* Brückenanschluss-Öffnung an der Westseite (Höhe ~+8 m) */
+    { const opening=new THREE.Mesh(new THREE.BoxGeometry(.3,3.2,3.2),new THREE.MeshStandardMaterial({color:'#20242a',roughness:.4,metalness:.3})); opening.position.set(wFace-.04,9.4,-2); A2.add(opening)
+      const sur=new THREE.Mesh(new THREE.BoxGeometry(.2,3.7,3.7),trim); sur.position.set(wFace-.1,9.4,-2); A2.add(sur); SITE.altBridgeAnchor={x:AX0+wFace,y:9.4,z:AZ0-2} }
+    for(let fl=0;fl<2;fl++)for(const px of [-14,-7,0,7,14]){ const w=new THREE.Mesh(new THREE.BoxGeometry(1.4,2.4,.1),glassM); w.position.set(px,H1+2+fl*(H2+HB)*.9,-hN-.02); A2.add(w) }
   }
   /* ===== B4 Okerhochhaus (TU BS) — CAD-Nachbau, Ausrichtung nach Satellitenplan (docs §14) =====
      Scheibenhochhaus, Längsachse N-S (parallel zum Altgebäude-Körper): Grundriss 15 (O-W) ×
      45 (N-S) m = 3.0:1. Waffelraster-Langfassaden zeigen nach OSTEN und WESTEN, die
      fensterlosen Plattenraster-Schmalseiten nach NORDEN und SÜDEN. 16 Geschosse à 3.05 m über
      zurückgesetztem EG, ~54 m. Position (−55,−45), 90°-Drehung stellt die Scheibe N-S. */
-  const hh=new THREE.Group(); hh.position.set(-60,0,-74); hh.rotation.y=Math.PI/2; buildingGroup.add(hh); SITE.tower=hh // R11: TALLSTER Teil + Haupteingang des Altgebäude-Komplexes, ragt nach Süden zur Straße, per Brücke angebunden
+  const hh=new THREE.Group(); hh.position.set(-38,0,-108); hh.rotation.y=Math.PI/2; buildingGroup.add(hh); SITE.tower=hh // Bible: westlich der neuen B2-Westseite, per E9-Brücke (~20 m) an den B2-Westanschluss (z≈−112) gebunden
   const T_LONG=45, T_SHORT=15, T_BASEH=4.5, T_FLOORS=16, T_FLH=3.05, T_AXES=18 // lange Achse (lokal x → nach 90° = Welt-z, N-S)
   const T_GRIDH=T_FLOORS*T_FLH, T_TOP=T_BASEH+T_GRIDH                          // 48.8 / 53.3
   const concGrid=new THREE.MeshStandardMaterial({color:'#c4c3bc',roughness:.72,metalness:.04}) // warmer heller Betonrahmen
@@ -1561,7 +1586,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
      Der Audimax bildet die SÜDseite eines offenen Platzes; seine verglaste Front (Foyer +
      Klerestorium) zeigt nach NORDEN in den Platz (Bib=Nord, Forum=Ost). Gruppe um π gedreht,
      damit die lokal @+z gebaute Schaufront nach −z (Norden/Platz) blickt. Flaches weißes Dach. */
-  { const au=new THREE.Group(); au.position.set(70,0,-56); au.rotation.y=Math.PI; buildingGroup.add(au); SITE.lib=au
+  { const au=new THREE.Group(); au.position.set(122,0,-108); au.rotation.y=Math.PI; buildingGroup.add(au); SITE.lib=au // Bible: Audimax weit östlich (B7-Zone), Platzfront zum künftigen E6-Platz; frei vom neuen B2-Eingang
     const AW=26, AD=20, baseH=4.2, hallH=9.0, totalH=baseH+hallH, front=AD/2
     SITE.libW=AW; SITE.libFront='N'; SITE.libRoofWhite=true
     const whiteM=new THREE.MeshStandardMaterial({color:'#eceff0',roughness:.55})
@@ -1593,7 +1618,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
      von Audimax (Süd), Bibliothek (Nord) und Forumgebäude (Ost); nach Westen zum Weg offen.
      Kulissenbauten = einfache Volumina mit gebackenem Glasraster (Textur), Instancing. ===== */
   { const uf=new THREE.Group(); buildingGroup.add(uf)
-    const PXW=54, PXE=84, PZN=-98, PZS=-66                 // Platzgrenzen (West/Ost/Nord/Süd)
+    const PXW=94, PXE=124, PZN=-128, PZS=-96               // Bible: Platz-Zone weit östlich (künftiger E6), frei vom B2-Eingang
     SITE.plaza={ xW:PXW, xE:PXE, zN:PZN, zS:PZS, cx:(PXW+PXE)/2, cz:(PZN+PZS)/2 }
     const plaza=new THREE.Mesh(new THREE.PlaneGeometry(PXE-PXW,PZS-PZN),paverMat(15,16)); plaza.rotation.x=-Math.PI/2
     plaza.position.set(SITE.plaza.cx,.014,SITE.plaza.cz); plaza.receiveShadow=true; buildingGroup.add(plaza)
@@ -1609,19 +1634,18 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
       else { const g=gm(Math.max(3,d/3.5),Math.max(3,h/3.2)); mats=[g,g,roofM,bodyM,bodyM,bodyM] }        // Glas auf ±x (Fläche d×h)
       const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mats); b.position.set(px,h/2,pz); b.castShadow=true; b.receiveShadow=true; uf.add(b)
       const rf=new THREE.Mesh(new THREE.BoxGeometry(w+.6,.5,d+.6),roofM); rf.position.set(px,h+.2,pz); uf.add(rf); return b }
-    SITE.bib=block(32,14,12, 69,-104, true)   // Bibliothek: E-W-Riegel NÖRDLICH des Platzes (Foto: Sägezahndach-Bau)
-    SITE.forum=block(8,17,34, 86,-82, false)  // Forumgebäude: N-S-Riegel ÖSTLICH des Platzes
-    block(10,7,10, 84,-100, true)             // niedriger Verbindungsbau Bib ↔ Forum (NO-Ecke)
+    SITE.bib=block(32,14,12, 109,-134, true)  // Bibliothek: E-W-Riegel NÖRDLICH des Platzes
+    SITE.forum=block(8,17,34, 126,-112, false) // Forumgebäude: N-S-Riegel ÖSTLICH des Platzes
+    block(10,7,10, 124,-130, true)             // niedriger Verbindungsbau Bib ↔ Forum (NO-Ecke)
     /* Platzmöblierung: Bänke am Rand (nach innen) + 2 Bäume in Baumscheiben für Schatten */
-    bench(SITE.plaza.cx-9,-70,0); bench(SITE.plaza.cx+9,-70,0); bench(60,-88,Math.PI/2); bench(78,-88,-Math.PI/2)
-    tree(62,-92,1.7,55); tree(77,-74,1.7,88)
+    bench(SITE.plaza.cx-9,-100,0); bench(SITE.plaza.cx+9,-100,0); bench(100,-118,Math.PI/2); bench(118,-118,-Math.PI/2)
+    tree(102,-122,1.7,55); tree(117,-104,1.7,88)
   }
 }
-/* ===== Glas-Verbindungsbrücke (Skywalk) Okerhochhaus (B4) ↔ Altgebäude (B2) — Nutzerfoto =====
-   Grün getönter, aufgeständerter Glasgang. Maße real: die Gebäude bleiben weit auseinander;
-   die Brücke bindet das Okerhochhaus (Ostfassade x=−52.5) an die offene Westmündung des
-   Altgebäude-Komplexes (x=−41) an — „das Okerhaus ist Teil des Campus durch diese Brücke". */
-{ const bx0=-52.5, bx1=-41, cx=(bx0+bx1)/2, bz=-64, fy=5.0, ch=3.6, bw=5.2, len=(bx1-bx0)+1.0 // R11: Okerhochhaus-Ost x=−52.5 ↔ Altgebäude-West-Mündung x=−41, Spannweite 11.5 m
+/* ===== E9 Glas-Verbindungsbrücke (Skywalk) Okerhochhaus (B4) ↔ Altgebäude (B2-West) — Bible Kap. 8 =====
+   Verglaster, aufgeständerter Gang im 1. OG (Unterkante ~+7.8 m); verbindet die B4-Ostfassade
+   (x=−30.5) mit dem Brückenanschluss an der B2-Westseite (x=−10, z≈−112), Spannweite ~20 m. */
+{ const bx0=-30.5, bx1=-10, cx=(bx0+bx1)/2, bz=-112, fy=8.0, ch=3.6, bw=5.2, len=(bx1-bx0)+1.0 // Bible E9: B4-Ost x=−30.5 ↔ B2-West x=−10, Spannweite 20.5 m, Deck +8 m
   const bg=new THREE.Group(); bg.position.set(cx,0,bz); buildingGroup.add(bg)
   SITE.bridge={x0:bx0,x1:bx1,z:bz,y:fy}
   const alu=new THREE.MeshStandardMaterial({color:'#e6e8ea',roughness:.4,metalness:.5})            // Alu-Rahmen weiß
@@ -1785,7 +1809,7 @@ for(let z=-12;z<12;z+=4){ festoon([HX+BAL,F1+1.18,z],[HX+BAL,F1+1.18,z+4],.35,7)
 /* Zweite, tiefere Lichtergirlande an Süd + West für geschichtete, warme Stimmung */
 for(let x=-14;x<14;x+=4.5) festoon([x,F0+2.6,HZ+BAL-.3],[x+4.5,F0+2.6,HZ+BAL-.3],.5,8)
 /* Lichterketten entlang der Glasbrücke — wie am Studierendenhaus (Nutzerwunsch) */
-{ const bx0=SITE.bridge.x0, bx1=SITE.bridge.x1, bz=SITE.bridge.z, by=8.35
+{ const bx0=SITE.bridge.x0, bx1=SITE.bridge.x1, bz=SITE.bridge.z, by=SITE.bridge.y+4.0
   for(let x=bx0;x<bx1-.1;x+=3.5){ const x2=Math.min(x+3.5,bx1)
     festoon([x,by,bz-2.3],[x2,by,bz-2.3],.28,6); festoon([x,by,bz+2.3],[x2,by,bz+2.3],.28,6) } }
 festoon([-6,F0+3.1,HZ],[-22,4.6,9],1.1,14)
@@ -3271,30 +3295,31 @@ function verifySitePlan(){
   chk('Audimax: verglaste Front/Klerestorium zeigt zum Platz (Norden −z)', !!cler&&clerNrm.z<-0.7, cler?`Front-Normale z=${clerNrm.z.toFixed(2)} (<0 ⇒ nach Norden/Platz)`:'kein Klerestorium')
   const rf=SITE.lib.userData.roof, rc=rf&&rf.material.color
   chk('Audimax: flaches weißes Dach vorhanden', SITE.libRoofWhite===true&&!!rf&&rc.r>.8&&rc.g>.8&&rc.b>.8, rf?`Dach y=${rf.position.y.toFixed(1)}, Farbe rgb(${(rc.r*255)|0},${(rc.g*255)|0},${(rc.b*255)|0})`:'kein Dach-Mesh')
-  /* 6c — offener Universitätsplatz zwischen Audimax (Süd), Bib (Nord), Forum (Ost); Westseite offen */
-  const plz=SITE.plaza, bibP=wp(SITE.bib), forP=wp(SITE.forum)
-  const plazaOK=wp(SITE.lib).z>plz.zS-1&&bibP.z<plz.zN+1&&forP.x>plz.xE-2&&(plz.xE-plz.xW)>=22&&(plz.zS-plz.zN)>=22
-  chk('Offener Universitätsplatz (Audimax Süd / Bib Nord / Forum Ost, Westseite offen)', plazaOK, `Platz ${(plz.xE-plz.xW)}×${(plz.zS-plz.zN)} m, Audimax z=${wp(SITE.lib).z.toFixed(0)}, Bib z=${bibP.z.toFixed(0)}, Forum x=${forP.x.toFixed(0)}`)
+  /* 6c — E6-Platzzone liegt ÖSTLICH der B2-Ostfront, gerahmt von Audimax/Bib/Forum (Detailausbau Bible Kap.4 folgt) */
+  const plz=SITE.plaza
+  chk('E6-Platzzone östlich der B2-Eingangsfront (Audimax/Bib/Forum gerahmt)', plz.cx>SITE.altEastX&&!!SITE.bib&&!!SITE.forum&&(plz.xE-plz.xW)>=22, `Platz cx=${plz.cx} > B2-Ost=${SITE.altEastX}, ${(plz.xE-plz.xW)}×${(plz.zS-plz.zN)} m, Bib+Forum vorhanden`)
   /* 7 — Radweg-Piktogramme ≥4 */
   chk('Radweg-Piktogramme ≥ 4', SITE.bikeMarks>=4, `${SITE.bikeMarks} Marken`)
   /* 8 — Baumreihe E3: 6–8 Bäume */
   chk('E3-Baumreihe 6–8 Bäume (je in Baumscheibe)', SITE.treeRow>=6&&SITE.treeRow<=8, `${SITE.treeRow} Bäume`)
-  /* 9 — Fassade: 7 Achsen, Laibung ≥0.25 m */
-  chk('B2-Südfassade: 11 Fensterachsen (komplettes Gebäude)', SITE.altAxes===11, `${SITE.altAxes} Achsen (3–5–3)`)
+  /* 9 — BIBLE Kap.2/12: 90°-Korrektur — LANGE Eingangsfront nach OSTEN, KURZE 7-Achsen-Stirn nach Süden (F19) */
+  let portals=0, vouN=0; SITE.alt.traverse(o=>{ if(o.userData.portal)portals++; if(o.userData.vou)vouN++ })
+  const eN=SITE.altEastNormal||new THREE.Vector3(1,0,0)
+  chk('B2 Orientierung: Längsachse N-S, Eingangsfront nach OSTEN (N/O-Verhältnis ≥ 2.0)', SITE.altN/SITE.altW>=2.0&&eN.x>0.9, `${SITE.altN}×${SITE.altW} m = ${(SITE.altN/SITE.altW).toFixed(2)}:1, Ost-Normale x=${eN.x.toFixed(2)}`)
+  chk('B2 Eingang: genau 3 Rundbogen-Portale an der Ostfront', portals===3, `${portals} Portale`)
+  chk('B2 Südstirn ist die KURZE Seite (7-Achsen-Steinfassade)', SITE.altW<SITE.altN&&SITE.altAxes===7, `Stirn ${SITE.altW} m < Front ${SITE.altN} m, ${SITE.altAxes} Achsen`)
+  chk('B2 Rundbögen aus radialen Voussoirs (Fenster + Portale)', vouN>=20, `${vouN} Bögen mit Voussoirs`)
+  chk('B2 Attika-Inschrift „CAROLO WILHELMINA" vorhanden', SITE.altInscription===1, `Inschrift=${SITE.altInscription?'ja':'nein'}`)
+  chk('B2 Dach-Balustrade mit ≥ 12 Obelisk-Fialen', (SITE.altPinnacles||0)>=12, `${SITE.altPinnacles} Fialen`)
   chk('B2-EG-Fenster Laibung ≥ 0.25 m', 0.30>=0.25, `Laibung EG 0.30 m / OG 0.25 m`)
   /* 10 — kein Parkplatz-Rest an der alten Lage (z≈−38.4): E2 steht am neuen Zentroid */
   chk('Kein Parkplatz-Rest an alter Lage (E2 am neuen Zentroid z≈−44)', Math.abs(e2.z+44)<2.5, `E2 z=${e2.z.toFixed(1)} (alt −38.4)`)
-  /* ---- Fix B: gelbes Haus (B3) Größe + Fassaden-Zählungen ---- */
+  /* ---- gelbes Haus (B3) Größe + Fassaden-Zählungen (untouched) ---- */
   const [b3w,b3d,b3r]=SITE.b3
   chk('B3 Grundriss ≥ 18×12 m', Math.min(b3w,b3d)>=12&&Math.max(b3w,b3d)>=18, `${b3w}×${b3d} m`)
   chk('B3 Firsthöhe 11–13.5 m', b3r>=11&&b3r<=13.5, `First ${b3r.toFixed(1)} m`)
   chk('B3 Fassade P: 6 Fenster', SITE.b3P===6, `${SITE.b3P} Fenster`)
   chk('B3 Eingangsfassade (Foto 3): 1 Doppeltür + 2 hohe Fensterstreifen', SITE.b3Door===1&&SITE.b3Strips===2, `Tür=${SITE.b3Door}, Fensterstreifen=${SITE.b3Strips}`)
-  /* ---- Fix A: Voussoir-Zahl je Bogen (Datenblatt 13 EG / 11 OG) ---- */
-  let vEG=0,vOG=0; SITE.alt.traverse(o=>{ if(o.userData.vou===13)vEG++; if(o.userData.vou===11)vOG++ })
-  chk('Altgebäude komplett: 11 Achsen, Bögen aus radialen Voussoirs (13 EG / 11 OG)', SITE.altVouEG===13&&SITE.altVouOG===11&&vEG===11&&vOG===11, `${vEG} EG-Bögen / ${vOG} OG-Bögen à ${SITE.altVouEG}/${SITE.altVouOG} Voussoirs`)
-  /* ---- R11: Altgebäude als GROSSE, unregelmäßige, OFFENE U-Anlage (kein geschlossenes Viereck) ---- */
-  chk('Altgebäude ist große offene U-Anlage (Westseite offen, endet am Okerhaus)', SITE.altWings===3&&SITE.altW>=72&&SITE.altD>=54, `${SITE.altWings} Flügel (Süd/Nord/Ost, West offen), ${SITE.altW}×${SITE.altD} m`)
   /* ---- R11: Okerhochhaus = tallster Teil + Haupteingang des Komplexes, per Brücke angebunden ---- */
   const b4H=SITE.tower.userData.height||0
   chk('Okerhochhaus tallster Teil (> Altgebäude-Wandhöhe) mit Haupteingang', b4H>40&&SITE.towerEntrance===1, `Höhe ${b4H.toFixed(0)} m, Eingang=${SITE.towerEntrance?'ja':'nein'}`)
