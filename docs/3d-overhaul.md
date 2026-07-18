@@ -849,9 +849,208 @@ SwiftShader nicht repräsentativ messbar; Draw-Call-Reduktion (oben) ist der mas
 Weit-Overview unter Budget zu bringen (erfordert Trennung der statischen B1-Hülle von den
 interaktiven Tischen).
 
+## 27. LIGHTNESS RESCUE — Pflicht-Fragebogen (VOR jeder Code-Änderung beantwortet)
+
+Reihenfolge des Mandats: erst reproduzieren/auditieren, dann Fragebogen, dann Code (F33 verbietet
+Optimieren vor dem Audit der letzten Runde). Branch-Stand geklärt: **PR #3 (Perf-Pass) ist in `main`
+gemerged** (`origin/main` = `aba4ce7`). Der Branch trug 0 unmergte Commits ⇒ per Merged-PR-Regel den
+Branch frisch von `origin/main` neu aufgesetzt (`git checkout -B … origin/main`); LIGHTNESS RESCUE
+stapelt sich NICHT auf gemergter Historie, sondern beginnt frisch darauf.
+
+**Q1 — Was macht der aktuelle Service Worker wirklich? Erreicht ein neuer Build die Nutzer?**
+`sw.js` (`CACHE='wlt-v24'`): `install` → `caches.addAll(CORE)` + `skipWaiting()`; `activate` → alte
+Caches löschen + `clients.claim()`; `fetch`: für `navigate`/`index.html` **network-first** (Netz zuerst,
+Cache nur als Offline-Fallback), für CDN/Fonts/CORE **cache-first**. → HTML ist bereits network-first,
+also erreicht ein neuer Build den Nutzer **beim nächsten Reload**. Zwei echte Lücken: (a) der
+Cache-Name ist statisch (`wlt-v24`) statt an den Build gebunden → beim Build-Wechsel wird der alte
+CDN-/CORE-Cache nicht zwingend invalidiert; (b) es gibt **keinen Reload-Hinweis**, wenn ein neuer SW
+im Hintergrund aktiv wird → der Nutzer sieht die neue Version erst beim nächsten manuellen Reload.
+
+**Q2 — Was ist deployed vs. `main`?** Deploy = GitHub Pages von `main` (CNAME `kommilo.app`). Nach dem
+Merge von PR #3 ist der Perf-Pass live. Es gibt **kein Build-Sichtbarkeits-Signal** auf der Seite:
+weder Owner noch Nutzer können am Bildschirm ablesen, welcher Build läuft — Kernproblem der Aufgabe.
+
+**Q3 — Welche Module lädt die Seite zur Laufzeit vom CDN? Vendoring-Entscheidung.**
+Importmap lädt `three@0.169.0/build/three.module.js` + `examples/jsm/*` von `cdn.jsdelivr.net`
+(12 Addon-Dateien direkt importiert, insgesamt 22 mit transitiven Abhängigkeiten). Fonts von
+`fonts.googleapis.com`. Supabase-SDK dynamisch, guarded. **Entscheidung: three + Addons in `/vendor/three/`
+vendoren** (23 Dateien, 1.7 MB, kein Build-Schritt nötig) und lokal importieren; jsdelivr bleibt nur als
+dokumentierter Kommentar-Fallback. Begründung: entfernt die Laufzeit-Abhängigkeit von einem Drittanbieter-
+CDN (Egress/Ausfall/Version-Drift), macht die App selbst-hostend und den SW-Cache vollständig
+(alle App-kritischen JS-Bytes liegen same-origin). `preconnect` zu jsdelivr bleibt als Fallback-Wärmer.
+
+**Q4 — Build-Stamp-Plan.** Eine Quelle `BUILD` (Nummer + ISO-Datum) in `index.html` UND `sw.js`;
+Cache-Name = `kommilo-v${BUILD}` (an den Build gebunden ⇒ Build-Wechsel invalidiert alten Cache
+deterministisch). Sichtbar unten links als dezenter Stempel `v2026.07.18-a5f32d7`; der
+Kurz-Hash wird in einem finalen Stempel-Commit auf den Inhalts-Commit gesetzt (ohne Build-Schritt ist
+ein selbstreferenzieller Hash unmöglich — ehrlich dokumentiert; Nummer+Datum sind deterministisch und
+für die Delivery-Verifikation ausreichend). Der `?debug=perf`-Overlay zeigt denselben Stempel.
+
+**Q5 — Audit der letzten Runde (F33): Zahlen reproduziert?** `bench.mjs` auf dem aktuellen Code
+(`b5e5552`, jetzt in `main`) neu gefahren — Draw Calls exakt reproduziert:
+P1 2354 (Claim 2353), P2 2088, P3 211, P4 143, P5 426; `shadowMap.autoUpdate=false` bestätigt.
+Die Behauptungen von §26 sind **ehrlich und reproduzierbar**. Worst-View 2354 (Overview) bleibt der
+einzige offene Hebel — die interaktiven B1-Tische + ferne Stadtkulisse (nicht mergebar/App-Inhalt).
+
+**Q6 — Aktuelle gemessene Baseline (headless, `sceneDraw()`, high):**
+
+| Punkt | Draw calls | Dreiecke |
+|-------|-----------:|---------:|
+| P1 overview | 2354 | 1 025 934 |
+| P2 orbit-B1 | 2088 | 598 084 |
+| P3 portal-zoom | 211 | 278 534 |
+| P4 promenade | 143 | 274 008 |
+| P5 overview2 | 426 | 332 197 |
+Global: geometries 2078, textures 52, programs 58.
+
+**Q7 — 4-Stufen-Modell + Auto-Auswahl.** High / Balanced / Light / Potato. Auto-Auswahl beim Boot aus
+(a) `WEBGL_debug_renderer_info`-GPU-String (Apple/M-, RTX/Radeon/Arc = High; Intel/UHD/Iris, Mali/Adreno/
+PowerVR/Apple-A = Light/Balanced; SwiftShader/llvmpipe/software = Potato), (b) Bildschirmfläche +
+`pointer:coarse` (Phones default **Light**), (c) 1-s-Warm-up-Frame-Probe (echtes p95 nach dem Boot
+korrigiert die Heuristik nach unten). `?quality=high|balanced|light|potato` überschreibt hart.
+Der bestehende `perfMon` fährt weiter innerhalb der Reihenfolge fort.
+
+**Q8 — Interaction-Boost-Parameter.** Während aktivem Drag/Pinch/Zoom: DPR × 0.75 mit Floor 1.0 (der
+sichtbare Aliasing-Boden), AO-Pass aus, Schatten-`needsUpdate` pausiert, IBL-Prewarm verschoben. Beim
+`end`-Event über **250 ms** zurück auf die volle DPR der aktiven Stufe geblendet (kein harter Sprung).
+
+**Q9 — Anti-Pattern-Grep-Sweep (14 Posten, gemessen am aktuellen Code):**
+1. `new THREE.*` im Render-Loop (3286–3314): **0** (Vektoren `_bp/_bl/projV/_fr*` wiederverwendet). ✓
+2. `.innerHTML` pro Frame: nur in `updateLabels` und **nur** in `partner`/`gruppen` (Campus-3D early-return). ✓
+3. `getBoundingClientRect()` pro Frame: 1× in `updateLabels` (nur partner/gruppen). Akzeptabel, nicht Campus.
+4. `getElementById` im Hot-Path: **0** (`labelLayer` gecacht). ✓
+5. `querySelector` im Loop: **0**. ✓
+6. `Math.random()` im Loop: **0**. ✓
+7. `.clone()` gesamt 27× — alle im Setup, keiner pro Frame. ✓
+8. `.traverse()` gesamt 7× — Setup/verify, keiner pro Frame. ✓
+9. `castShadow=true` 75×, `receiveShadow` 38× — pro-Mesh-Setup; Schattenpass throttled (autoUpdate=false, alle 3 Frames). ✓
+10. `JSON.parse/stringify` pro Frame: 0. ✓
+11. Per-Frame-Matrix-Neuberechnung statischer Kulisse: unterbunden (`matrixAutoUpdate=false` eingefroren). ✓
+12. Voll-Auflösungs-Postpasses pro Frame: GTAO Half-Res, Bloom bleibt (bekannt), SMAA. Interaction-Boost pausiert AO.
+13. `setPixelRatio`-Churn pro Frame: 0 (nur bei Tier-Wechsel/Resize). ✓ — Interaction-Boost fügt kontrolliertes Setzen bei start/end hinzu.
+14. `touch-action` auf Canvas: **fehlt** → Phase 5 setzt `touch-action:none` + passive Listener.
+⇒ Der Loop ist nach dem Perf-Pass bereits sauber; die verbleibenden echten Hebel sind Delivery (Ph0),
+Overlay (Ph1), Tiers (Ph2), Interaction-Boost (Ph3) und Touch-Feel (Ph5) — nicht weitere Loop-Allokationen.
+
+**Q10 — Vorhergesagtes p95 + Beweis.** Bei ~143–426 Calls im Nahfeld und eingefrorenen Matrizen ist
+Desktop-High p95 ≤ 16.7 ms plausibel; Balanced ≤ 16.7 ms sicher; Phone-Light Ziel ≤ 33 ms (Potato als
+Netz). Frame-Zeit ist unter SwiftShader NICHT valide (Headless ~1 fps) — Beweis daher zweigleisig:
+(a) maschinell verifizierte Draw-Call-/Dreieck-Zahlen + `autoUpdate=false` headless, (b) `?benchmark=1`
+druckt `avg/p95 ms` auf echter GPU (Owner-Repro), zusätzlich im `?debug=perf`-Overlay live ablesbar.
+
+## 28. LIGHTNESS RESCUE — Umsetzung (Change Log)
+
+**Ph0 Delivery.** (a) three@0.169 + 22 Addons nach `/vendor/three/` vendored (1.7 MB, kein Build-Schritt);
+Importmap zeigt lokal, jsdelivr bleibt als dokumentierter Kommentar-Fallback; `modulepreload` auf die
+lokale `three.module.js`, `dns-prefetch` auf jsdelivr (nur noch für Fallback + 2 Foto-Texturen mit
+prozeduralem Canvas-Fallback). Beweis: **App bootet mit KOMPLETT geblocktem jsdelivr** (`window.__ok===true`)
+— three ist echt same-origin. (b) `sw.js` neu: Cache = `kommilo-v${BUILD}` (an den Build gebunden),
+HTML network-first, `/vendor/`+CORE+CDN cache-first, `skipWaiting`+`clients.claim`, precached
+index+manifest+icons+`three.module.js`. (c) `window.__BUILD={id,date,hash}` als EINE Quelle; sichtbarer
+Fuß-Stempel `v2026.07.18-a5f32d7`; **selbst-enthaltener Reload-Hinweis** „Neue Version
+verfügbar — neu laden" via `updatefound`→`installed`+Controller (kein Fehlalarm beim Erstbesuch). Beweis:
+Build-Bump im Test → neuer SW → Toast erscheint → Cache wird zu `kommilo-v<neu>` (alte Caches gelöscht).
+
+**Ph1 Overlay.** `?debug=perf` blendet FPS/ms (EMA), Draw-Calls+Dreiecke (über Szene+Postpässe akkumuliert,
+`renderer.info.autoReset=false`), DPR, Stufe, GPU-String und Build-Stempel ein. GPU-String einmalig via
+`WEBGL_debug_renderer_info`. `?benchmark=1` druckt zusätzlich Stufe/GPU/Build in die Konsole.
+
+**Ph2 Gerätebewusste Stufen.** 4 Stufen High/Balanced/Light/Potato (+`shadows`-Flag: Potato = Schattenpass
+KOMPLETT aus, DPR 1). Auto-Auswahl beim Boot aus GPU-String (`classifyTier`) + Zeiger/Fläche; `?quality=…`
+übersteuert hart; 1-s-Warm-up-Probe korrigiert einmalig nach unten. `perfMon` fährt 4-stufig fort. Beweis:
+SwiftShader → **Potato** (DPR 1, Schatten aus); `?quality=high` → **High** (Schatten an, „Tier High (?quality)").
+
+**Ph3 Interaction-Boost.** Aktives Ziehen → DPR × 0.75 (Floor 1.0) + AO aus + Schatten/`updateLife`
+eingefroren; nach dem Loslassen 250 ms entprellt zurück. Kein DPR-Ramp pro Frame (nur je 1 setSize an
+Start/Ende, nur bei echtem DPR-Spielraum). Beweis: Drag → **DPR 2→1.5, AO true→false**; Loslassen+Frame →
+**DPR/AO zurück**, `controls "end"` gefeuert.
+
+**Ph4 Heavy-Hitter-Sweep (alle 14 Posten, gemessen am aktuellen Code):**
+
+| # | Anti-Pattern | Befund | Status |
+|---|---|---|---|
+| 1 | `new THREE.*`/Array/Objekt-Alloc im Render-Loop | **0** (Loop-Body 3395–3435: Vektoren `_bp/_bl/projV/_fr*` wiederverwendet) | ✓ sauber |
+| 2 | `clone()` pro Instanz | 27× gesamt, **alle im Setup**, 0 pro Frame; Instanz-Varianz via Instanz-Attribute | ✓ |
+| 3 | `shadowMap.autoUpdate===true` | **false** + `needsUpdate` alle 3 Frames + bei Sonne/Preset; im Boost eingefroren | ✓ (Perf-Pass) |
+| 4 | Voll-Auflösungs-AO / doppelte Postpässe | GTAO **Half-Res** (alle Stufen), EINE Postkette; Boost pausiert AO | ✓ |
+| 5 | Ungeklemmtes/Geräte-rohes DPR | `min(devicePixelRatio, tier, 2)` + adaptiver Floor + Boost-Dip | ✓ |
+| 6 | >10 gleiche Meshes nicht instanziert | **17 `InstancedMesh`/`instanced()`** (Säulen, Mullions, Fialen, Dentils, Foliage, Figuren-Teile…) | ✓ |
+| 7 | Alpha-BLENDED Foliage | **8× `alphaTest`** (Cutout) → kein Overdraw-Killer | ✓ |
+| 8 | Mixer/Wind für Off-Frustum-Objekte | `updateLife` **frustum-gated** (`_frustum.intersectsSphere`); im Boost pausiert | ✓ (Perf-Pass) |
+| 9 | Texturen >2048 / fehlende Mip/Aniso | keine Diffuse >2048 (nur Shadow-Map 2048); **6× `anisotropy`** gesetzt | ✓ |
+| 10 | Über-Merge zerstört Frustum-Culling | Merge **pro Gebäude** (nicht global); B1-Hülle bewusst NICHT (s.u.) | ✓ |
+| 11 | Per-Frame-DOM/`getBoundingClientRect` | nur in `updateLabels`, **nur** partner/gruppen (Campus-3D early-return); `labelLayer` gecacht | ✓ |
+| 12 | Raycast/Frame gegen ganze Szene | Raycast nur im **`pointerup`**-Handler, gegen schlanke Sets (`partnerTargets`/`intTargets`/`clickTargets`) | ✓ |
+| 13 | `console.log` im Loop | **0** im Loop-Body | ✓ |
+| 14 | `preserveDrawingBuffer`/Stencil/`autoClear` | keine gesetzt (Default) | ✓ |
+
+⇒ Nach dem Perf-Pass war der Loop bereits sauber; LIGHTNESS RESCUE ergänzt `touch-action:none` (Ph5) und
+den Interaction-Boost (Ph3). **B1-Hüllen-Merge getestet und VERWORFEN:** bringt Fern-Overview (P1 766→381),
+**verschlechtert aber den Worst-View** (P2 1981→2459, P5 326→518), weil der gemergte Block die Pro-Sub-Mesh-
+Frustum-Cull-Granularität im Nahbereich verliert (headless, Schatten-frei, deterministisch gemessen). Der
+Worst-View ist budgetrelevant → bewusst NICHT gemergt (§29). Instanz-LOD-Reduktion auf Light/Potato ist ein
+dokumentierter Folgehebel; aktuell ist die Geometrie über alle Stufen identisch (sicherster Content-Schutz).
+
+**Ph5 Control-Feel v2.** `touch-action:none` auf Canvas (CSS + `domElement.style`) — Browser-Gesten kämpfen
+nicht gegen OrbitControls. Bereits aus dem Perf-Pass vorhanden: Pointer-Capture (OrbitControls 0.169),
+`zoomToCursor`, `controls.update(dt)` einmal/Frame, Damping 0.06, rotate/pan 0.9, zoom 0.8, Polar-Clamp .495π.
+
+## 29. LIGHTNESS RESCUE — Beweis (Vorher/Nachher, Ziele, Feel, Content-Proof)
+
+**Draw Calls — reine Beauty-Pass-Messung (headless, `sceneDraw()`, Schatten AUS, Damping AUS, deterministisch):**
+
+| Punkt | vor Runde (mit Schatten-Rauschen) | LIGHTNESS RESCUE (beauty, sauber) | Δ Geometrie identisch? |
+|-------|-------:|-------:|---|
+| P1 overview | 2354* | 766 | ja (F27) |
+| P2 orbit-B1 (worst) | 2088 | **1981** | ja |
+| P3 portal-zoom | 211 | 211 | ja |
+| P4 promenade | 143 | 143 | ja |
+| P5 overview2 | 426 | 326 | ja |
+Global: geometries 2214, textures 60. `*` P1 alt enthielt einen Schatten-Pass-Frame; die saubere Beauty-Zahl
+ist niedriger. **Kernbefund: die LIGHTNESS-RESCUE-Änderungen (Delivery/Overlay/Stufen/Boost/Feel) fügen NULL
+Draw-Calls hinzu** — die Szenengeometrie ist unverändert (Content-Proof unten).
+
+**Ziele — ehrlicher Abgleich:**
+- Desktop-High/Balanced p95 ≤ 16.7 ms: **nicht headless messbar** (SwiftShader ~0.4 fps → Frame-Zeit
+  irrelevant). Owner-Repro: `https://kommilo.app/?benchmark=1` (druckt avg/p95) bzw. `?debug=perf` live.
+  Maschinen-Beleg: Nahfeld 143–326 Calls, eingefrorene Matrizen, 0 Allokationen/Frame.
+- Phone-Light p95 ≤ 33 ms: Handys landen per Auto-Auswahl auf **Light** (DPR 1.25, Schatten 1024) bzw. sehr
+  schwache/Software-GPUs auf **Potato** (Schatten AUS, DPR 1) — Owner-Repro auf echtem Gerät.
+- Draw-Calls ≤ 350 Worst-High: **im Nahfeld erreicht** (P3 211, P4 143, P5 326); **im Weit-Overview NICHT**
+  (P2 1981) — das sind die klickbaren Studien-Tische in B1 (App-Inhalt, F27, nicht mergebar) + Stadtkulisse.
+  Der einzige Hebel dafür (B1-Hüllen-Merge) verschlechtert den Worst-View (§28 Ph4) → verworfen. Ehrlich
+  dokumentiert statt geschönt (Zero-Tolerance-Policy #4).
+
+**Feel-Checkliste (binär):** touch-action:none ✓ · Pointer-Capture (OrbitControls) ✓ · Damping 0.06 /
+Flick-Glide ~0.6–0.9 s ✓ · Zoom-to-Cursor ✓ · Interaction-Boost DPR-Dip beim Ziehen ✓ (2→1.5 gemessen) ·
+250-ms-Restore ✓ · Soft-Polar-Clamp (kein Snap) ✓ · Idle-Drift weicht sofort ✓. (Subjektiv-Feel bestätigt
+der Owner auf echter GPU.)
+
+**Content-Proof (F27/F31):** `verifySitePlan` **27/27 PASS** (B2-Portale/Voussoirs/Fialen/CAROLO-WILHELMINA/
+Okerhochhaus/Brücke/gelbes Haus/Audimax alle intakt) auf jeder Stufe; **14/14** Interaktions-Regression
+(Sektionen, Tischklick, Labels, Effekt-Toggle, Tag/Nacht, Resize, generisches Gebäude); Tag+Nacht-Screenshots
+gerendert; App-Logik/Auth/Payments/Credits/Moderation unangetastet.
+
+**Owner-Verifikation (auf echtem Gerät, deutsch):**
+1. `https://kommilo.app` öffnen → unten mittig steht `v2026.07.18-a5f32d7`. Ist die Nummer/das
+   Datum aktuell, läuft der neuste Build. (Kommt ein grauer Balken „Neue Version verfügbar — neu laden",
+   einmal neu laden — dann bist du sicher aktuell.)
+2. `https://kommilo.app/?debug=perf` → Overlay oben links zeigt FPS, ms, Draw-Calls, DPR, **Stufe** und
+   deinen **GPU-String**. Am Desktop sollte „High" oder „Balanced" stehen, am Handy „Light".
+3. `https://kommilo.app/?benchmark=1` → 20 s warten → Konsole (F12) druckt `[BENCHMARK] … p95=… ms` samt
+   Stufe/GPU. Ziel Desktop p95 ≤ 16.7 ms.
+4. Kräftig ziehen/drehen: es muss sofort reagieren und nach dem Loslassen weich ausgleiten (kurz kann das
+   Bild beim Ziehen minimal weicher werden — das ist der Interaction-Boost, er kommt nach ~¼ s zurück).
+5. Erzwinge eine Stufe zum Vergleich: `?quality=potato` (leichteste) vs. `?quality=high` (volle Qualität).
+
 ## 24. Files touched
 
-- `index.html` — module script (rendering pipeline + scene content) + merged production system
-- `sw.js` — cache version bumped to `wlt-v24` (rest from `main`)
+- `index.html` — module script (rendering pipeline + scene content) + merged production system;
+  LIGHTNESS RESCUE: vendored importmap + modulepreload, `window.__BUILD` + SW-Registrierung/Reload-Toast,
+  Build-Stempel (`#buildstamp`), `?debug=perf`-Overlay, GPU-String + `classifyTier` + `?quality` + Warm-up,
+  4. Stufe Potato + `shadows`-Toggle, Interaction-Boost (`applyBoost`), `touch-action:none`
+- `sw.js` — neu geschrieben: Cache `kommilo-v${BUILD}` (Build-gebunden), HTML network-first,
+  `/vendor/`+CORE+CDN cache-first, `skipWaiting`+`clients.claim`, Precache inkl. `three.module.js`
+- `vendor/three/` — NEU: three@0.169 + 22 Addons same-origin vendored (1.7 MB, kein Build-Schritt)
 - `CNAME`, `sitemap.xml` — from `main` (unchanged)
-- `docs/3d-overhaul.md` — this document
+- `docs/3d-overhaul.md` — this document (§27 Fragebogen, §28 Umsetzung, §29 Beweis)

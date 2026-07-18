@@ -10,7 +10,37 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Kommilo">
-<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js'))}</script>
+<script>
+/* ===== Delivery / Build-Sichtbarkeit (LIGHTNESS RESCUE Ph0) =====
+   EINE Quelle der Build-Kennung — geteilt mit sw.js (Cache-Name = kommilo-v${id}). Sichtbar als
+   dezenter Fuß-Stempel und im ?debug=perf-Overlay; so ist am Bildschirm ablesbar, welcher Build läuft. */
+window.__BUILD = { id: '2026.07.18-a5f32d7', date: '2026-07-18', hash: 'a5f32d7' }; // id = Delivery-Stempel (Datum-Hash) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>; finaler Stempel-Commit trägt den echten Kurz-Hash nach
+(function(){
+  // Fuß-Stempel setzen, sobald der Body existiert (robust — auch wenn die 3D-App nicht bootet)
+  function stamp(){ var el=document.getElementById('buildstamp'); if(!el) return
+    el.textContent='v'+window.__BUILD.id }   // → v2026.07.18-a5f32d7 (Format laut Spezifikation)
+  if(document.readyState!=='loading') stamp(); else addEventListener('DOMContentLoaded', stamp)
+  if(!('serviceWorker' in navigator)) return
+  // Selbst-enthaltener Reload-Hinweis — unabhängig vom App-Toast, wirkt auch bei kaputter/veralteter App
+  function reloadToast(){ if(document.getElementById('sw-reload')) return
+    var b=document.createElement('div'); b.id='sw-reload'
+    b.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;background:#111827;color:#fff;font:600 13px/1.3 "Plus Jakarta Sans",system-ui,sans-serif;padding:10px 14px;border-radius:12px;box-shadow:0 10px 34px rgba(0,0,0,.38);display:flex;gap:10px;align-items:center;max-width:calc(100vw - 24px)'
+    var s=document.createElement('span'); s.textContent='Neue Version verfügbar — neu laden'
+    var r=document.createElement('button'); r.textContent='Neu laden'
+    r.style.cssText='background:#4F46E5;color:#fff;border:0;border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer;white-space:nowrap'
+    r.onclick=function(){ location.reload() }
+    b.appendChild(s); b.appendChild(r); (document.body||document.documentElement).appendChild(b) }
+  addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      /* Update-Erkennung: ein neuer Worker wird installiert, WÄHREND bereits ein Controller läuft
+         ⇒ echte Aktualisierung (nicht der Erstbesuch) ⇒ Reload-Hinweis. */
+      reg.addEventListener('updatefound',function(){ var nw=reg.installing; if(!nw) return
+        nw.addEventListener('statechange',function(){
+          if(nw.state==='installed' && navigator.serviceWorker.controller) reloadToast() }) })
+    }).catch(function(){})
+  })
+})()
+</script>
 <meta name="description" content="Kommilo: Finde Lernpartner und Lerngruppen im 3D-Studierendenhaus der TU Braunschweig. Nur mit Uni-E-Mail, faire Regeln, Credits statt Abo, internationale Uni-Verbindungen — kein Dating, nur Lernen.">
 <link rel="canonical" href="https://kommilo.app/">
 <meta name="robots" content="index,follow">
@@ -26,13 +56,18 @@
 <meta name="twitter:description" content="Lernpartner & Lerngruppen im 3D-Studierendenhaus finden. Nur mit Uni-E-Mail.">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Kommilo","alternateName":"Seatmate","url":"https://kommilo.app/","applicationCategory":"EducationalApplication","operatingSystem":"Web","inLanguage":"de","description":"3D-Lernplattform der TU Braunschweig: Lernpartner finden, Lerngruppen an echten Tischen im Studierendenhaus gründen, internationale Uni-Verbindungen. Registrierung nur mit Uni-E-Mail.","offers":{"@type":"Offer","price":"0.99","priceCurrency":"EUR","description":"Credit-Pakete ab 0,99 €, erstes Match kostenlos, kein Abo"},"audience":{"@type":"EducationalAudience","educationalRole":"student"},"creator":{"@type":"Person","name":"Sam"}}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<!-- three ist same-origin vendored; jsdelivr nur noch für den Fallback + zwei optionale Foto-Texturen -->
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 <style>
 :root{font-family:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif}
 *{box-sizing:border-box;margin:0}
 html,body{height:100%;overflow:hidden;background:linear-gradient(#5b9bd9 0%,#a8cdee 34%,#e8f1f8 68%,#eef0ea 100%);color:#221c35;transition:background .6s}
 body.night{background:linear-gradient(#0b1322 0%,#141d33 55%,#1a2338 100%)}
 #stage{position:fixed;inset:64px 0 0 264px}
-#stage canvas{display:block}
+#stage canvas{display:block;touch-action:none}/* Ph5: Browser-Touch-Gesten nicht gegen OrbitControls kämpfen lassen */
+/* Delivery: dezenter Build-Stempel am unteren Rand mittig — immer sichtbar, frei von Chip/Statistik-Karte, blockiert keine Klicks */
+#buildstamp{position:fixed;left:50%;transform:translateX(-50%);bottom:3px;z-index:50;font:600 10px/1 'Plus Jakarta Sans',system-ui,sans-serif;letter-spacing:.02em;color:rgba(90,100,120,.5);pointer-events:none;user-select:none;white-space:nowrap}
+body.night #buildstamp{color:rgba(150,165,195,.45)}
 #labels{position:fixed;inset:64px 0 0 264px;pointer-events:none;z-index:4;overflow:hidden}
 .tlabel{position:fixed;transform:translate(-50%,-100%);background:rgba(255,255,255,.94);border:1px solid rgba(23,23,43,.08);border-radius:8px;box-shadow:0 2px 10px -2px rgba(23,23,43,.16);padding:4px 10px;text-align:center;white-space:nowrap}
 .tlabel b{display:block;font-size:11px}.tlabel i{display:block;font-style:normal;font-size:10px;font-weight:700}
@@ -169,6 +204,7 @@ input:focus,select:focus{border-color:#4F46E5;box-shadow:0 0 0 3px rgba(79,70,22
 <div id="labels"></div>
 <div id="hud"></div>
 <div id="toasts"></div>
+<div id="buildstamp" aria-hidden="true"></div>
 <div id="modal"><div class="mbox"></div></div>
 <div id="load"><div id="splash">
 <svg id="spl-mark" viewBox="0 0 220 220" width="132" height="132">
@@ -179,7 +215,7 @@ input:focus,select:focus{border-color:#4F46E5;box-shadow:0 0 0 3px rgba(79,70,22
 </svg>
 <div id="spl-name">kommilo</div></div>
 <div style="position:absolute;left:-9999px;top:0"><h1>Kommilo — Lernpartner &amp; Lerngruppen an der TU Braunschweig</h1><p>Der 3D Study Campus im Studierendenhaus: Wähle einen echten Tisch, gründe eine Lerngruppe (max. 7 Personen) oder finde einen Lernpartner in deinem Fach. Registrierung nur mit Uni-E-Mail, Credits statt Abo (Pakete ab 0,99&nbsp;€), erstes Match und erster Gruppenbeitritt kostenlos. Kein Dating — nur gemeinsames Lernen.</p></div></div>
-<div id="err"><div class="card"><b>Die 3D-Welt konnte nicht starten.</b><p>Internet prüfen (cdn.jsdelivr.net) und neu laden.</p><p id="errdetail" style="font-size:10px;color:#b8332e;word-break:break-all"></p></div></div>
+<div id="err"><div class="card"><b>Die 3D-Welt konnte nicht starten.</b><p>Seite neu laden. Bleibt es hängen, Browser-Cache leeren (die 3D-Engine liegt lokal, kein CDN nötig).</p><p id="errdetail" style="font-size:10px;color:#b8332e;word-break:break-all"></p></div></div>
 <script>
   window.__splashT0=Date.now()
   window.addEventListener('error',ev=>{ if(!window.__ok&&(ev.error||ev.message)){
@@ -187,10 +223,16 @@ input:focus,select:focus{border-color:#4F46E5;box-shadow:0 0 0 3px rgba(79,70,22
     try{ var ed=document.getElementById('errdetail'); if(ed) ed.textContent=(ev.message||'')+(ev.lineno?(' · Zeile '+ev.lineno):'') }catch(x){} } },true)
   setTimeout(()=>{ if(!window.__ok){document.getElementById('err').style.display='grid';document.getElementById('load').style.display='none'} },10000)
 </script>
+<!-- Delivery: three@0.169 ist same-origin nach /vendor/three/ vendored (kein Build-Schritt, keine
+     Laufzeit-Abhängigkeit von einem Dritt-CDN → Egress/Ausfall/Version-Drift ausgeschlossen, SW-Cache
+     vollständig). jsdelivr bleibt nur als dokumentierter Fallback (Preconnect wärmt ihn vor):
+       "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js"
+       "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/" -->
+<link rel="modulepreload" href="./vendor/three/three.module.js">
 <script type="importmap">
 { "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+  "three": "./vendor/three/three.module.js",
+  "three/addons/": "./vendor/three/addons/"
 } }
 </script>
 <script type="module">
@@ -233,14 +275,22 @@ const sceneConfig = {
     damping: .06,              // orbit inertia — "wind": instant response, ~0.6–0.9 s glide-out after release
     breatheAmp: .05,           // metres of idle vertical "breathing" drift (very subtle life)
     breatheSpeed: .22,         // Hz-ish speed of the breathing sine — slow enough to not read as a loop
+    boostScale: .75,           // Ph3 Interaction-Boost: DPR × 0.75 während aktivem Ziehen/Zoomen …
+    boostFloor: 1.0,           // … aber nie unter 1.0 (Aliasing-Boden); auf Stufen ohne DPR-Spielraum unwirksam
+    boostRestoreMs: 250,       // nach dem Loslassen 250 ms entprellen, dann volle DPR/AO wiederherstellen (kein Puffer-Thrash pro Frame)
   },
-  quality: {                   // tiers applied by the adaptive performance monitor (Phase D)
-    high:   { pixelRatio: 2,   shadowMap: 2048, ao: true,  aoHalfRes: true,  smaa: true  }, // Perf-Pass: AO Half-Res auch auf high (fast unsichtbar, spart Fullscreen-Bandbreite)
-    medium: { pixelRatio: 1.5, shadowMap: 2048, ao: true,  aoHalfRes: true,  smaa: true  },
-    low:    { pixelRatio: 1.25,shadowMap: 1024, ao: false, aoHalfRes: true,  smaa: false }, // adaptiver DPR-Floor 1.25 (F29: default-DPR nie < 1.5)
+  quality: {                   // LIGHTNESS RESCUE Ph2: 4 gerätebewusste Stufen (Anzeigenamen ↔ interne Keys)
+    /* Anzeige: High↔high · Balanced↔medium · Light↔low · Potato↔potato. shadows=false schaltet den
+       kompletten Schattenpass ab (größter Gewinn auf schwächster HW). aoHalfRes: AO auf halber Auflösung. */
+    high:   { pixelRatio: 2,    shadowMap: 2048, shadows: true,  ao: true,  aoHalfRes: true,  smaa: true  }, // dGPU/Apple-Silicon Desktop
+    medium: { pixelRatio: 1.5,  shadowMap: 1536, shadows: true,  ao: true,  aoHalfRes: true,  smaa: true  }, // Balanced: Intel-iGPU/unbekannt Desktop (Schatten 1536, DPR ≤ 1.75 laut Spec)
+    low:    { pixelRatio: 1.25, shadowMap: 1024, shadows: true,  ao: false, aoHalfRes: true,  smaa: false }, // Light: Handys default (Ziel 30 fps)
+    potato: { pixelRatio: 1.0,  shadowMap: 512,  shadows: false, ao: false, aoHalfRes: true,  smaa: false }, // Notnetz: Software-GL/sehr schwach — Schatten AUS, DPR 1
     fpsDrop: 45,               // sustained fps below this → drop one tier
     fpsRaise: 57,              // sustained fps above this → raise one tier (with hysteresis)
     windowSec: 3,              // seconds of fps averaging before a tier decision
+    warmupSec: 1,              // Ph2: 1-s-Warm-up-Probe direkt nach dem Boot korrigiert die Heuristik einmalig nach unten
+    display: { high:'High', medium:'Balanced', low:'Light', potato:'Potato' }, // Overlay/Anzeige-Namen
   },
   shadow: {
     frustum: 46,               // half-size (m) of the sun shadow box — building + near park, keeps texels dense
@@ -333,8 +383,9 @@ const sceneConfig = {
 }
 
 /* ===== Renderer: sRGB out, ACES filmic, weiche Schatten ===== */
-/* Mobile (grober Zeiger) startet eine Stufe tiefer — Ziel 30 fps; der Monitor stuft weiter ab */
-let qualityTier = (matchMedia('(pointer: coarse)').matches) ? 'medium' : 'high'
+/* Bootstrap-Stufe (nur für die Renderer-Konstruktion): grob nach Zeiger/Fläche; die echte
+   gerätebewusste Auswahl folgt gleich nach der GPU-String-Abfrage (setQualityTier korrigiert). */
+let qualityTier = (matchMedia('(pointer: coarse)').matches || innerWidth < 900) ? 'low' : 'high'
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
 renderer.outputColorSpace = THREE.SRGBColorSpace
 renderer.setPixelRatio(Math.min(devicePixelRatio, sceneConfig.quality[qualityTier].pixelRatio, sceneConfig.renderer.maxPixelRatio))
@@ -345,6 +396,25 @@ renderer.shadowMap.autoUpdate = false   // Perf-Pass: Schatten NICHT jeden Frame
 renderer.toneMapping = THREE.ACESFilmicToneMapping
 renderer.toneMappingExposure = sceneConfig.modes.tag.exposure
 document.getElementById('stage').appendChild(renderer.domElement)
+/* ===== LIGHTNESS RESCUE Ph1/Ph2: GPU-String, ?debug=perf, ?quality-Override, gerätebewusste Auto-Stufe ===== */
+let GPU_RENDERER = 'unbekannt'
+try { const _gl = renderer.getContext(), _dbg = _gl.getExtension('WEBGL_debug_renderer_info')
+  if(_dbg) GPU_RENDERER = String(_gl.getParameter(_dbg.UNMASKED_RENDERER_WEBGL) || '').slice(0, 90) } catch(e) {}
+const DEBUG_PERF = location.search.indexOf('debug=perf') >= 0
+/* GPU-String + Zeiger/Bildschirmfläche → interne Stufe (Phones default Light per Brief). */
+function classifyTier(gpu){
+  const g = (gpu || '').toLowerCase(), coarse = matchMedia('(pointer: coarse)').matches
+  if(/swiftshader|llvmpipe|software|microsoft basic|softwarerasterizer/.test(g)) return 'potato'      // keine echte GPU
+  if(/nvidia|geforce|rtx|gtx|radeon|\brx ?\d|\bamd\b|\barc\b|apple m\d|apple gpu/.test(g)) return coarse ? 'medium' : 'high' // dGPU/Apple-Silicon
+  if(coarse || /mali|adreno|powervr|apple a\d/.test(g)) return 'low'                                  // Handy-GPU → Light
+  if(/intel|uhd|iris|hd graphics/.test(g)) return 'medium'                                            // Intel-iGPU → Balanced
+  return (coarse || innerWidth < 900) ? 'low' : 'medium'                                              // unbekannt: klein→Light, sonst Balanced
+}
+/* Harte Übersteuerung per ?quality=high|balanced|light|potato (Anzeige- → interner Key). */
+const _DISP2KEY = { high:'high', balanced:'medium', light:'low', potato:'potato' }
+const _qOvr = (location.search.match(/[?&]quality=(high|balanced|light|potato)/) || [])[1]
+const AUTO_TIER = _qOvr ? _DISP2KEY[_qOvr] : classifyTier(GPU_RENDERER)
+qualityTier = AUTO_TIER   // setQualityTier(qualityTier) weiter unten wendet Stufe + DPR + Schatten an
 const scene = new THREE.Scene()
 scene.fog = new THREE.FogExp2(new THREE.Color(sceneConfig.modes.tag.fog.color), sceneConfig.modes.tag.fog.density)
 const pmrem = new THREE.PMREMGenerator(renderer)
@@ -388,9 +458,13 @@ controls.autoRotate = true; controls.autoRotateSpeed = .3
 controls.minDistance = 3; controls.maxDistance = 130; controls.maxPolarAngle = Math.PI * .495 // nie unter den Boden/kippen
 controls.rotateSpeed = .9; controls.panSpeed = .9; controls.zoomSpeed = .8
 controls.zoomToCursor = true                                                          // Welt fließt zum Zeiger
-let lastInteract = -9999
-controls.addEventListener('start', () => { controls.autoRotate = false; lastInteract = performance.now() })
-controls.addEventListener('end',   () => { lastInteract = performance.now() })
+controls.domElement.style.touchAction = 'none'                                        // Ph5: Browser-Touch-Gesten (Scroll/Zoom) NICHT gegen OrbitControls kämpfen lassen
+let lastInteract = -9999, boostOn = false, boostOffAt = Infinity                       // Ph3 Interaction-Boost-Zustand
+/* Ph3: aktives Ziehen/Zoomen → sofort DPR senken + AO aus (applyBoost weiter unten definiert, gehoisted) */
+controls.addEventListener('start', () => { controls.autoRotate = false; lastInteract = performance.now()
+  boostOffAt = Infinity; if(!boostOn){ boostOn = true; applyBoost(true) } })
+controls.addEventListener('end',   () => { lastInteract = performance.now()
+  boostOffAt = performance.now() + sceneConfig.camera.boostRestoreMs })              // nach Loslassen entprellt zurück
 
 /* ===== Licht: geschichtet — Sonne (Schatten), Himmels-Bounce, IBL.
    Konstruktion direkt aus dem Tag-Preset; applyMode() hält die Werte danach synchron. ===== */
@@ -1986,6 +2060,15 @@ function applyAoSize(){ if(!composer||!gtaoPass||!gtaoPass.enabled) return
   const q=sceneConfig.quality[qualityTier], pr=renderer.getPixelRatio()
   /* Halbauflösung (in effektiven Pixeln): AO ist niederfrequent — optisch kaum Verlust, halbe Füllrate */
   if(q.aoHalfRes) gtaoPass.setSize(Math.ceil((innerWidth-264)*pr/2),Math.ceil((innerHeight-64)*pr/2)) }
+/* Ph3 Interaction-Boost: aktives Ziehen → DPR × boostScale (Floor boostFloor) + AO aus → fps für die
+   Geste; nach dem Loslassen zurück. KEIN DPR-Ramp pro Frame (würde Render-Targets thrashen) — je ein
+   setSize bei Start und Ende, und nur wenn echter DPR-Spielraum besteht (auf Potato/DPR 1 wirkungslos). */
+function applyBoost(on){
+  const full=Math.min(devicePixelRatio,sceneConfig.quality[qualityTier].pixelRatio,sceneConfig.renderer.maxPixelRatio)
+  const pr=on?Math.max(sceneConfig.camera.boostFloor,full*sceneConfig.camera.boostScale):full
+  if(Math.abs(renderer.getPixelRatio()-pr)>.01){ renderer.setPixelRatio(pr); renderer.setSize(innerWidth-264,innerHeight-64)
+    if(composer){ composer.setPixelRatio(pr); composer.setSize(innerWidth-264,innerHeight-64) } applyAoSize() }
+  if(gtaoPass) gtaoPass.enabled = on ? false : sceneConfig.quality[qualityTier].ao }
 function setQualityTier(tier){ if(!sceneConfig.quality[tier]) return
   qualityTier=tier
   const q=sceneConfig.quality[tier]
@@ -1997,12 +2080,15 @@ function setQualityTier(tier){ if(!sceneConfig.quality[tier]) return
   if(composer){ composer.setPixelRatio(pr); composer.setSize(innerWidth-264,innerHeight-64) }
   if(sun.shadow.mapSize.x!==q.shadowMap){ sun.shadow.mapSize.set(q.shadowMap,q.shadowMap)
     if(sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map=null } }
+  /* Ph2: Schattenpass auf der schwächsten Stufe komplett aus (größter Einzelgewinn auf Software-GL/Handy) */
+  if(renderer.shadowMap.enabled!==q.shadows){ renderer.shadowMap.enabled=q.shadows; renderer.shadowMap.needsUpdate=true }
   if(gtaoPass) gtaoPass.enabled=q.ao
   if(smaaPass) smaaPass.enabled=q.smaa
   applyAoSize() }
 setQualityTier(qualityTier)
-/* FPS-Monitor: schnell abstufen, träge heraufstufen; Ceiling verhindert Ping-Pong */
-const perfMon={ frames:0, tSum:0, good:0, sinceRaise:99, ceiling:2, order:['low','medium','high'] }
+/* FPS-Monitor: schnell abstufen, träge heraufstufen; Ceiling verhindert Ping-Pong.
+   Ph2: 4-stufige Reihenfolge (Potato < Light < Balanced < High); Ceiling = oberster Index. */
+const perfMon={ frames:0, tSum:0, good:0, sinceRaise:99, ceiling:3, order:['potato','low','medium','high'] }
 function perfTick(dt){ const q=sceneConfig.quality
   if(dt>.5) return // Tab war im Hintergrund (rAF pausiert) — Ausreißer-Frame nicht werten
   perfMon.frames++; perfMon.tSum+=dt; if(perfMon.tSum<q.windowSec) return
@@ -3100,7 +3186,7 @@ const HUD={
   '<div class="stats br"><div class="stat"><b style="color:#6366F1">'+gg.length+'</b><span>Lerngruppen</span></div>'+
   '<div class="stat"><b style="color:#8B5CF6">'+DB.matches.length+'</b><span>Matches</span></div>'+
   '<div class="stat"><b style="color:#4F46E5">'+state.invitations.length+'</b><span>Einladungen</span></div></div>'+
-  '<div class="chiph bl">Ziehen = drehen · Scrollen = zoomen · <b>Build 24</b></div>' },
+  '<div class="chiph bl">Ziehen = drehen · Scrollen = zoomen</div>' },
  partner(){ const left=credits()
   return '<div class="card tl" style="max-width:410px"><div class="eyebrow">Lernpartner finden</div><h2>Setz dich dazu</h2>'+
   '<p>Kommiliton:innen sitzen allein am Tisch — der Stuhl daneben ist frei. Klicke einen Tisch für eine <b>Lern-Einladung</b> (kein Dating, kein Swipe). Oder öffne selbst einen freien 2er-Tisch und warte auf Anfragen.</p>'+
@@ -3279,18 +3365,45 @@ function benchStep(t,dt){ if(BENCH.done) return
   camera.position.copy(_bp); controls.target.copy(_bl); camera.lookAt(_bl)
   if(bt>=20){ BENCH.done=true; const s=BENCH.samp.slice().sort((x,y)=>x-y)
     const avg=s.reduce((p,c)=>p+c,0)/Math.max(1,s.length)*1000, p95=(s[Math.floor(s.length*.95)]||0)*1000
-    window.__benchResult={avg,p95,frames:s.length}
-    console.log('[BENCHMARK] frames='+s.length+' avg='+avg.toFixed(1)+'ms p95='+p95.toFixed(1)+'ms ('+(1000/avg).toFixed(0)+' fps avg) — Budget p95≤16.7ms')
+    window.__benchResult={avg,p95,frames:s.length,tier:qualityTier,gpu:GPU_RENDERER}
+    console.log('[BENCHMARK] frames='+s.length+' avg='+avg.toFixed(1)+'ms p95='+p95.toFixed(1)+'ms ('+(1000/avg).toFixed(0)+' fps avg) — Tier '+(sceneConfig.quality.display[qualityTier]||qualityTier)+' · GPU '+GPU_RENDERER+' · Build v'+window.__BUILD.id+' — Budget p95≤16.7ms')
     controls.enabled=true }
+}
+/* ===== LIGHTNESS RESCUE Ph1: ?debug=perf-Overlay (FPS/ms/Draw-Calls/Tris/DPR/Stufe/GPU/Build) ===== */
+let _msEMA=16.7, _fpsEMA=60, _dbgAcc=0, _dbgCalls=0, _dbgTris=0
+const _dbgEl = DEBUG_PERF ? (()=>{ const d=document.createElement('div'); d.id='perfhud'
+  d.style.cssText='position:fixed;left:274px;top:72px;z-index:9999;background:rgba(10,14,22,.82);color:#c8f9d8;font:600 11px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:9px 12px;border-radius:10px;white-space:pre;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.4)'
+  document.body.appendChild(d); return d })() : null
+function debugTick(dt){ _msEMA+=(dt*1000-_msEMA)*.12; _fpsEMA+=((dt>0?1/dt:60)-_fpsEMA)*.12
+  _dbgAcc+=dt; if(_dbgAcc<.25) return; _dbgAcc=0; const b=window.__BUILD
+  _dbgEl.textContent='FPS '+_fpsEMA.toFixed(0)+'   '+_msEMA.toFixed(1)+' ms\n'+
+    'draw '+_dbgCalls+'   tris '+(_dbgTris/1000).toFixed(0)+'k\n'+
+    'DPR '+renderer.getPixelRatio().toFixed(2)+'   Tier '+(sceneConfig.quality.display[qualityTier]||qualityTier)+(_qOvr?' (?quality)':'')+'\n'+
+    'GPU '+GPU_RENDERER+'\n'+'Build v'+b.id }
+/* Ph2: 1-s-Warm-up-Probe — misst direkt nach dem Boot auf der Campus-Szene und korrigiert die
+   Auto-Stufe EINMAL nach unten, wenn die frühe Framerate klar unter dem Drop-Ziel liegt. */
+const warmUp={ t0:-1, done:false, n:0, s:0 }
+function warmUpTick(t,dt){ if(warmUp.done) return
+  if(warmUp.t0<0){ warmUp.t0=t; return }
+  const el=t-warmUp.t0; if(el<.5) return                 // Einschwingen (Shader/IBL) ausklammern
+  warmUp.n++; warmUp.s+=dt
+  if(el < .5+sceneConfig.quality.warmupSec) return
+  warmUp.done=true
+  const fps=warmUp.n/Math.max(1e-3,warmUp.s), idx=perfMon.order.indexOf(qualityTier)
+  if(!_qOvr && fps<sceneConfig.quality.fpsDrop && idx>0){ perfMon.ceiling=Math.max(0,idx-1); setQualityTier(perfMon.order[idx-1]) }
 }
 renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
   const dt=t-lastT; lastT=t
+  if(DEBUG_PERF){ renderer.info.autoReset=false; renderer.info.reset() } // Calls über Szene+Postpässe akkumulieren
   controls.update(dt)                                    // Delta → framerate-unabhängiges „Wind"-Damping
+  if(boostOn && performance.now()>=boostOffAt){ boostOn=false; boostOffAt=Infinity; applyBoost(false) } // Ph3: entprellt zurückblenden
   const sc=current()
   if(BENCH&&sc===scene) benchStep(t,dt)
+  if(sc===scene) warmUpTick(t,dt)
   /* Perf-Pass: bewegte Schatten (Foliage/Figuren) alle 3 Frames aktualisieren — statische Gebäude
-     kosten so nichts, lebendige Schatten bleiben; autoUpdate ist aus (needsUpdate wird konsumiert). */
-  if(sc===scene && (frameN++ %3===0)) renderer.shadowMap.needsUpdate=true
+     kosten so nichts, lebendige Schatten bleiben; autoUpdate ist aus (needsUpdate wird konsumiert).
+     Ph3: während des Boosts (aktives Ziehen) Schatten einfrieren — frei nach dem Loslassen wieder live. */
+  if(sc===scene && !boostOn && (frameN++ %3===0)) renderer.shadowMap.needsUpdate=true
   /* Leerlauf-Drift (Atmen + AutoRotate) weicht SOFORT der Eingabe und blendet nach ~5 s Ruhe zurück */
   const idleFor=performance.now()-lastInteract, interacting=idleFor<5000
   if(sc===scene){ const b=Math.sin(t*sceneConfig.camera.breatheSpeed*Math.PI*2)*sceneConfig.camera.breatheAmp
@@ -3306,11 +3419,12 @@ renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
       e2.position.y=1.1+((i-1)%3)*.5+Math.sin(t+i)*.12; e2.rotation.y=a+1.2 } }) }
   if(sc===gearScene){ gears.forEach((gr,i)=>{ gr.g.rotation.z+=(i%2?-1:1)*.008*(14/gr.teeth) }) }
   if(sc===scene){
-    windUniform.value=t*sceneConfig.wind.speed
-    updateLife(t)
+    windUniform.value=t*sceneConfig.wind.speed                 // Wind/Wasser bleiben (billige Shader-Uniforms)
+    if(!boostOn) updateLife(t)                                 // Ph3: CPU-Figuren-Posing während des Ziehens pausieren
     water.material.uniforms.time.value=t*sceneConfig.water.flowSpeed }
   perfTick(dt) // auf ALLEN Render-Pfaden messen — auch Themenwelten/Effekte-aus müssen DPR-Stufen abwerfen können
   if(sc===scene&&composer&&state.settings.effects){ composer.render() } else { renderer.render(sc,camera) }
+  if(DEBUG_PERF){ _dbgCalls=renderer.info.render.calls; _dbgTris=renderer.info.render.triangles; debugTick(dt) }
   updateLabels() })
 { const bell=document.querySelector('.bellb')
   if(bell){ bell.style.position='relative'
@@ -3321,7 +3435,12 @@ renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
 HEDGE_RUNS.forEach(r=>hedgeRun(...r))
 buildHedges(); buildGrassClusters()
 /* Perf-Pass: Drawcalls senken — statische Gebäude je Material mergen (Inhalt identisch, F27 gewahrt).
-   Nur die großen Einzel-Mesh-Gebäude; Foliage/Figuren/Instancing/Wasser bleiben unangetastet. */
+   Nur die großen Einzel-Mesh-Gebäude; Foliage/Figuren/Instancing/Wasser bleiben unangetastet.
+   LIGHTNESS-RESCUE-Befund (gemessen, headless): buildingGroup (B1-Hülle) NICHT mitmergen — es tauscht
+   Fern-Overview-Calls gegen einen SCHLECHTEREN Worst-View (P2 1981→2459), weil der gemergte Block die
+   Pro-Sub-Mesh-Frustum-Cull-Granularität im Nahbereich verliert. Der Worst-View ist die budgetrelevante
+   Zahl → bewusst ausgelassen (Doku §29). Schwache Geräte entlastet stattdessen die Stufe (Potato: Schatten
+   aus, DPR 1) + der Interaction-Boost. */
 { let saved=0; [SITE.alt,SITE.tower,SITE.yellow,SITE.lib,SITE.bib,SITE.forum].forEach(g=>{ saved+=mergeStatic(g) })
   window.__mergeSaved=saved }
 /* Statische Kulisse: Weltmatrizen einmal berechnen und einfrieren — spart CPU-Zeit pro Frame.
@@ -3401,7 +3520,7 @@ function verifySitePlan(){
   chk('Okerhochhaus per Brücke am Campus angebunden (Spannweite ≥ 8 m)', (brg.x1-brg.x0)>=8, `Spannweite ${(brg.x1-brg.x0).toFixed(1)} m`)
   return out }
 /* Einziger 3D-Tuning-Handle: Werte in .config ändern, dann .applyMode() — ersetzt die alten window.__*-Streuungen */
-window.__kommilo3d={ config:sceneConfig, applyMode, setQualityTier, tier:()=>qualityTier, camera, controls, renderer, composer, scene, sun, info:()=>renderer.info.render, verifySitePlan,
+window.__kommilo3d={ config:sceneConfig, applyMode, setQualityTier, tier:()=>qualityTier, gpu:()=>GPU_RENDERER, build:()=>window.__BUILD, camera, controls, renderer, composer, scene, sun, info:()=>renderer.info.render, verifySitePlan,
   /* dev: echte Szenen-Drawcalls messen (Composer-info spiegelt sonst nur den letzten Fullscreen-Pass) */
   sceneDraw:()=>{ const a=renderer.info.autoReset; renderer.info.autoReset=false; renderer.info.reset(); renderer.render(scene,camera)
     const r={calls:renderer.info.render.calls,tris:renderer.info.render.triangles}; renderer.info.autoReset=a; return r } }
