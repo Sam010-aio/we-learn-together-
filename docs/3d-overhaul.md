@@ -766,6 +766,89 @@ Längsachse N-S).
 E6 Platz (Becken + Statue + Fahnen + Bänke), B6 Forum + B7 Audimax im Detail nach Fotos,
 E7/E8 Straßen/Alleen, Figuren-/Prop-Pass. Live-Produktionssystem (Stripe/Supabase) unangetastet.
 
+## 25. PERFORMANCE PASS „Move Like Wind" — Phase 1 Baseline (gemessen, headless)
+
+Draw calls / Dreiecke sind GPU-unabhängige Szenenkomplexitäts-Metriken (unter SwiftShader valide);
+Frame-Zeit p95 muss der Owner auf echter GPU via `?benchmark=1` reproduzieren (Instrumentierung im
+Report). `sceneDraw()`-Dev-Handle misst echte Szenen-Drawcalls (Composer-`info` spiegelt sonst nur
+den letzten Fullscreen-Pass).
+
+| Punkt | Draw calls | Dreiecke |
+|-------|-----------:|---------:|
+| P1 overview | 3381 | 658 418 |
+| P2 orbit-B1 (worst) | **5816** | 1 521 288 |
+| P3 portal-zoom | 2211 | 643 194 |
+| P4 promenade | 2457 | 642 600 |
+| P5 overview2 | 3394 | 658 581 |
+
+Global: geometries 3781, textures 58, programs 82, shadowMap.autoUpdate=**true**, high-Tier
+pixelRatio bis 2. **Worst-View 5816 Drawcalls ≈ 16× über dem ~350-Budget** → Grundursache der
+Trägheit.
+
+**Top-10 Kostenverdächtige (gerankt):**
+1. **Un-merged statische Gebäudegeometrie** — B2 allein ~600 Einzel-Meshes (arcWin-Fenster, Voussoirs,
+   Fialen, Treppe…), 0× `BufferGeometryUtils`. → per Gebäude/Material mergen. GRÖSSTER Hebel.
+2. **`shadowMap.autoUpdate=true`** — Schattenpass zeichnet die ganze Szene JEDEN Frame neu. → `false`
+   + `needsUpdate` nur bei Sonne/Preset-Wechsel.
+3. **Voll-Auflösungs-GTAO** (high: `aoHalfRes:false`) — teurer Fullscreen-AO jeden Frame. → Half-Res.
+4. **UnrealBloom** (Multi-Mip-Fullscreen) jeden Frame.
+5. **Figuren-Update jeden Frame off-screen** (nicht frustum-gated).
+6. **`controls.update()` ohne Delta** — framerate-abhängiges Damping.
+7. **DPR bis 2 auf high** (Retina → 4× Pixel) — Clamp vorhanden, adaptiver Floor fehlt.
+8. **1,52 Mio Dreiecke** worst — 42k Grashalme + Foliage (instanziert = 1 Call, aber Overdraw).
+9. **`updateLabels` DOM-`innerHTML`** jeden Frame in partner/gruppen (nicht campus).
+10. **Breathe-Drift** schreibt `camera.y` jeden Frame, kann mit Damping mikro-kämpfen; pausiert nicht bei Eingabe.
+
+## 26. PERFORMANCE PASS — Phase 2/3/4 (Hebel, Vorher/Nachher, Feel)
+
+**Phase 2 (Optimieren) — Hebel angewandt (Inhalt unverändert, F27 gewahrt):**
+1. **Draw-Call-Merge** (`mergeStatic`, `BufferGeometryUtils.mergeGeometries`): statische opake
+   Single-Material-Meshes je Gebäude zu 1 Mesh/Material verschmolzen (B2/Turm/gelb/Audimax/Bib/
+   Forum) — Weltmatrizen gebacken, per Gebäude (nicht global → Culling bleibt). Markierte Meshes
+   (`userData.glaz/roof/flag…`) und InstancedMesh/transparent/Skinned bleiben unangetastet.
+2. **Schatten:** `renderer.shadowMap.autoUpdate=false`; `needsUpdate` alle 3 Frames (bewegte
+   Foliage/Figuren-Schatten bleiben live bei 1/3 Kosten) + einmal bei Sonne/Preset-Wechsel.
+3. **AO Half-Res auch auf high** (`aoHalfRes:true`) — Fullscreen-GTAO auf halber Auflösung.
+4. **Figuren frustum-gated:** `updateLife` animiert Figuren nur im Kamera-Frustum (off-screen = 0).
+5. **Main-Loop-Hygiene:** `controls.update(dt)` (framerate-unabhängig), wiederverwendete
+   Frustum/Sphere/Matrix (0 Allokation/Frame in den Hot-Paths).
+6. **DPR:** Clamp `min(devicePixelRatio,2)` bleibt; adaptiver Floor auf **1.25** (low-Tier), Default
+   (high) bleibt 2 (F29). `perfMon` schaltet Tiers adaptiv.
+
+**Vorher/Nachher — Draw Calls (headless, `sceneDraw()`, high-Tier):**
+| Punkt | vorher | nachher | Δ |
+|-------|-------:|--------:|---|
+| P1 overview | 3381 | 2353 | −30 % |
+| P2 orbit-B1 (worst) | **5816** | **2088** | **−64 %** |
+| P3 portal-zoom | 2211 | **211** | **−90 %** |
+| P4 promenade | 2457 | **143** | **−94 %** |
+| P5 overview2 | 3394 | 426 | −87 % |
+
+Navigations-Nahdistanz (P3/P4/P5) jetzt **143–426 Calls** (Budget ~350 im Nahfeld erreicht) —
+das ist die gefühlte „Trägheit". Die beiden Overview-Punkte bleiben ~2000, weil sie die
+**interaktiven Studien-Tische/Stühle in B1** (klickbarer App-Inhalt — NICHT mergebar, App-Logik
+unangetastet) plus die ferne Stadtkulisse enthalten. Ehrlich: das ~350-Budget wird im Weit-Overview
+NICHT erreicht; Nahfeld ja. `shadowMap.autoUpdate=false` verifiziert.
+
+**Phase 3 (Feel „Wind"):** `enableDamping`, `dampingFactor 0.06`, `rotateSpeed 0.9`, `panSpeed 0.9`,
+`zoomSpeed 0.8`, `zoomToCursor=true`, `maxPolarAngle .495π` (nie unter Boden), `controls.update(dt)`.
+Leerlauf-Drift (Atmen + AutoRotate) pausiert sofort bei Eingabe (`start`-Event) und blendet nach 5 s
+Ruhe zurück, ohne Sprung (Delta-Tracking).
+
+**Feel-Checkliste:** Flick-Glide ~0.6–0.9 s mit Damping 0.06 ✓ · Zoom-to-Cursor ✓ · kein Snap
+(soft polar clamp) ✓ · Touch-Inertia (Damping gilt für Touch) ✓ · Idle-Drift weicht sofort ✓.
+(Subjektiv-Feel muss der Owner auf echter GPU bestätigen.)
+
+**Phase 4 (Prove):** `verifySitePlan` 27/27 PASS ⇒ B2-Portale/Voussoirs/Fialen/Inschrift überleben
+das Merge (Content-Proof). `?benchmark=1` fährt einen deterministischen 20-s-Kamerapfad und druckt
+`[BENCHMARK] avg/p95 ms` in die Konsole — **Owner-Repro auf kommilo.app: `https://kommilo.app/?benchmark=1`
+öffnen, 20 s warten, Konsole lesen** (Ziel p95 ≤ 16.7 ms auf Referenz-Desktop). Frame-Zeit ist unter
+SwiftShader nicht repräsentativ messbar; Draw-Call-Reduktion (oben) ist der maschinen-verifizierte Beleg.
+
+**Offen (Follow-up):** B1-Statik-Shell + Stadtkulisse + Baum-Stämme per Gruppe mergen, um auch den
+Weit-Overview unter Budget zu bringen (erfordert Trennung der statischen B1-Hülle von den
+interaktiven Tischen).
+
 ## 24. Files touched
 
 - `index.html` — module script (rendering pipeline + scene content) + merged production system
