@@ -701,7 +701,72 @@ Stripe-Zahlungen, Credits, Moderation, Domain kommilo.app, PWA) mit der 3D-Optik
 `modStrike`+18h-Gate · Domain: 0× github.io, alle Head-URLs kommilo.app, `CNAME` unverändert ·
 3D-Pipeline aktiv (Sky/IBL/PMREM/Composer/PBR) + verifySitePlan **24/24 PASS** · Build 24.
 
-## 23. Files touched
+## 23. CAMPUS BIBLE — Chapter 13 questionnaire (logged before coding) + rebuild plan
+
+**1.5 absolute sentence (verbatim):** „The Altgebäude's LONG facade is the EAST entrance front
+toward the plaza; its SHORT end faces the Studierendenhaus in the south. The current app has this
+inverted and it must be rebuilt."
+
+1. **sceneFromSite:** site (E,N) → scene (x=E, z=−N); North=−z, East=+x. B1 world transform = origin
+   (0,0,0), footprint ≈24×24 → **1 site-metre = 1 scene-unit** (calibration via B1). No 20 m scale
+   bar image was attached to this task, so distances are taken from the Bible's numeric table
+   (§1.3) at 1 m = 1 unit, clamped to the existing world where noted; logged as (doc) not (sat).
+2. **px/m:** n/a this task (no new satellite image attached); B1-footprint calibration used (1 m = 1u).
+3. **Re-measured §1.3 (scene units):** B2 (10,−110) [Bible (E10,N112)→(10,−112), pulled +2 z so the
+   short south face lands at z=−62 = existing parking relation]; footprint **40 (E-W) × 96 (N-S)**
+   (N-length 96 within −4 % of 100, inside ±15 %); E5 promenade x 30…46; E6 plaza x 46…96;
+   Audimax east x≈118; Forum NE x≈70 z≈−168; bridge B4-east(−52.5)↔B2-west(−10).
+4. **B2 transform/rebuild:** OLD = box long axis E-W, showpiece facing south (F19). NEW = long axis
+   **N-S**, entrance long front faces **EAST (+x)**, seven-axis 2-3-2 stone facade = **SHORT south
+   end (+z)**. Preserved: the masonry generator (generalised to `mkMasonry(faceW)`), the round-arch
+   window law (`arcWin`), the dentil-cornice build-up, the voussoir/keystone system, weathering.
+5. **East front composition:** A-B-C-B-A (corner pavilions + wings + central risalit). Wing axes
+   ~8/side; risalit = 3 upper arched windows over 3 portals. **Pinnacles placed: 16** (parapet +
+   pavilion corners) ≥ the 12 minimum.
+6. **Portal zone:** stair **9 steps**, full risalit width (~12 m); double arched doors ~2.4×4.2 m;
+   ramp on the south (right-from-plaza) side; 2 lantern pedestals at the stair foot.
+7. **E5 racks:** 5 hoop runs/side × 14 hoops = 70/side (>60); **~84 instanced bicycles**.
+8. **E6:** basin ~30×10 at plaza west-centre; bronze statue NW quadrant; 3 red-flag poles W edge.
+9–11. Audimax colonnade ~5 m spacing + upper dark mullion band; Forum 6 skylight ridges; bridge
+   anchors B4-east ↔ B2-west, underside ~+8 m.
+12. **Objects in the rebuild zone:** B1/B3/B4-body/E1/E2-E3/river/hedges/figures = untouched (F25);
+   old plaza/Audimax/Forum (R9-R11) = relocated east of the new B2; bridge = re-anchored.
+13. **Budget:** bikes/racks/pinnacles/lamps all instanced; report after build.
+14. Chapter-12 assertions → `verifySitePlan()` checks (orientation, 3 doors, ordering, bikes,
+    basin/statue/flags, pinnacles, bridge), run headless.
+15. (sentence above.)
+
+**Decision (Bible is huge; live Stripe/Supabase now merged in):** execute the Chapter 14.1 order,
+verifying each phase, starting with the centerpiece B2 (the identified root cause) — never a
+sprawling unverified mega-edit that could break the production system.
+
+## 23b. CAMPUS BIBLE — Phase 1 (Chapter 2, centerpiece) DONE + verified
+
+- **B2 90°-Korrektur (F19 behoben):** Altgebäude als langer N-S-Block (96×40) neu gebaut; die
+  LANGE Eingangsfront zeigt nach **OSTEN** (Ost-Normale x=1.00), die 7-Achsen-Steinstirn nach Süden.
+  Ostfront A-B-C-B-A: Eckpavillons + Flügel (2 Reihen Rundbogenfenster mit Voussoirs/Keilstein) +
+  **zentraler Risalit** mit **3 Rundbogen-Portalen**, vollbreiter **Freitreppe (9 Stufen) + Rampe +
+  2 Laternen-Pedestalen**, 3 hohen OG-Bogenfenstern mit **Reliefmedaillons**, **Attika-Block mit
+  erhabener Inschrift „CAROLO WILHELMINA"** (Relief-Normalmap auf proud Band), Krönungspediment +
+  Adler-Silhouette, 2 roten Bannerfahnen. **14 Obelisk-Fialen** auf der Balustrade. Dachlaterne.
+  Ganzflächiges Stone-True-Mauerwerk (`mkMasonry` je Fassadenbreite), Eck-Quader, Dentil-Gesims.
+- **Welt vergrößert** (Grund 320×340, Bounce-Disc r260) für den Nord/Ost-Campus.
+- **B4 + E9-Brücke** neu ausgerichtet: B4 (−38,−108), verglaste Brücke B4-Ost(−30.5) ↔ B2-West(−10),
+  Deck +8 m, Spannweite 20.5 m, Anschlussöffnung an der B2-Westseite.
+- Alte Ost-Kulisse (R9-R11 Audimax/Bib/Forum/Platz) als Halteposition weit nach Osten gerückt →
+  Eingangsvorfeld frei; wird in Phase 2 durch die echten Bible-Bauten E5/E6/B6/B7 ersetzt.
+
+**Verifikation:** node --check OK · Boot `window.__ok`+`__kommilo3d`, Campus rendert, 0 echte
+Konsolenfehler · **verifySitePlan 27/27 PASS** (neu: B2 Orientierung Ost 96×40=2.40:1, 3 Portale,
+7-Achsen-Südstirn, 49 Voussoir-Bögen, CAROLO-WILHELMINA-Inschrift, 14 Fialen, E9-Brücke 20.5 m) ·
+14/14 Interaktionsregression. Chapter-16 CAM-1/CAM-3 visuell geprüft (Portal/Attika/Fialen/
+Längsachse N-S).
+
+**Offen (Phase 2/3, Mode B):** E5 Promenade (Bügelständer + ≥60 Räder + Baum/Lampen-Rhythmus),
+E6 Platz (Becken + Statue + Fahnen + Bänke), B6 Forum + B7 Audimax im Detail nach Fotos,
+E7/E8 Straßen/Alleen, Figuren-/Prop-Pass. Live-Produktionssystem (Stripe/Supabase) unangetastet.
+
+## 24. Files touched
 
 - `index.html` — module script (rendering pipeline + scene content) + merged production system
 - `sw.js` — cache version bumped to `wlt-v24` (rest from `main`)
