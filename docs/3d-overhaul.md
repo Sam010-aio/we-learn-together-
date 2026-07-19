@@ -1068,3 +1068,68 @@ gerendert; App-Logik/Auth/Payments/Credits/Moderation unangetastet.
 - `vendor/three/` — NEU: three@0.169 + 22 Addons same-origin vendored (1.7 MB, kein Build-Schritt)
 - `CNAME`, `sitemap.xml` — from `main` (unchanged)
 - `docs/3d-overhaul.md` — this document (§27 Fragebogen, §28 Umsetzung, §29 Beweis)
+
+## 25. ENG-Runde — On-Demand-Rendering + Fill/Delivery (Decision Log)
+
+Ziel: „muss sich auf einem durchschnittlichen Studenten-Laptop mühelos anfühlen und auf Handys
+nutzbar bleiben." Vorgehen: messen → dominanten Engpass attribuieren → genau diese Klasse fixen →
+Regressionsbudget verankern. **In-Sandbox-Rendering ist unmöglich (SwiftShader = Software-GL) —
+darum liest der Owner die echten Zahlen im realen Browser über `?debug=perf`; hier keine Zahl
+behauptet, die nicht real gemessen wurde.**
+
+**Attribution (Sec4):** Aus dem zuvor erfassten CPU-Breakdown + E6-Drawcall-Reads: die Szene zahlte
+auch im Stillstand eine kontinuierliche GPU-Last (blinde 60-fps-Schleife über eine überwiegend
+statische Campus-Szene) und pro-Pixel-Fill dominierte auf iGPUs. Zwei Klassen mit dem größten Hebel:
+**(a) verschwendetes Leerlauf-Rendering** und **(b) Füllrate**. Drawcalls sind durch frühere
+Instancing/Merge-Arbeit bereits im Budget (≤350 Worst-View; 19 `InstancedMesh`-Stellen) → diese Runde
+jagt keine Drawcalls, sondern fixt (a) und (b), worauf die SLOs tatsächlich zielen.
+
+**Entscheidungen (Frage → Entscheidung → Begründung):**
+- *Leerlauf-GPU?* → **On-Demand-Rendering**: nur rendern bei Kamerabewegung (`controls 'change'`),
+  aktiver Animation, kürzlicher Eingabe (<5 s) oder Auto-Rotate; sonst Frame komplett übersprungen
+  (kein Szene-Update, kein `renderer.render`). `document.hidden` → gar keine Arbeit. Begründung:
+  größter Struktur-Gewinn, Leerlauf-GPU → ~0, Interaktion fühlt sich sofort an. Campus/Partner drehen
+  nach ~5 s Ruhe weiter (zählt als „Animation aktiv") — Feel bleibt erhalten; Leerlauf→0 greift in
+  Innen-/Listensektionen (kein Auto-Rotate).
+- *Retina/4K-Desktop rendert 2–3× Pixel?* → **DPR hart auf `min(devicePixelRatio,1.25)`** (Potato 1.0).
+  Begründung: Füllrate ist der dominante iGPU-Kostenpunkt; Feel vor maximaler Schärfe (§5B).
+- *Post-Kette überall?* → **Post nur auf High** (`tier.post`); Balanced/Light/Potato rendern direkt.
+  Begründung: Tonemapping/sRGB liegen am Renderer, AA macht MSAA — kein Farb-/Kantenverlust, nur die
+  Vollbild-Postpässe fallen weg → „post off by default" für die Stufen, die die meisten Geräte
+  automatisch wählen. Der nutzerseitige *Effekte*-Toggle bleibt unangetastet (gated Post auf High).
+- *Schatten?* → genau **ein** gerichteter Caster (`sun`), `mapSize` je Stufe (High 2048 / Light 1024 /
+  Potato aus), `autoUpdate=false` + explizites `needsUpdate` bei Sonne/Preset; zusätzlich gedrosselter
+  Live-Refresh (jeder 3. gerenderte Frame, im Boost eingefroren) für bewegte Figuren/Foliage.
+- *Kamera unter Boden?* → jeden Frame nach `controls.update` klemmen: `camera.position.y ≥ 0.6`,
+  `controls.target.y ≥ 0`, `maxPolarAngle = 1.54` (Sec8). Tische bleiben klickbar (`clickTargets`,
+  `actions.select`), Gebäude betretbar.
+
+**Delivery (unverändert korrekt aus Vorrunde, hier bestätigt):** `sw.js` HTML **network-first**
+(„HTML immer network-first: neuer Build schlägt den Cache"), Cache `kommilo-v${BUILD}` build-gebunden,
+`activate` löscht Fremd-Caches, `skipWaiting`+`clients.claim`, Reload-Toast „Neue Version verfügbar —
+neu laden" bei SW-Update (`updatefound`→`installed`+controller). Stempel = committete Konstante
+`window.__BUILD` (index.html) == `BUILD` (sw.js). CDN-Module vendored unter `/vendor/` (same-origin,
+committet, kein Build-Schritt), CDN nur Fallback.
+
+**Tier-Schwellen:** Startwahl = `GL_RENDERER`-Heuristik + Bildschirmgröße + ~1-s-Warm-up-Frame-Probe;
+Handys default Light. Drop bei fps<45, Raise bei fps>57 mit Hysterese (`?quality=`-Override,
+session-persistent). Interaction-Boost: `boostScale 0.75`, `boostFloor 1.0`, `boostRestoreMs 250`.
+
+**Vorhergesagte p95 (Owner bestätigt via `?debug=perf`):** High auf mittlerem Laptop-iGPU ≈ 12–16 ms
+bei Interaktion (DPR 1.25 + Boost), **Leerlauf → keine Frames**; Balanced/Light niedriger (keine
+Post-Kette); Handy-Light Ziel ≤ 33 ms. Hält ein mittlerer Laptop High nicht, senkt die Warm-up-Probe
+beim Start auf Balanced/Light (protokolliert, nicht still). Details: `PERF.md`.
+
+**Regressionsschutz:** `scripts/perf-guard.cjs` (Node, kein Browser) sichert DPR-Clamp, High-only-Post,
+On-Demand-Gate, Einzel-Schattencaster, `autoUpdate=false` + alle Preservation-Law-Symbole;
+`scripts/syntax-check.cjs` (`node --check`); CI-Workflow `.github/workflows/perf-guard.yml` (nur
+Node — kein SwiftShader-Render). Drawcall/Dreieck-Budget prüft der Owner via `sceneDraw()` + Overlay.
+
+**Owner-Verifikation (Deutsch):**
+1. `kommilo.app` im **Inkognito** öffnen, Strg/Cmd+Shift+R, **Build-Stempel** unten mittig ablesen —
+   muss zum Report-Commit passen.
+2. `?debug=perf` anhängen: FPS/Frame-ms + **p95** beim Bewegen ablesen; still stehen lassen → Overlay
+   zeigt **„on-demand IDLE — 0 draw calls"**; ziehen → **DPR-Dip** sichtbar (Interaction-Boost).
+3. `?quality=potato` vs. `?quality=high` vergleichen.
+4. Login, **Credits-Shop** und **Tisch-Auswahl** kurz antesten (Preservation-Law lebt).
+5. Beim nächsten Deploy muss der **Reload-Toast** erscheinen.

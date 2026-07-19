@@ -14,11 +14,11 @@
 /* ===== Delivery / Build-Sichtbarkeit (LIGHTNESS RESCUE Ph0) =====
    EINE Quelle der Build-Kennung — geteilt mit sw.js (Cache-Name = kommilo-v${id}). Sichtbar als
    dezenter Fuß-Stempel und im ?debug=perf-Overlay; so ist am Bildschirm ablesbar, welcher Build läuft. */
-window.__BUILD = { id: '2026.07.18-e0030f1', date: '2026-07-18', hash: 'e0030f1' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
+window.__BUILD = { id: '2026.07.19-cd704c6', date: '2026-07-19', hash: 'cd704c6' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
 (function(){
   // Fuß-Stempel setzen, sobald der Body existiert (robust — auch wenn die 3D-App nicht bootet)
   function stamp(){ var el=document.getElementById('buildstamp'); if(!el) return
-    el.textContent='v'+window.__BUILD.id }   // → v2026.07.18-e0030f1 (Format laut Spezifikation)
+    el.textContent='v'+window.__BUILD.id }   // → v2026.07.19-cd704c6 (Format laut Spezifikation)
   if(document.readyState!=='loading') stamp(); else addEventListener('DOMContentLoaded', stamp)
   if(!('serviceWorker' in navigator)) return
   // Selbst-enthaltener Reload-Hinweis — unabhängig vom App-Toast, wirkt auch bei kaputter/veralteter App
@@ -265,7 +265,7 @@ const F1=F0+CLEAR+SLAB, CEIL1=F1+CLEAR, ROOF_TOP=CEIL1+.28, BAL=2.2, OV=3.1, ATR
    ============================================================================ */
 const sceneConfig = {
   renderer: {
-    maxPixelRatio: 2,          // brief: clamp devicePixelRatio to 2; quality tiers may lower it
+    maxPixelRatio: 1.25,       // Sec5B: hard DPR clamp min(devicePixelRatio,1.25) on every tier — fill-rate is the dominant cost on iGPUs (Potato lowers further to 1.0)
     anisotropy: 8,             // texture sharpness at grazing angles (grass, pavers)
     envPrewarmMs: 2500,        // idle delay before pre-baking the night IBL — avoids a hitch on first mode toggle
   },
@@ -282,10 +282,13 @@ const sceneConfig = {
   quality: {                   // LIGHTNESS RESCUE Ph2: 4 gerätebewusste Stufen (Anzeigenamen ↔ interne Keys)
     /* Anzeige: High↔high · Balanced↔medium · Light↔low · Potato↔potato. shadows=false schaltet den
        kompletten Schattenpass ab (größter Gewinn auf schwächster HW). aoHalfRes: AO auf halber Auflösung. */
-    high:   { pixelRatio: 2,    shadowMap: 2048, shadows: true,  ao: true,  aoHalfRes: true,  smaa: true  }, // dGPU/Apple-Silicon Desktop
-    medium: { pixelRatio: 1.5,  shadowMap: 1536, shadows: true,  ao: true,  aoHalfRes: true,  smaa: true  }, // Balanced: Intel-iGPU/unbekannt Desktop (Schatten 1536, DPR ≤ 1.75 laut Spec)
-    low:    { pixelRatio: 1.25, shadowMap: 1024, shadows: true,  ao: false, aoHalfRes: true,  smaa: false }, // Light: Handys default (Ziel 30 fps)
-    potato: { pixelRatio: 1.0,  shadowMap: 512,  shadows: false, ao: false, aoHalfRes: true,  smaa: false }, // Notnetz: Software-GL/sehr schwach — Schatten AUS, DPR 1
+    /* post: die volle Post-Kette (GTAO+Bloom+SMAA+Vignette) läuft NUR auf High (Sec5B/§5 „post off by default").
+       Balanced/Light/Potato rendern direkt (renderer.render) — Tonemapping/sRGB liegen am Renderer, Antialiasing
+       macht MSAA (antialias:true) → kein Vollbild-Postpass, spart Füllrate ohne Farb-/Kantenregression. */
+    high:   { pixelRatio: 2,    shadowMap: 2048, shadows: true,  ao: true,  aoHalfRes: true,  smaa: true,  post: true  }, // dGPU/Apple-Silicon Desktop
+    medium: { pixelRatio: 1.5,  shadowMap: 1536, shadows: true,  ao: false, aoHalfRes: true,  smaa: false, post: false }, // Balanced: Intel-iGPU/unbekannt Desktop — Post aus
+    low:    { pixelRatio: 1.25, shadowMap: 1024, shadows: true,  ao: false, aoHalfRes: true,  smaa: false, post: false }, // Light: Handys default (Ziel 30 fps)
+    potato: { pixelRatio: 1.0,  shadowMap: 512,  shadows: false, ao: false, aoHalfRes: true,  smaa: false, post: false }, // Notnetz: Software-GL/sehr schwach — Schatten AUS, DPR 1
     fpsDrop: 45,               // sustained fps below this → drop one tier
     fpsRaise: 57,              // sustained fps above this → raise one tier (with hysteresis)
     windowSec: 3,              // seconds of fps averaging before a tier decision
@@ -455,11 +458,18 @@ const controls = new OrbitControls(camera, renderer.domElement)
 /* „Wind"-Feel: sofortige Reaktion + weiches Nachgleiten (~0.6–0.9 s) nach dem Loslassen */
 controls.enableDamping = true; controls.dampingFactor = sceneConfig.camera.damping   // 0.06
 controls.autoRotate = true; controls.autoRotateSpeed = .3
-controls.minDistance = 3; controls.maxDistance = 130; controls.maxPolarAngle = Math.PI * .495 // nie unter den Boden/kippen
+controls.minDistance = 3; controls.maxDistance = 130; controls.maxPolarAngle = 1.54 // Sec8: nie unter den Boden/kippen (≈88°)
 controls.rotateSpeed = .9; controls.panSpeed = .9; controls.zoomSpeed = .8
 controls.zoomToCursor = true                                                          // Welt fließt zum Zeiger
 controls.domElement.style.touchAction = 'none'                                        // Ph5: Browser-Touch-Gesten (Scroll/Zoom) NICHT gegen OrbitControls kämpfen lassen
 let lastInteract = -9999, boostOn = false, boostOffAt = Infinity                       // Ph3 Interaction-Boost-Zustand
+/* ===== On-Demand-Rendering: die Szene ist überwiegend statisch → nur rendern, wenn sich etwas ändert.
+   'change' feuert OrbitControls bei jeder echten Kamerabewegung (Ziehen/Zoom/Pan/Damping-Ausklang/
+   Auto-Rotate). invalidate() fordert genau einen weiteren gerenderten Frame an; alle nicht-kamera-
+   bezogenen Änderungen (Preset, Sektion, Auswahl, Resize, GLB) rufen es explizit. ===== */
+let renderNeeded = true
+function invalidate(){ renderNeeded = true }
+controls.addEventListener('change', invalidate)
 /* Ph3: aktives Ziehen/Zoomen → sofort DPR senken + AO aus (applyBoost weiter unten definiert, gehoisted) */
 controls.addEventListener('start', () => { controls.autoRotate = false; lastInteract = performance.now()
   boostOffAt = Infinity; if(!boostOn){ boostOn = true; applyBoost(true) } })
@@ -2412,7 +2422,7 @@ const actions={
  uni(id){ state.uniId=id; state.selected=null; rebuildTables(); syncScene(); render() },
  mode(m){ state.mode=m; applyMode(); render() },
  bell(){ openNotifCenter() },
- set(k,v){ state.settings[k]=v; render() },
+ set(k,v){ state.settings[k]=v; render(); invalidate() },   // On-Demand: Einstellungswechsel (z. B. Effekte) einen 3D-Frame anfordern
  save(){ toast('Einstellungen gespeichert','Alles bleibt für diese Session aktiv.'); if(state.settings.glb) loadGlb(state.settings.glb) },
  connect(pid){ if(guardBlock())return
    const p=state.partners.find(x=>x.id===pid); if(!p||p.req) return
@@ -2983,7 +2993,8 @@ function applyMode(){ const night=state.mode==='nacht'
   wu.distortionScale.value=mc.water.distortion; wu.sunDirection.value.copy(SUNV)
   scene.environment=envFor(night?'nacht':'tag')
   scene.environmentIntensity=mc.envIntensity
-  scene.fog.color.set(mc.fog.color); scene.fog.density=mc.fog.density }
+  scene.fog.color.set(mc.fog.color); scene.fog.density=mc.fog.density
+  invalidate() }   // On-Demand: Preset ändert Licht/Himmel/Wasser ohne Kamerabewegung → einen Frame anfordern
 const partnerGroup=new THREE.Group(); partnerGroup.visible=false; scene.add(partnerGroup)
 const partnerTargets=[]
 function partnerTable(p,x,z,ry,i){
@@ -3042,14 +3053,15 @@ function syncScene(){ const c=CAMS[state.section]||CAMS.amb
   const gen=uni().building==='gen'&&state.section==='gruppen'
   genericGroup.visible=gen; buildingGroup.visible=!gen||state.section!=='gruppen'
   if(gen){ buildingGroup.visible=false; controls.target.set(0,2,30); camera.position.set(22,9,58) }
-  else buildingGroup.visible=!(glbGroup&&glbGroup.visible) }
+  else buildingGroup.visible=!(glbGroup&&glbGroup.visible)
+  invalidate() }   // On-Demand: Sektionswechsel setzt Kamera/Sichtbarkeit direkt (kein 'change') → einen Frame anfordern
 let glbGroup=null
 function loadGlb(url){ new GLTFLoader().load(url,g=>{ if(glbGroup) scene.remove(glbGroup)
     glbGroup=g.scene; glbGroup.traverse(o=>{ if(o.isMesh){o.castShadow=true;o.receiveShadow=true} })
     const box=new THREE.Box3().setFromObject(glbGroup); const size=box.getSize(new THREE.Vector3()); const cen=box.getCenter(new THREE.Vector3())
     const md=Math.max(size.x,size.z)||1; const sc=(md>200||md<2)?40/md:1
     glbGroup.scale.setScalar(sc); glbGroup.position.sub(cen.multiplyScalar(sc)); glbGroup.position.y-=box.min.y*sc-.02
-    buildingGroup.visible=false; scene.add(glbGroup); toast('Echter 3D-Scan geladen','Er ersetzt jetzt das prozedurale Gebäude.')
+    buildingGroup.visible=false; scene.add(glbGroup); invalidate(); toast('Echter 3D-Scan geladen','Er ersetzt jetzt das prozedurale Gebäude.')
   },undefined,()=>toast('Scan konnte nicht geladen werden','URL prüfen (.glb, CORS).','info')) }
 
 /* ---------- UI-Helfer, Gates, Notification-Center, Chat ---------- */
@@ -3303,7 +3315,8 @@ actions.decline=function(iid){ const i=state.invitations.find(x=>x.id===iid); st
 
 const rayc=new THREE.Raycaster(), mouseV=new THREE.Vector2()
 let downAt=null
-renderer.domElement.addEventListener('pointerdown',e=>{ downAt=[e.clientX,e.clientY] })
+renderer.domElement.addEventListener('pointerdown',e=>{ downAt=[e.clientX,e.clientY]
+  lastInteract=performance.now(); invalidate() })   // On-Demand: Tap/Klick (auch Tisch-Auswahl ohne Kamerabewegung) hält 5 s wach
 renderer.domElement.addEventListener('pointerup',e=>{
   if(!downAt||Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1])>6) return
   if(state.section!=='gruppen'&&state.section!=='partner'&&state.section!=='international') return
@@ -3344,7 +3357,7 @@ function updateLabels(){
       : '<div class="tlabel free" style="left:'+x+'px;top:'+y+'px"><b>+ Gruppe gründen</b></div>' })
   labelLayer.innerHTML=html }
 addEventListener('resize',()=>{ camera.aspect=(innerWidth-264)/(innerHeight-64); camera.updateProjectionMatrix()
-  renderer.setSize(innerWidth-264,innerHeight-64); if(composer){ composer.setSize(innerWidth-264,innerHeight-64); applyAoSize() } })
+  renderer.setSize(innerWidth-264,innerHeight-64); if(composer){ composer.setSize(innerWidth-264,innerHeight-64); applyAoSize() } invalidate() })
 renderer.setSize(innerWidth-264,innerHeight-64); camera.aspect=(innerWidth-264)/(innerHeight-64); camera.updateProjectionMatrix()
 if(composer){ composer.setSize(innerWidth-264,innerHeight-64); applyAoSize() }
 const appClock=new THREE.Clock()
@@ -3369,16 +3382,37 @@ function benchStep(t,dt){ if(BENCH.done) return
     console.log('[BENCHMARK] frames='+s.length+' avg='+avg.toFixed(1)+'ms p95='+p95.toFixed(1)+'ms ('+(1000/avg).toFixed(0)+' fps avg) — Tier '+(sceneConfig.quality.display[qualityTier]||qualityTier)+' · GPU '+GPU_RENDERER+' · Build v'+window.__BUILD.id+' — Budget p95≤16.7ms')
     controls.enabled=true }
 }
-/* ===== LIGHTNESS RESCUE Ph1: ?debug=perf-Overlay (FPS/ms/Draw-Calls/Tris/DPR/Stufe/GPU/Build) ===== */
+/* ===== ENG Sec3: ?debug=perf-Profiler — FPS/ms + p95(5-s-Fenster) + CPU-Phasen (controls/update/render)
+   + Draw-Calls/Tris + DPR/Stufe/GPU/Build + best-effort GPU-Timer (EXT_disjoint_timer_query_webgl2).
+   Spiegelt jeden Frame nach window.__perf (headless-loggbar). Alles nur hinter ?debug=perf. ===== */
 let _msEMA=16.7, _fpsEMA=60, _dbgAcc=0, _dbgCalls=0, _dbgTris=0
+let _tCtrl=0, _tUpd=0, _tRender=0                       // EMA der CPU-Phasen (ms)
+const _p95buf=[]                                        // {t, ms} — gleitendes 5-s-Fenster für p95
+/* GPU-Timer (best-effort): oft aus Sicherheitsgründen deaktiviert → sauberer Fallback „n/a" */
+let _gpuExt=null, _gpuQ=null, _gpuPending=false, _gpuMs=-1
+if(DEBUG_PERF){ try{ const gl=renderer.getContext(); _gpuExt=gl.getExtension('EXT_disjoint_timer_query_webgl2') }catch(e){} }
 const _dbgEl = DEBUG_PERF ? (()=>{ const d=document.createElement('div'); d.id='perfhud'
-  d.style.cssText='position:fixed;left:274px;top:72px;z-index:9999;background:rgba(10,14,22,.82);color:#c8f9d8;font:600 11px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:9px 12px;border-radius:10px;white-space:pre;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.4)'
+  d.style.cssText='position:fixed;left:274px;top:72px;z-index:9999;background:rgba(10,14,22,.82);color:#c8f9d8;font:600 11px/1.55 ui-monospace,Menlo,Consolas,monospace;padding:9px 12px;border-radius:10px;white-space:pre;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.4)'
   document.body.appendChild(d); return d })() : null
-function debugTick(dt){ _msEMA+=(dt*1000-_msEMA)*.12; _fpsEMA+=((dt>0?1/dt:60)-_fpsEMA)*.12
+function _p95(){ if(!_p95buf.length) return 0
+  const a=_p95buf.map(s=>s.ms).sort((x,y)=>x-y); return a[Math.min(a.length-1,Math.floor(a.length*.95))] }
+function debugTick(dt, tNow){ const ms=dt*1000
+  _msEMA+=(ms-_msEMA)*.12; _fpsEMA+=((dt>0?1/dt:60)-_fpsEMA)*.12
+  _p95buf.push({t:tNow, ms}); while(_p95buf.length && tNow-_p95buf[0].t>5000) _p95buf.shift()  // 5-s-Fenster
+  /* GPU-Query-Ergebnis abholen (falls verfügbar) */
+  if(_gpuExt&&_gpuQ&&_gpuPending){ try{ const gl=renderer.getContext()
+    if(gl.getQueryParameter(_gpuQ,gl.QUERY_RESULT_AVAILABLE)&&!gl.getParameter(_gpuExt.GPU_DISJOINT_EXT)){
+      _gpuMs=gl.getQueryParameter(_gpuQ,gl.QUERY_RESULT)/1e6; _gpuPending=false } }catch(e){ _gpuPending=false } }
   _dbgAcc+=dt; if(_dbgAcc<.25) return; _dbgAcc=0; const b=window.__BUILD
-  _dbgEl.textContent='FPS '+_fpsEMA.toFixed(0)+'   '+_msEMA.toFixed(1)+' ms\n'+
-    'draw '+_dbgCalls+'   tris '+(_dbgTris/1000).toFixed(0)+'k\n'+
-    'DPR '+renderer.getPixelRatio().toFixed(2)+'   Tier '+(sceneConfig.quality.display[qualityTier]||qualityTier)+(_qOvr?' (?quality)':'')+'\n'+
+  const gpu=_gpuMs>=0?_gpuMs.toFixed(1)+'ms':'n/a'
+  window.__perf={ fps:+_fpsEMA.toFixed(0), ms:+_msEMA.toFixed(1), p95:+_p95().toFixed(1),
+    ctrl:+_tCtrl.toFixed(2), upd:+_tUpd.toFixed(2), render:+_tRender.toFixed(2), gpuMs:_gpuMs,
+    calls:_dbgCalls, tris:_dbgTris, dpr:+renderer.getPixelRatio().toFixed(2), tier:qualityTier, gpu:GPU_RENDERER, build:b.id, idle:false }
+  _dbgEl.textContent=
+    'FPS '+window.__perf.fps+'   '+window.__perf.ms+' ms   p95 '+window.__perf.p95+'\n'+
+    'CPU  ctrl '+window.__perf.ctrl+'  upd '+window.__perf.upd+'  rndr '+window.__perf.render+' ms\n'+
+    'GPU  '+gpu+'   draw '+window.__perf.calls+'  tris '+(window.__perf.tris/1000).toFixed(0)+'k\n'+
+    'DPR '+window.__perf.dpr+'   Tier '+(sceneConfig.quality.display[qualityTier]||qualityTier)+(_qOvr?' (?quality)':'')+'\n'+
     'GPU '+GPU_RENDERER+'\n'+'Build v'+b.id }
 /* Ph2: 1-s-Warm-up-Probe — misst direkt nach dem Boot auf der Campus-Szene und korrigiert die
    Auto-Stufe EINMAL nach unten, wenn die frühe Framerate klar unter dem Drop-Ziel liegt. */
@@ -3394,21 +3428,41 @@ function warmUpTick(t,dt){ if(warmUp.done) return
 }
 renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
   const dt=t-lastT; lastT=t
-  if(DEBUG_PERF){ renderer.info.autoReset=false; renderer.info.reset() } // Calls über Szene+Postpässe akkumulieren
-  controls.update(dt)                                    // Delta → framerate-unabhängiges „Wind"-Damping
-  if(boostOn && performance.now()>=boostOffAt){ boostOn=false; boostOffAt=Infinity; applyBoost(false) } // Ph3: entprellt zurückblenden
+  const _t0 = DEBUG_PERF ? performance.now() : 0        // Sec3: CPU-Phasen-Profiling (nur bei ?debug=perf)
+  controls.update(dt)                                    // Delta → framerate-unabhängiges „Wind"-Damping; feuert 'change' bei echter Bewegung → invalidate
+  const _t1 = DEBUG_PERF ? performance.now() : 0
+  if(boostOn && performance.now()>=boostOffAt){ boostOn=false; boostOffAt=Infinity; applyBoost(false); renderNeeded=true } // Ph3: entprellt zurückblenden
+  /* Sec8: Kamera nie unter den Boden — jeden Frame nach controls.update klemmen (auch auf übersprungenen Frames) */
+  if(camera.position.y<0.6) camera.position.y=0.6
+  if(controls.target.y<0) controls.target.y=0
   const sc=current()
+  const idleFor=performance.now()-lastInteract, interacting=idleFor<5000
+  /* Leerlauf-AutoRotate (Campus/Partner) VOR dem Gate: nach ~5 s Ruhe wieder sanft drehen → zählt als „Animation aktiv" und rendert weiter. */
+  if(sc===scene && !controls.autoRotate && !interacting && (state.section==='campus'||state.section==='partner')) controls.autoRotate=true
+  /* ===== On-Demand-Gate: nur rendern, wenn sich wirklich etwas ändert (größter Leerlauf-Gewinn) =====
+     Wach bei: Kamerabewegung ('change'→renderNeeded), animierender Themenwelt, Benchmark/Warm-up,
+     aktivem Ziehen (Boost), kürzlicher Eingabe (<5 s) oder Auto-Rotate. Sonst Leerlauf → GPU ~0. */
+  if(sc!==scene) renderNeeded=true                                   // Themenwelten (Globus/Zahnräder/…) animieren jeden Frame
+  if(BENCH&&sc===scene) renderNeeded=true                            // Benchmark bewegt die Kamera direkt (feuert kein 'change')
+  if(sc===scene && !warmUp.done) renderNeeded=true                   // 1-s-Warm-up-Probe braucht Frames
+  if(boostOn || controls.autoRotate || (sc===scene && interacting)) renderNeeded=true
+  if(document.hidden) return                                         // 5F: Tab verdeckt/hintergründig → gar nicht rendern
+  if(!renderNeeded){                                                 // ————— LEERLAUF: kein GPU-Render, keine Szene-Updates —————
+    if(DEBUG_PERF){ _dbgAcc+=dt; if(_dbgAcc>=.25){ _dbgAcc=0; _dbgCalls=0; _dbgTris=0
+      if(window.__perf){ window.__perf.calls=0; window.__perf.render=0; window.__perf.idle=true }
+      _dbgEl.textContent='⏸ on-demand IDLE — 0 draw calls\nDPR '+renderer.getPixelRatio().toFixed(2)+'   Tier '+(sceneConfig.quality.display[qualityTier]||qualityTier)+(_qOvr?' (?quality)':'')+'\nBuild v'+window.__BUILD.id } }
+    return }
+  renderNeeded=false                                                 // Frame WIRD gerendert → Flag verbrauchen
+  if(DEBUG_PERF){ renderer.info.autoReset=false; renderer.info.reset() } // Calls über Szene+Postpässe akkumulieren
   if(BENCH&&sc===scene) benchStep(t,dt)
   if(sc===scene) warmUpTick(t,dt)
-  /* Perf-Pass: bewegte Schatten (Foliage/Figuren) alle 3 Frames aktualisieren — statische Gebäude
+  /* Perf-Pass: bewegte Schatten (Foliage/Figuren) alle 3 gerenderten Frames aktualisieren — statische Gebäude
      kosten so nichts, lebendige Schatten bleiben; autoUpdate ist aus (needsUpdate wird konsumiert).
      Ph3: während des Boosts (aktives Ziehen) Schatten einfrieren — frei nach dem Loslassen wieder live. */
   if(sc===scene && !boostOn && (frameN++ %3===0)) renderer.shadowMap.needsUpdate=true
-  /* Leerlauf-Drift (Atmen + AutoRotate) weicht SOFORT der Eingabe und blendet nach ~5 s Ruhe zurück */
-  const idleFor=performance.now()-lastInteract, interacting=idleFor<5000
+  /* Leerlauf-Atmen: nur auf gerenderten Frames (verhindert unsichtbare Kamera-Drift im Leerlauf) */
   if(sc===scene){ const b=Math.sin(t*sceneConfig.camera.breatheSpeed*Math.PI*2)*sceneConfig.camera.breatheAmp
-    if(!interacting) camera.position.y+=b-breathePrev; breathePrev=b   // Delta läuft weiter → kein Sprung beim Zurückblenden
-    if(!controls.autoRotate && !interacting && (state.section==='campus'||state.section==='partner')) controls.autoRotate=true }
+    if(!interacting) camera.position.y+=b-breathePrev; breathePrev=b }   // Delta läuft weiter → kein Sprung beim Zurückblenden
   if(sc===ambScene) ambShapes.forEach(sh=>{ sh.position.y=sh.userData.y0+Math.sin(t*sh.userData.sp+sh.userData.ph)*.45; sh.rotation.x+=.001*sh.userData.sp*3; sh.rotation.y+=.0014*sh.userData.sp*3 })
   if(sc===globeScene){ globeGroup.rotation.y+=.0008; arcs.forEach(a=>{ const k=(t*.14+a.off)%1; a.dot.position.copy(a.curve.getPoint(k)) }) }
   if(sc===avScene){ avTurn.rotation.y+=.008; avTurn.position.y=Math.sin(t*1.4)*.012 }
@@ -3422,9 +3476,17 @@ renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
     windUniform.value=t*sceneConfig.wind.speed                 // Wind/Wasser bleiben (billige Shader-Uniforms)
     if(!boostOn) updateLife(t)                                 // Ph3: CPU-Figuren-Posing während des Ziehens pausieren
     water.material.uniforms.time.value=t*sceneConfig.water.flowSpeed }
-  perfTick(dt) // auf ALLEN Render-Pfaden messen — auch Themenwelten/Effekte-aus müssen DPR-Stufen abwerfen können
-  if(sc===scene&&composer&&state.settings.effects){ composer.render() } else { renderer.render(sc,camera) }
-  if(DEBUG_PERF){ _dbgCalls=renderer.info.render.calls; _dbgTris=renderer.info.render.triangles; debugTick(dt) }
+  perfTick(dt) // nur gerenderte Frames werten — die DPR-Stufe folgt der echten Render-Last
+  const _t2 = DEBUG_PERF ? performance.now() : 0        // Sec3: Render-Phase abgrenzen
+  /* Sec3 GPU-Timer (best-effort, hart geguarded — bricht headless/ohne Ext NICHT): TIME_ELAPSED um den Render */
+  let _gpuActive=false
+  if(DEBUG_PERF&&_gpuExt&&!_gpuPending){ try{ const gl=renderer.getContext()
+    if(!_gpuQ) _gpuQ=gl.createQuery(); gl.beginQuery(_gpuExt.TIME_ELAPSED_EXT,_gpuQ); _gpuActive=true }catch(e){ _gpuActive=false } }
+  if(sc===scene&&composer&&state.settings.effects&&sceneConfig.quality[qualityTier].post){ composer.render() } else { renderer.render(sc,camera) } // Sec5B: Post-Kette nur auf High
+  if(_gpuActive){ try{ renderer.getContext().endQuery(_gpuExt.TIME_ELAPSED_EXT); _gpuPending=true }catch(e){ _gpuPending=false } }
+  if(DEBUG_PERF){ const _t3=performance.now()
+    _tCtrl+=((_t1-_t0)-_tCtrl)*.1; _tUpd+=((_t2-_t1)-_tUpd)*.1; _tRender+=((_t3-_t2)-_tRender)*.1
+    _dbgCalls=renderer.info.render.calls; _dbgTris=renderer.info.render.triangles; debugTick(dt, _t3) }
   updateLabels() })
 { const bell=document.querySelector('.bellb')
   if(bell){ bell.style.position='relative'
@@ -3523,7 +3585,28 @@ function verifySitePlan(){
 window.__kommilo3d={ config:sceneConfig, applyMode, setQualityTier, tier:()=>qualityTier, gpu:()=>GPU_RENDERER, build:()=>window.__BUILD, camera, controls, renderer, composer, scene, sun, info:()=>renderer.info.render, verifySitePlan,
   /* dev: echte Szenen-Drawcalls messen (Composer-info spiegelt sonst nur den letzten Fullscreen-Pass) */
   sceneDraw:()=>{ const a=renderer.info.autoReset; renderer.info.autoReset=false; renderer.info.reset(); renderer.render(scene,camera)
-    const r={calls:renderer.info.render.calls,tris:renderer.info.render.triangles}; renderer.info.autoReset=a; return r } }
+    const r={calls:renderer.info.render.calls,tris:renderer.info.render.triangles}; renderer.info.autoReset=a; return r },
+  /* ENG Sec4: Attributions-Experimente (dev-only, KEIN UI). Eine Variable je Experiment umschalten,
+     dann window.__perf messen. exp.reset() stellt den Ausgangszustand wieder her. */
+  exp:{
+    dpr:(f)=>{ renderer.setPixelRatio(f); if(composer){ composer.setPixelRatio(f); composer.setSize(innerWidth-264,innerHeight-64) } }, // E1
+    shadows:(on)=>{ renderer.shadowMap.enabled=on; renderer.shadowMap.needsUpdate=true },                                             // E3
+    basicMat:(on)=>{ scene.overrideMaterial = on ? new THREE.MeshBasicMaterial({color:0x888888}) : null },                            // E4
+    halfPop:(on)=>{ scene.traverse(o=>{                                                                                               // E5
+      if(!o.isInstancedMesh) return
+      if(on){ if(o.userData._c0==null) o.userData._c0=o.count; o.count=Math.max(1,Math.floor(o.userData._c0/2)) }
+      else if(o.userData._c0!=null){ o.count=o.userData._c0; o.userData._c0=null } }) },
+    reset:()=>{ scene.overrideMaterial=null; renderer.shadowMap.enabled=true; renderer.shadowMap.needsUpdate=true
+      scene.traverse(o=>{ if(o.isInstancedMesh&&o.userData._c0!=null){ o.count=o.userData._c0; o.userData._c0=null } })
+      setQualityTier(qualityTier) },
+    /* synchroner Median-Probe: n Renders des aktuellen Pfads, Median-CPU-ms + Calls/Tris — EMA-frei,
+       damit A/B unter SwiftShader (~0.4 fps) verlässlich ist. Nutzt die Post-Kette, wenn Effekte an sind. */
+    probe:(n)=>{ n=n||3; const ts=[]; const useC=current()===scene&&composer&&state.settings.effects&&sceneConfig.quality[qualityTier].post
+      let calls=0,tris=0; const a=renderer.info.autoReset; renderer.info.autoReset=false
+      for(let i=0;i<n;i++){ renderer.info.reset(); renderer.shadowMap.needsUpdate=true; const t0=performance.now()
+        if(useC) composer.render(); else renderer.render(scene,camera); ts.push(performance.now()-t0)
+        calls=renderer.info.render.calls; tris=renderer.info.render.triangles }
+      renderer.info.autoReset=a; ts.sort((x,y)=>x-y); return { ms:+ts[Math.floor(n/2)].toFixed(1), calls, tris } } } }
 window.__payPoll=0
 if(location.search.indexOf('paid=1')>=0){ history.replaceState({},'',location.pathname)
   toast('Zahlung wird bestätigt …','Einen Moment — deine Credits kommen gleich.')
