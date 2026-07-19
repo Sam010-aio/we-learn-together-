@@ -3369,16 +3369,37 @@ function benchStep(t,dt){ if(BENCH.done) return
     console.log('[BENCHMARK] frames='+s.length+' avg='+avg.toFixed(1)+'ms p95='+p95.toFixed(1)+'ms ('+(1000/avg).toFixed(0)+' fps avg) — Tier '+(sceneConfig.quality.display[qualityTier]||qualityTier)+' · GPU '+GPU_RENDERER+' · Build v'+window.__BUILD.id+' — Budget p95≤16.7ms')
     controls.enabled=true }
 }
-/* ===== LIGHTNESS RESCUE Ph1: ?debug=perf-Overlay (FPS/ms/Draw-Calls/Tris/DPR/Stufe/GPU/Build) ===== */
+/* ===== ENG Sec3: ?debug=perf-Profiler — FPS/ms + p95(5-s-Fenster) + CPU-Phasen (controls/update/render)
+   + Draw-Calls/Tris + DPR/Stufe/GPU/Build + best-effort GPU-Timer (EXT_disjoint_timer_query_webgl2).
+   Spiegelt jeden Frame nach window.__perf (headless-loggbar). Alles nur hinter ?debug=perf. ===== */
 let _msEMA=16.7, _fpsEMA=60, _dbgAcc=0, _dbgCalls=0, _dbgTris=0
+let _tCtrl=0, _tUpd=0, _tRender=0                       // EMA der CPU-Phasen (ms)
+const _p95buf=[]                                        // {t, ms} — gleitendes 5-s-Fenster für p95
+/* GPU-Timer (best-effort): oft aus Sicherheitsgründen deaktiviert → sauberer Fallback „n/a" */
+let _gpuExt=null, _gpuQ=null, _gpuPending=false, _gpuMs=-1
+if(DEBUG_PERF){ try{ const gl=renderer.getContext(); _gpuExt=gl.getExtension('EXT_disjoint_timer_query_webgl2') }catch(e){} }
 const _dbgEl = DEBUG_PERF ? (()=>{ const d=document.createElement('div'); d.id='perfhud'
-  d.style.cssText='position:fixed;left:274px;top:72px;z-index:9999;background:rgba(10,14,22,.82);color:#c8f9d8;font:600 11px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:9px 12px;border-radius:10px;white-space:pre;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.4)'
+  d.style.cssText='position:fixed;left:274px;top:72px;z-index:9999;background:rgba(10,14,22,.82);color:#c8f9d8;font:600 11px/1.55 ui-monospace,Menlo,Consolas,monospace;padding:9px 12px;border-radius:10px;white-space:pre;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.4)'
   document.body.appendChild(d); return d })() : null
-function debugTick(dt){ _msEMA+=(dt*1000-_msEMA)*.12; _fpsEMA+=((dt>0?1/dt:60)-_fpsEMA)*.12
+function _p95(){ if(!_p95buf.length) return 0
+  const a=_p95buf.map(s=>s.ms).sort((x,y)=>x-y); return a[Math.min(a.length-1,Math.floor(a.length*.95))] }
+function debugTick(dt, tNow){ const ms=dt*1000
+  _msEMA+=(ms-_msEMA)*.12; _fpsEMA+=((dt>0?1/dt:60)-_fpsEMA)*.12
+  _p95buf.push({t:tNow, ms}); while(_p95buf.length && tNow-_p95buf[0].t>5000) _p95buf.shift()  // 5-s-Fenster
+  /* GPU-Query-Ergebnis abholen (falls verfügbar) */
+  if(_gpuExt&&_gpuQ&&_gpuPending){ try{ const gl=renderer.getContext()
+    if(gl.getQueryParameter(_gpuQ,gl.QUERY_RESULT_AVAILABLE)&&!gl.getParameter(_gpuExt.GPU_DISJOINT_EXT)){
+      _gpuMs=gl.getQueryParameter(_gpuQ,gl.QUERY_RESULT)/1e6; _gpuPending=false } }catch(e){ _gpuPending=false } }
   _dbgAcc+=dt; if(_dbgAcc<.25) return; _dbgAcc=0; const b=window.__BUILD
-  _dbgEl.textContent='FPS '+_fpsEMA.toFixed(0)+'   '+_msEMA.toFixed(1)+' ms\n'+
-    'draw '+_dbgCalls+'   tris '+(_dbgTris/1000).toFixed(0)+'k\n'+
-    'DPR '+renderer.getPixelRatio().toFixed(2)+'   Tier '+(sceneConfig.quality.display[qualityTier]||qualityTier)+(_qOvr?' (?quality)':'')+'\n'+
+  const gpu=_gpuMs>=0?_gpuMs.toFixed(1)+'ms':'n/a'
+  window.__perf={ fps:+_fpsEMA.toFixed(0), ms:+_msEMA.toFixed(1), p95:+_p95().toFixed(1),
+    ctrl:+_tCtrl.toFixed(2), upd:+_tUpd.toFixed(2), render:+_tRender.toFixed(2), gpuMs:_gpuMs,
+    calls:_dbgCalls, tris:_dbgTris, dpr:+renderer.getPixelRatio().toFixed(2), tier:qualityTier, gpu:GPU_RENDERER, build:b.id }
+  _dbgEl.textContent=
+    'FPS '+window.__perf.fps+'   '+window.__perf.ms+' ms   p95 '+window.__perf.p95+'\n'+
+    'CPU  ctrl '+window.__perf.ctrl+'  upd '+window.__perf.upd+'  rndr '+window.__perf.render+' ms\n'+
+    'GPU  '+gpu+'   draw '+window.__perf.calls+'  tris '+(window.__perf.tris/1000).toFixed(0)+'k\n'+
+    'DPR '+window.__perf.dpr+'   Tier '+(sceneConfig.quality.display[qualityTier]||qualityTier)+(_qOvr?' (?quality)':'')+'\n'+
     'GPU '+GPU_RENDERER+'\n'+'Build v'+b.id }
 /* Ph2: 1-s-Warm-up-Probe — misst direkt nach dem Boot auf der Campus-Szene und korrigiert die
    Auto-Stufe EINMAL nach unten, wenn die frühe Framerate klar unter dem Drop-Ziel liegt. */
@@ -3395,7 +3416,9 @@ function warmUpTick(t,dt){ if(warmUp.done) return
 renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
   const dt=t-lastT; lastT=t
   if(DEBUG_PERF){ renderer.info.autoReset=false; renderer.info.reset() } // Calls über Szene+Postpässe akkumulieren
+  const _t0 = DEBUG_PERF ? performance.now() : 0        // Sec3: CPU-Phasen-Profiling (nur bei ?debug=perf)
   controls.update(dt)                                    // Delta → framerate-unabhängiges „Wind"-Damping
+  const _t1 = DEBUG_PERF ? performance.now() : 0
   if(boostOn && performance.now()>=boostOffAt){ boostOn=false; boostOffAt=Infinity; applyBoost(false) } // Ph3: entprellt zurückblenden
   const sc=current()
   if(BENCH&&sc===scene) benchStep(t,dt)
@@ -3423,8 +3446,16 @@ renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
     if(!boostOn) updateLife(t)                                 // Ph3: CPU-Figuren-Posing während des Ziehens pausieren
     water.material.uniforms.time.value=t*sceneConfig.water.flowSpeed }
   perfTick(dt) // auf ALLEN Render-Pfaden messen — auch Themenwelten/Effekte-aus müssen DPR-Stufen abwerfen können
+  const _t2 = DEBUG_PERF ? performance.now() : 0        // Sec3: Render-Phase abgrenzen
+  /* Sec3 GPU-Timer (best-effort, hart geguarded — bricht headless/ohne Ext NICHT): TIME_ELAPSED um den Render */
+  let _gpuActive=false
+  if(DEBUG_PERF&&_gpuExt&&!_gpuPending){ try{ const gl=renderer.getContext()
+    if(!_gpuQ) _gpuQ=gl.createQuery(); gl.beginQuery(_gpuExt.TIME_ELAPSED_EXT,_gpuQ); _gpuActive=true }catch(e){ _gpuActive=false } }
   if(sc===scene&&composer&&state.settings.effects){ composer.render() } else { renderer.render(sc,camera) }
-  if(DEBUG_PERF){ _dbgCalls=renderer.info.render.calls; _dbgTris=renderer.info.render.triangles; debugTick(dt) }
+  if(_gpuActive){ try{ renderer.getContext().endQuery(_gpuExt.TIME_ELAPSED_EXT); _gpuPending=true }catch(e){ _gpuPending=false } }
+  if(DEBUG_PERF){ const _t3=performance.now()
+    _tCtrl+=((_t1-_t0)-_tCtrl)*.1; _tUpd+=((_t2-_t1)-_tUpd)*.1; _tRender+=((_t3-_t2)-_tRender)*.1
+    _dbgCalls=renderer.info.render.calls; _dbgTris=renderer.info.render.triangles; debugTick(dt, _t3) }
   updateLabels() })
 { const bell=document.querySelector('.bellb')
   if(bell){ bell.style.position='relative'
@@ -3523,7 +3554,28 @@ function verifySitePlan(){
 window.__kommilo3d={ config:sceneConfig, applyMode, setQualityTier, tier:()=>qualityTier, gpu:()=>GPU_RENDERER, build:()=>window.__BUILD, camera, controls, renderer, composer, scene, sun, info:()=>renderer.info.render, verifySitePlan,
   /* dev: echte Szenen-Drawcalls messen (Composer-info spiegelt sonst nur den letzten Fullscreen-Pass) */
   sceneDraw:()=>{ const a=renderer.info.autoReset; renderer.info.autoReset=false; renderer.info.reset(); renderer.render(scene,camera)
-    const r={calls:renderer.info.render.calls,tris:renderer.info.render.triangles}; renderer.info.autoReset=a; return r } }
+    const r={calls:renderer.info.render.calls,tris:renderer.info.render.triangles}; renderer.info.autoReset=a; return r },
+  /* ENG Sec4: Attributions-Experimente (dev-only, KEIN UI). Eine Variable je Experiment umschalten,
+     dann window.__perf messen. exp.reset() stellt den Ausgangszustand wieder her. */
+  exp:{
+    dpr:(f)=>{ renderer.setPixelRatio(f); if(composer){ composer.setPixelRatio(f); composer.setSize(innerWidth-264,innerHeight-64) } }, // E1
+    shadows:(on)=>{ renderer.shadowMap.enabled=on; renderer.shadowMap.needsUpdate=true },                                             // E3
+    basicMat:(on)=>{ scene.overrideMaterial = on ? new THREE.MeshBasicMaterial({color:0x888888}) : null },                            // E4
+    halfPop:(on)=>{ scene.traverse(o=>{                                                                                               // E5
+      if(!o.isInstancedMesh) return
+      if(on){ if(o.userData._c0==null) o.userData._c0=o.count; o.count=Math.max(1,Math.floor(o.userData._c0/2)) }
+      else if(o.userData._c0!=null){ o.count=o.userData._c0; o.userData._c0=null } }) },
+    reset:()=>{ scene.overrideMaterial=null; renderer.shadowMap.enabled=true; renderer.shadowMap.needsUpdate=true
+      scene.traverse(o=>{ if(o.isInstancedMesh&&o.userData._c0!=null){ o.count=o.userData._c0; o.userData._c0=null } })
+      setQualityTier(qualityTier) },
+    /* synchroner Median-Probe: n Renders des aktuellen Pfads, Median-CPU-ms + Calls/Tris — EMA-frei,
+       damit A/B unter SwiftShader (~0.4 fps) verlässlich ist. Nutzt die Post-Kette, wenn Effekte an sind. */
+    probe:(n)=>{ n=n||3; const ts=[]; const useC=current()===scene&&composer&&state.settings.effects
+      let calls=0,tris=0; const a=renderer.info.autoReset; renderer.info.autoReset=false
+      for(let i=0;i<n;i++){ renderer.info.reset(); renderer.shadowMap.needsUpdate=true; const t0=performance.now()
+        if(useC) composer.render(); else renderer.render(scene,camera); ts.push(performance.now()-t0)
+        calls=renderer.info.render.calls; tris=renderer.info.render.triangles }
+      renderer.info.autoReset=a; ts.sort((x,y)=>x-y); return { ms:+ts[Math.floor(n/2)].toFixed(1), calls, tris } } } }
 window.__payPoll=0
 if(location.search.indexOf('paid=1')>=0){ history.replaceState({},'',location.pathname)
   toast('Zahlung wird bestätigt …','Einen Moment — deine Credits kommen gleich.')
