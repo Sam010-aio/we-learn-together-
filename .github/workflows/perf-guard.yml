@@ -1,0 +1,21 @@
+# Headless-free perf + preservation gate. NO browser / NO WebGL (CI GL is SwiftShader
+# software-only and would time out rendering the campus). Locks the structural
+# performance wins and the Preservation-Law symbols; syntax-checks the module script.
+name: perf-guard
+on:
+  pull_request:
+    paths: [ 'index.html', 'scripts/**', '.github/workflows/perf-guard.yml' ]
+  push:
+    branches: [ main ]
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax check (node --check on module script)
+        run: node scripts/syntax-check.cjs
+      - name: Structural perf + preservation guard
+        run: node scripts/perf-guard.cjs
