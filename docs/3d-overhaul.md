@@ -1133,3 +1133,25 @@ Node — kein SwiftShader-Render). Drawcall/Dreieck-Budget prüft der Owner via 
 3. `?quality=potato` vs. `?quality=high` vergleichen.
 4. Login, **Credits-Shop** und **Tisch-Auswahl** kurz antesten (Preservation-Law lebt).
 5. Beim nächsten Deploy muss der **Reload-Toast** erscheinen.
+
+## 26. Bewegungs-Feel — Navigations-LOD + Gras-Cap (Owner-Feedback „schwer zu bewegen")
+
+**Befund/Attribution:** Trotz DPR-Clamp + On-Demand blieb das **Bewegen** schwer. Beim Ziehen/Zoomen
+ist die Szene NICHT füllraten-, sondern **CPU-draw-call-/vertex-gebunden**: das **42k-Gras-Feld**
+(`frustumCulled=false`, größte Einzel-Vertex-Last) und die **gegliederten Figuren** (`peopleGroup` =
+hunderte Draw-Calls) werden jeden gezogenen Frame gesendet — die DPR-Senkung erreicht diese Geometrie
+nicht. Genau deshalb half die bisherige Boost-Logik (nur DPR) nicht gegen das Ruckeln.
+
+**Fix (Katalog 5A/5C):**
+- **Navigations-LOD:** Während echter Kamerabewegung (getriggert am `change`-Event nur bei aktiver
+  Geste, `boostOn`) werden Foliage (`AO_EXCLUDE`: 42k-Gras + Cluster + Hecken-/Baumblätter) + Figuren +
+  Partikel **unsichtbar** geschaltet; 250 ms nach dem Loslassen zurück (durch die Bewegung kaschiert).
+  Ein reiner **Tap/Tisch-Klick** blendet NICHTS aus (kein Flackern). Gebäude, Boden, Wasser, klickbare
+  Tische bleiben sichtbar. Sichtbarkeit pro Objekt gesichert/zurückgesetzt (Tag/Nacht bleibt korrekt).
+- **Gras-Cap je Stufe:** `grass`-Anteil in `sceneConfig.quality` (High 1.0 / Balanced .55 / Light .3 /
+  Potato .12) auf `InstancedMesh.count` — entlastet auch die Dauer-Render-Frames (AutoRotate) auf
+  schwacher HW, nicht nur die Geste.
+
+**Entscheidung/Trade-off:** Detail weicht der Geschwindigkeit **nur während der Bewegung** — Standard-
+Navigations-LOD (Google Earth/Maps/CAD). Feel vor Detail (Owner-Priorität). Vollständig reversibel,
+kein Inhalt entfernt, keine App-Logik/UI berührt. Ausblend-Set und Gras-Anteile sind Ein-Zeilen-Tunables.

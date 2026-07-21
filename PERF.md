@@ -94,6 +94,20 @@ did **not** chase draw calls further; it fixed (a) and (b), which the SLOs actua
    (`EXT_disjoint_timer_query_webgl2`, "n/a" when blocked), draw calls, triangles, DPR,
    tier, `GL_RENDERER`, build stamp. Mirrored to `window.__perf` for scripted reads.
 
+8. **Navigation-LOD (movement feel — the key fix for "heavy to move"):** during a
+   drag/zoom the scene is CPU draw-call + vertex bound, not fill bound (the DPR drop
+   can't touch geometry). While the camera is actually moving, the heaviest
+   non-clickable detail is hidden and restored 250 ms after release (masked by the
+   motion): all alpha-card foliage (`AO_EXCLUDE`: 42k grass + clusters + hedge/tree
+   leaves), `peopleGroup` figures, and particles. Engaged from the OrbitControls
+   `change` event only when a gesture is active (`boostOn`) — a plain tap / table
+   select never flashes detail. Per-object visibility is saved/restored so day-night
+   particle state stays correct.
+9. **Per-tier grass cap:** the 42k-instance grass field (largest single vertex load)
+   is thinned by a `grass` fraction per tier (High 1.0 / Balanced .55 / Light .3 /
+   Potato .12) on `InstancedMesh.count`, relieving the continuous-render frames on
+   weak hardware, not just the gesture.
+
 Interaction-boost parameters: `boostScale 0.75`, `boostFloor 1.0`, `boostRestoreMs 250`.
 
 ---
