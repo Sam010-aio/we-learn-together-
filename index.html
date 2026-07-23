@@ -1450,13 +1450,13 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
   { /* SITEPLAN: Altgebäude (15,−98), 105 (O-W) × 16 (N-S) m, Portal-LANGFRONT → Nord (−z, zum
        Forumsplatz). Gruppe um +90° gedreht: lokale +x-Front (Risalit/Portale/CAROLO) → Welt −z,
        lokale z-Längsachse → Welt x. Dossier Teil A + B4. */
-    const A2=new THREE.Group(); A2.position.set(15,0,-98); A2.rotation.y=Math.PI/2; buildingGroup.add(A2); SITE.alt=A2
+    const A2=new THREE.Group(); A2.position.set(-51,0,-82); A2.rotation.y=0; buildingGroup.add(A2); SITE.alt=A2 // V2-Satellit: Blockrand-Westseite, Portalfront OSTEN zur Pockelsstraße
     const AX0=A2.position.x, AZ0=A2.position.z
     const WE=16, NL=105, hE=WE/2, hN=NL/2              // lokale Tiefe (→Welt-z) / lokale Länge (→Welt-x)
     const H1=2.4, H2=7.5, HB=.6, H4=6.5, wallTop=H1+H2+HB+H4
-    SITE.altW=NL; SITE.altD=WE; SITE.altEastX=AX0+hN; SITE.altSouthZ=AZ0+hE; SITE.altAxes=7
+    SITE.altW=NL; SITE.altD=WE; SITE.altEastX=AX0+hE; SITE.altSouthZ=AZ0+hN; SITE.altAxes=7
     /* Portalfront-Normale (Welt −z, zum Platz) — für Assertion */
-    SITE.altEastNormal=new THREE.Vector3(0,0,-1)
+    SITE.altEastNormal=new THREE.Vector3(1,0,0)
     /* --- Stone-True-Mauerwerk-Generator, verallgemeinert auf beliebige Fassadenbreite --- */
     const mkMasonry=(faceW)=>{ const s=1536/faceW, PW=1536, PH=Math.max(2,Math.round(wallTop*s))
       const c2=document.createElement('canvas'); c2.width=PW; c2.height=PH; const x2=c2.getContext('2d')
@@ -1587,8 +1587,8 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     ringBar(entabY+.1,.2,.1,.8,trim)
     /* Dentils an Portalfront (Welt −z) + Ost-Stirn (Welt +x) — Weltkoordinaten über die
        90°-Gruppendrehung abgebildet: Welt = (AX0+lz, y, AZ0−lx) */
-    const dent=[]; for(let z=-hN+.3;z<=hN-.3;z+=.3) dent.push({x:AX0+z,y:entabY+.4,z:AZ0-hE-.06})
-    for(let x=-hE+.3;x<=hE-.3;x+=.3) dent.push({x:AX0+hN+.06,y:entabY+.4,z:AZ0-x})
+    const dent=[]; for(let z=-hN+.3;z<=hN-.3;z+=.3) dent.push({x:AX0+hE+.06,y:entabY+.4,z:AZ0+z}) // rot 0: Ostfront-Zahnschnitt entlang der 105-m-Länge
+    for(let x=-hE+.3;x<=hE-.3;x+=.3) dent.push({x:AX0+x,y:entabY+.4,z:AZ0+hN+.06})
     instanced(new THREE.BoxGeometry(.12,.18,.16),stoneM,dent,false)
     ringBar(entabY+.85,.5,.55,1.1,trim)      // Corona
     ringBar(entabY+1.18,.16,.25,.9,trim)     // Kranzgesims
@@ -1621,7 +1621,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
      über doppelgeschossig verglastem Sockel + zurückgesetzter dunkler Technikaufbau ≈ 47 m.
      Langseite (lokal x) mit ry=12° ≈ parallel zur Altgebäude-Rückseite; Waffelraster-Langfassaden
      nach Nord/Süd, fensterlose Plattenraster-Schmalseiten nach Ost/West (B5). */
-  const hh=new THREE.Group(); hh.position.set(53,0,-72); hh.rotation.y=12*Math.PI/180; buildingGroup.add(hh); SITE.tower=hh
+  const hh=new THREE.Group(); hh.position.set(21,0,-169); hh.rotation.y=0; buildingGroup.add(hh); SITE.tower=hh // V2: Nordende der Pockelsstraße-Achse
   const T_LONG=26, T_SHORT=15, T_BASEH=4.5, T_FLOORS=13, T_FLH=3.3, T_AXES=10 // lange Achse lokal x ≈ Welt O-W
   const T_GRIDH=T_FLOORS*T_FLH, T_TOP=T_BASEH+T_GRIDH                          // 42.9 / 47.4 (Dossier ≈ 47 m)
   const concGrid=new THREE.MeshStandardMaterial({color:'#c4c3bc',roughness:.72,metalness:.04}) // warmer heller Betonrahmen
@@ -1684,7 +1684,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
   { /* SITEPLAN/Dossier B7+C10: Kinzig-Giebelhaus (70,−86), 22×12 m, Traufe 9 / First 13,5 m,
        −8°; First O-W (Dachflächen → Nord/Süd), PV-Feld auf der SÜD-Fläche; Eingangs-Giebel
        (lokal +x) → Osten zur Ufergasse (B7), Fassade P (lokal −x) → Westen zum Parkplatz. */
-    const gb=new THREE.Group(); gb.position.set(67,0,-91); gb.rotation.y=-8*Math.PI/180; buildingGroup.add(gb); SITE.yellow=gb // (67,−91): 3–5 m SE der Tabellenzelle — löst den Dossier-internen Überlapp Turm/Kinzig/Fluss (SITEPLAN „Abweichungen")
+    const gb=new THREE.Group(); gb.position.set(96,0,-158); gb.rotation.y=0; buildingGroup.add(gb); SITE.yellow=gb // V2: nicht in der Positionstabelle → als NO-Wohnkulisse verschoben // (67,−91): 3–5 m SE der Tabellenzelle — löst den Dossier-internen Überlapp Turm/Kinzig/Fluss (SITEPLAN „Abweichungen")
     const GW=22, GD=12, GBODY=9, GPEAK=4.5, RIDGE=GBODY+GPEAK // 22×12, Traufe 9, First 13,5 (Dossier)
     SITE.b3=[GW,GD,RIDGE] // für Assertion (Grundriss + Firsthöhe)
     /* Keramik-Paneele: horizontale Läuferverband-Platten (120×30 cm), dünne dunkle Fugen, leichter Glanz */
@@ -1768,7 +1768,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
      GLASFRONT → SÜD (+z, zum Forumsplatz): bernsteinfarbene Glas-Waben-Rasterfassade ≈ 20×~10 m
      (abends warm leuchtend — Signature), weißes Attika-Band „AUDITORIUM MAXIMUM" über dem
      verglasten Foyer-Sockel. Lokal +z-Front, Rotation 0. */
-  { const au=new THREE.Group(); au.position.set(7,0,-188); buildingGroup.add(au); SITE.lib=au
+  { const au=new THREE.Group(); au.position.set(57,0,-53); au.rotation.y=-Math.PI/2; buildingGroup.add(au); SITE.lib=au // V2: Ostseite der Straße, Glasfront WESTEN
     const AW=42, AD=30, baseH=4.2, hallH=7.8, totalH=baseH+hallH, front=AD/2
     SITE.libW=AW; SITE.libFront='S'; SITE.libRoofWhite=true
     const whiteM=new THREE.MeshStandardMaterial({color:'#eceff0',roughness:.55})
@@ -1815,8 +1815,8 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
      Zentrum (C1/C7): Betonplatten-Raster 1,2 m, Klinker-Vorfeld am Altgebäude, Bronzestatue,
      blaue Lichtstelen in 2 Reihen, Fahnenmasten, Brunnenbecken mit Sitzrand; Audimax-Plaza als
      abgesetzte Terrassenstufe mit Anthrazit-Platten, Mosaikbändern, Sitzblöcken + Corten. ===== */
-  { const uf=new THREE.Group(); buildingGroup.add(uf)
-    SITE.plaza={ xW:-15, xE:45, zN:-172.5, zS:-127.5, cx:15, cz:-150 }
+  { const uf=new THREE.Group(); uf.position.set(45,0,68); buildingGroup.add(uf) // V2: Ensemble nach Osten (Platz ZWISCHEN Audimax & Forum)
+    SITE.plaza={ xW:30, xE:90, zN:-104.5, zS:-59.5, cx:60, cz:-82 }
     /* Forumsplatz: großformatige helle Betonplatten (1,2 m Raster, Fugen sichtbar) */
     const slabTex=(()=>{ const c=cvs(256),x=c.getContext('2d'); x.fillStyle='#cfcdc6'; x.fillRect(0,0,256,256)
       x.strokeStyle='#a9a79e'; x.lineWidth=3; x.strokeRect(1,1,254,254)
@@ -1887,10 +1887,10 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     const roofM=new THREE.MeshStandardMaterial({color:'#c6c9cb',roughness:.6})
     { const g=gm(45/3.5,16/3.2), mats=[bodyM,bodyM,roofM,bodyM,g,g]
       const bib=new THREE.Mesh(new THREE.BoxGeometry(45,16,35),mats); bib.position.set(-40,8,-140); bib.castShadow=true; bib.receiveShadow=true; uf.add(bib)
-      const rf=new THREE.Mesh(new THREE.BoxGeometry(45.6,.5,35.6),roofM); rf.position.set(-40,16.2,-140); uf.add(rf); SITE.bib=bib }
+      const rf=new THREE.Mesh(new THREE.BoxGeometry(45.6,.5,35.6),roofM); rf.position.set(-40,16.2,-140); uf.add(rf); SITE.bib=bib; bib.visible=false; rf.visible=false } // V2: Bibliothek nicht in der Tabelle → ausgeblendet (Filler entfernt)
     /* ===== Forumsgebäude-Riegel — SITEPLAN: (7,−202), 52×16, H 24; 6-geschossiger grauer Riegel mit
        horizontalen Fensterbändern, SCHWEBT 4,5 m auf Rundstützen über dem Sockelflügel (B6) ===== */
-    { const fg=new THREE.Group(); uf.add(fg); SITE.forum=fg
+    { const fg=new THREE.Group(); fg.position.set(18,0,24); uf.add(fg); SITE.forum=fg // V2: Forum-Komplex → (70,−110)
       const bandTex=(()=>{ const c=cvs(256),x=c.getContext('2d'); x.fillStyle='#9aa0a5'; x.fillRect(0,0,256,256)
         for(let r=0;r<6;r++){ x.fillStyle='#22282e'; x.fillRect(0,r*42+10,256,20) } // 6 horizontale Fensterbänder
         const t=tx(c); t.repeat.set(9,1); return t })()
