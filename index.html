@@ -1614,7 +1614,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     /* Brückenanschluss-Öffnung in der Rückfassade am OSTFLÜGEL (lokal z=+45 → Welt x=60), OK Boden +7 m (C3) */
     { const opening=new THREE.Mesh(new THREE.BoxGeometry(.3,3.2,3.4),new THREE.MeshStandardMaterial({color:'#20242a',roughness:.4,metalness:.3})); opening.position.set(wFace-.04,8.6,45); A2.add(opening)
       const sur=new THREE.Mesh(new THREE.BoxGeometry(.2,3.7,3.9),trim); sur.position.set(wFace-.1,8.6,45); A2.add(sur)
-      SITE.altBridgeAnchor={x:AX0-hE,y:8.6,z:-80} } // Owner-Steg: Rückwand (West) des Prachtflügels bei Z−80 → Okerhochhaus dahinter
+      SITE.altBridgeAnchor={x:AX0-hE,y:8.6,z:-55} } // Owner-Steg: Rückwand (West) des Prachtflügels bei Z−55 → längere Brücke zum vor-links versetzten Okerhochhaus
     for(let fl=0;fl<2;fl++)for(const px of [-5.4,-1.8,1.8,5.4]){ const w=new THREE.Mesh(new THREE.BoxGeometry(1.4,2.4,.1),glassM); w.position.set(px,H1+2+fl*(H2+HB)*.9,-hN-.02); A2.add(w) }
     /* ===== ZWEITER FLÜGEL — Owner: L/Γ-Form entlang der Pockelsstraße (rote Linie + Satellit-Blockrand).
        Der fertige N-S-Straßenflügel wird GEKLONT (Geometrie/Material geteilt → 0 neue Assets) und am
@@ -1627,7 +1627,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
      über doppelgeschossig verglastem Sockel + zurückgesetzter dunkler Technikaufbau ≈ 47 m.
      Langseite (lokal x) mit ry=12° ≈ parallel zur Altgebäude-Rückseite; Waffelraster-Langfassaden
      nach Nord/Süd, fensterlose Plattenraster-Schmalseiten nach Ost/West (B5). */
-  const hh=new THREE.Group(); hh.position.set(-40,0,-80); hh.rotation.y=Math.PI/2; buildingGroup.add(hh); SITE.tower=hh // Owner: nach hinten (nord-west) gezogen, 90° gedreht; längere Brücke zur Altgebäude-Rückwand
+  const hh=new THREE.Group(); hh.position.set(-58,0,-55); hh.rotation.y=Math.PI/2; buildingGroup.add(hh); SITE.tower=hh // Owner: nach vorne (Platz) + links (West) gezogen → längere Brücke zur Altgebäude-Rückwand
   const T_LONG=36, T_SHORT=11, T_BASEH=4.5, T_FLOORS=13, T_FLH=3.3, T_AXES=12 // Owner: breiter (36) aber dünner (11) — flache Scheibe
   const T_GRIDH=T_FLOORS*T_FLH, T_TOP=T_BASEH+T_GRIDH                          // 42.9 / 47.4 (Dossier ≈ 47 m)
   const concGrid=new THREE.MeshStandardMaterial({color:'#c4c3bc',roughness:.72,metalness:.04}) // warmer heller Betonrahmen
@@ -4026,8 +4026,8 @@ function verifySitePlan(){
   chk('Altgebäude durchgehend (Prachtfront + verbundener Nordflügel, kein loser Block)', SITE.altWings===2, `Flügel=${SITE.altWings||1}`)
   const aN=new THREE.Vector3(1,0,0).applyQuaternion(SITE.alt.quaternion)
   chk('Altgebäude Portalfront nach OSTEN', aN.x>.9, `Front-Normale x=${aN.x.toFixed(2)}`)
-  chk('Okerhochhaus hinter dem Altgebäude ≈ (−40,−80)', near(tw.x,-40,4)&&near(tw.z,-80,4), `(${tw.x.toFixed(0)},${tw.z.toFixed(0)})`)
-  chk('Skybridge sichtbar (Altgebäude ↔ Okerhochhaus)', !!SITE.bridgeGroup&&SITE.bridgeGroup.visible&&SITE.bridge.span<34, SITE.bridge?`span=${SITE.bridge.span.toFixed(0)}m`:'fehlt')
+  chk('Okerhochhaus vor-links versetzt ≈ (−58,−55)', near(tw.x,-58,4)&&near(tw.z,-55,4), `(${tw.x.toFixed(0)},${tw.z.toFixed(0)})`)
+  chk('Skybridge sichtbar (Altgebäude ↔ Okerhochhaus)', !!SITE.bridgeGroup&&SITE.bridgeGroup.visible&&SITE.bridge.span<55, SITE.bridge?`span=${SITE.bridge.span.toFixed(0)}m`:'fehlt')
   chk('Audimax ≈ (+57,−53)', near(au.x,57,3)&&near(au.z,-53,3), `(${au.x.toFixed(0)},${au.z.toFixed(0)})`)
   const uN=new THREE.Vector3(0,0,1).applyQuaternion(SITE.lib.quaternion)
   chk('Audimax Glasfront nach WESTEN', uN.x<-.9, `Front-Normale x=${uN.x.toFixed(2)}`)
@@ -4037,7 +4037,7 @@ function verifySitePlan(){
   chk('Abt-Jerusalem (Z≈−21) + Schleinitz (Z≈−137)', !!SITE.streets&&near(SITE.streets.abtJ.z,-21,2)&&near(SITE.streets.schleinitz.z,-137,2), SITE.streets?`${SITE.streets.abtJ.z}/${SITE.streets.schleinitz.z}`:'fehlt')
   chk('Oker umschließt SW (Achse westl. am SH)', okerX(0)<-30&&okerX(34)<0, `x@z0=${okerX(0).toFixed(0)}, x@z34=${okerX(34).toFixed(0)}`)
   chk('Straßenbrücke südlich des SH (z≈+32)', !!SITE.roadBridge&&near(SITE.roadBridge.z,32,3), SITE.roadBridge?`z=${SITE.roadBridge.z}`:'fehlt')
-  chk('Skybridge kurz & angebunden (kein Schweben quer über den Rasen)', !!SITE.bridgeGroup&&SITE.bridgeGroup.visible&&SITE.bridge.span<34, SITE.bridge?`span=${SITE.bridge.span.toFixed(0)}m`:'fehlt')
+  chk('Skybridge kurz & angebunden (kein Schweben quer über den Rasen)', !!SITE.bridgeGroup&&SITE.bridgeGroup.visible&&SITE.bridge.span<55, SITE.bridge?`span=${SITE.bridge.span.toFixed(0)}m`:'fehlt')
   chk('C4: 0 Baum↔Gebäude-Durchdringungen', SITE.vegViolations===0, `${SITE.vegViolations} Verstöße`)
   chk('C5: Lichterketten kollisionsfrei', typeof SITE.lightViolations==='number', `${SITE.lightViolations} entfernt`)
   return out }
