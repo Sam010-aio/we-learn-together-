@@ -1817,6 +1817,33 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     const roof=new THREE.Mesh(new THREE.BoxGeometry(AW+2.2,.7,AD+2.2),whiteM); roof.position.y=totalH+.35; roof.castShadow=true; roof.receiveShadow=true; au.add(roof); au.userData.roof=roof
     const roofFascia=new THREE.Mesh(new THREE.BoxGeometry(AW+2.5,.28,AD+2.5),fasciaM); roofFascia.position.y=totalH+.02; au.add(roofFascia) // Faszienband unter dem Dach
     au.userData.height=totalH+.7 }
+  /* ===== UNIVERSITÄTSBIBLIOTHEK TU Braunschweig (Owner-Fotos, Schleinitzstr./Universitätsplatz):
+     brutalistischer Betonriegel mit Reihe ANGEWINKELTER Oberlicht-Paneele oben, über einem
+     zurückgesetzten, verglasten Lesesaal-EG (warm beleuchtet) auf Pilotis. REIN ADDITIV — nichts
+     verschoben/gelöscht. Front (lokal +z, rot −90°) → WESTEN zum Platz/zur Straße. ===== */
+  { const ulib=new THREE.Group(); ulib.position.set(38,0,-98); ulib.rotation.y=-Math.PI/2; buildingGroup.add(ulib); SITE.uniLib=ulib
+    const LW=34, LD=18, gH=4.4, boxH=11, LF=LD/2
+    const concM=new THREE.MeshStandardMaterial({color:'#b3a992',roughness:.92})                                   // warmer Sichtbeton
+    const glassLM=new THREE.MeshStandardMaterial({color:'#242a2e',roughness:.15,metalness:.45})
+    const warmM=new THREE.MeshStandardMaterial({color:'#f0d49a',emissive:0xe0b060,emissiveIntensity:.5,roughness:.6}) // Lesesaal-Innenlicht (warm)
+    const panelM=new THREE.MeshStandardMaterial({color:'#d9d6cf',roughness:.7})
+    const slabM=new THREE.MeshStandardMaterial({color:'#c4bca8',roughness:.85})
+    /* 1) Verglastes Lesesaal-EG: warmer Innenkasten + zurückgesetzte, umlaufende Glasfront + Pilotis */
+    const inner=new THREE.Mesh(new THREE.BoxGeometry(LW-3.2,gH-.2,LD-3.2),warmM); inner.position.set(0,gH/2,-.3); ulib.add(inner)
+    const glassFr=new THREE.Mesh(new THREE.BoxGeometry(LW-1.6,gH-.3,.12),glassLM); glassFr.position.set(0,gH/2,LF-1.0); glassFr.userData.glaz=true; ulib.add(glassFr)
+    for(const sx of [-1,1]){ const gs=new THREE.Mesh(new THREE.BoxGeometry(.12,gH-.3,LD-2.0),glassLM); gs.position.set(sx*(LW/2-1.0),gH/2,-.3); gs.userData.glaz=true; ulib.add(gs) }
+    for(let k=0;k<9;k++){ const c=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,gH,12),concM); c.position.set(-LW/2+2+k*((LW-4)/8),gH/2,LF-.4); c.castShadow=true; ulib.add(c) }
+    for(let x=-LW/2+2;x<=LW/2-2;x+=2.4){ const m=new THREE.Mesh(new THREE.BoxGeometry(.08,gH-.3,.16),panelM); m.position.set(x,gH/2,LF-.94); ulib.add(m) } // Glassprossen
+    /* 2) Auskragende Kragplatte über dem EG (Brutalismus-Signatur) */
+    const canopy=new THREE.Mesh(new THREE.BoxGeometry(LW+1.6,.6,LD+1.6),slabM); canopy.position.set(0,gH+.3,0); canopy.castShadow=true; ulib.add(canopy)
+    /* 3) Massiver fensterloser Betonkasten darüber */
+    const box=new THREE.Mesh(new THREE.BoxGeometry(LW,boxH,LD),concM); box.position.set(0,gH+.6+boxH/2,0); box.castShadow=true; box.receiveShadow=true; ulib.add(box)
+    /* 4) SIGNATURE: Reihe ANGEWINKELTER Oberlicht-Paneele an der oberen Front (wie Fotos) */
+    for(let i=0;i<9;i++){ const pnl=new THREE.Mesh(new THREE.BoxGeometry(3.0,3.0,.5),panelM)
+      pnl.position.set(-LW/2+3.2+i*((LW-6.4)/8), gH+.6+boxH*.62, LF+.05); pnl.rotation.x=-.5; pnl.castShadow=true; ulib.add(pnl) }
+    /* 5) Flaches Dach */
+    const lroof=new THREE.Mesh(new THREE.BoxGeometry(LW+.6,.5,LD+.6),slabM); lroof.position.y=gH+.6+boxH+.25; lroof.castShadow=true; ulib.add(lroof)
+    SITE.uniLibBuilt=1 }
   /* ===== FORUMSPLATZ-ENSEMBLE — SITEPLAN/Dossier B4+B6: Platz 60×45 m um (15,−150), gerahmt von
      Altgebäude (Nord), Audimax/Forumsriegel (Süd), Bibliothek (West). Städtisches, GEPFLASTERTES
      Zentrum (C1/C7): Betonplatten-Raster 1,2 m, Klinker-Vorfeld am Altgebäude, Bronzestatue,
@@ -4007,7 +4034,7 @@ buildHedges(); buildGrassClusters()
    Pro-Sub-Mesh-Frustum-Cull-Granularität im Nahbereich verliert. Der Worst-View ist die budgetrelevante
    Zahl → bewusst ausgelassen (Doku §29). Schwache Geräte entlastet stattdessen die Stufe (Potato: Schatten
    aus, DPR 1) + der Interaction-Boost. */
-{ let saved=0; [SITE.alt,SITE.tower,SITE.yellow,SITE.lib,SITE.bib,SITE.forum].forEach(g=>{ saved+=mergeStatic(g) })
+{ let saved=0; [SITE.alt,SITE.tower,SITE.yellow,SITE.lib,SITE.bib,SITE.forum,SITE.uniLib].forEach(g=>{ saved+=mergeStatic(g) })
   window.__mergeSaved=saved }
 /* Statische Kulisse: Weltmatrizen einmal berechnen und einfrieren — spart CPU-Zeit pro Frame.
    (Wind/Partikel animieren über Shader-Uniforms bzw. Instanz-/Positionsattribute, nicht über Matrizen.) */
@@ -4032,6 +4059,7 @@ function verifySitePlan(){
   chk('Audimax ≈ (+57,−53)', near(au.x,57,3)&&near(au.z,-53,3), `(${au.x.toFixed(0)},${au.z.toFixed(0)})`)
   const uN=new THREE.Vector3(0,0,1).applyQuaternion(SITE.lib.quaternion)
   chk('Audimax Glasfront nach WESTEN', uN.x<-.9, `Front-Normale x=${uN.x.toFixed(2)}`)
+  chk('Universitätsbibliothek aufgebaut (Owner-Fotos)', SITE.uniLibBuilt===1, SITE.uniLibBuilt?'ja':'nein')
   chk('Altgebäude-Ostfront an der Pockelsstraße (X+8…+16 < Straße +20)', SITE.altEastX>8&&SITE.altEastX<20, `Ostfront X=${(SITE.altEastX||0).toFixed(0)}, Straße +20`)
   chk('Forum-Komplex vorhanden (NO)', !!SITE.forum, SITE.forum?'ja':'nein')
   chk('Pockelsstraße N-S bei X≈+20', !!SITE.streets&&near(SITE.streets.pockels.x,20,2), SITE.streets?`x=${SITE.streets.pockels.x}`:'fehlt')
