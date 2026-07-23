@@ -2541,7 +2541,7 @@ const state={section:'campus',uniId:'tubs',selected:null,mode:'tag',myTable:null
  invitations:[{id:'i1',from:'Lena Vogt',group:'Spezi Team',subject:'Mathe 2',gid:'g1'},{id:'i2',from:'Circuit Lab',group:'Circuit Lab',subject:'Elektrotechnik',gid:'g3'}],
  settings:{email:true,push:false,pub:true,times:true,semester:4,effects:true,glb:''}}
 const SECTIONS=[['campus','Campus'],['partner','Lernpartner finden'],['matches','Matches'],['gruppen','Lerngruppen'],['aktivitaeten','Aktivitäten'],['feed','Campus Feed'],['unterlagen','Club Unterlagen'],['international','International'],['einladungen','Einladungen'],['profil','Profil'],['einstellungen','Einstellungen']]
-const ICONS={campus:'M3 21V9l9-6 9 6v12h-6v-7H9v7H3z',partner:'M16 11a4 4 0 1 0-8 0M2 21c1.5-4 6-5 10-5s8.5 1 10 5',matches:'M12 21C6 16 3 12 3 8.5A4.5 4.5 0 0 1 12 6a4.5 4.5 0 0 1 9 2.5C21 12 18 16 12 21z',gruppen:'M4 10h16M6 10V6h12v4M8 10v10M16 10v10M4 20h16',aktivitaeten:'M12 3c2.2 2.8 5 4.6 5 8.2a5 5 0 1 1-10 0c0-2 .9-3.6 2-5.2.5 1.6 1.4 2.3 2.9 2.5-.9-1.9-.9-3.6.1-5.5z',feed:'M4 4h16v13H8l-4 4zM8 9h8M8 12.5h5',unterlagen:'M3 7h6l2 2h10v11H3z',international:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3.5 3 14.5 0 18-3-3.5-3-14.5 0-18z',einladungen:'M3 6h18v12H3zM3 7l9 6 9-6',profil:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1-4.5 5-6 8-6s7 1.5 8 6',einstellungen:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-1-3-2.2.3-1.4-1.4L17 4.5l-3-1-1 2h-2l-1-2-3 1 .6 2.4L6.2 8.3 4 8l-1 3 2 1-2 1 1 3 2.2-.3 1.4 1.4L7 19.5l3 1 1-2h2l1 2 3-1-.6-2.4 1.4-1.4 2.2.3 1-3-2-1z'}
+const ICONS={campus:'M3 21V9l9-6 9 6v12h-6v-7H9v7H3z',partner:'M16 11a4 4 0 1 0-8 0M2 21c1.5-4 6-5 10-5s8.5 1 10 5',matches:'M12 21C6 16 3 12 3 8.5A4.5 4.5 0 0 1 12 6a4.5 4.5 0 0 1 9 2.5C21 12 18 16 12 21z',gruppen:'M4 10h16M6 10V6h12v4M8 10v10M16 10v10M4 20h16',aktivitaeten:'M12 3c2.2 2.8 5 4.6 5 8.2a5 5 0 1 1-10 0c0-2 .9-3.6 2-5.2.5 1.6 1.4 2.3 2.9 2.5-.9-1.9-.9-3.6.1-5.5z',feed:'M4 4h16v13H8l-4 4zM8 9h8M8 12.5h5',cprojekte:'M3 8h18v11H3zM8 8V5h8v3M3 13h18',unterlagen:'M3 7h6l2 2h10v11H3z',international:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3.5 3 14.5 0 18-3-3.5-3-14.5 0-18z',einladungen:'M3 6h18v12H3zM3 7l9 6 9-6',profil:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1-4.5 5-6 8-6s7 1.5 8 6',einstellungen:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-1-3-2.2.3-1.4-1.4L17 4.5l-3-1-1 2h-2l-1-2-3 1 .6 2.4L6.2 8.3 4 8l-1 3 2 1-2 1 1 3 2.2-.3 1.4 1.4L7 19.5l3 1 1-2h2l1 2 3-1-.6-2.4 1.4-1.4 2.2.3 1-3-2-1z'}
 function uni(){ return UNIS.find(u=>u.id===state.uniId) }
 function groups(){ return state.groupsByUni[state.uniId]||[] }
 function fires(){ const list=state.firesByUni[state.uniId]||[]; const t=Date.now()
@@ -2573,10 +2573,20 @@ try{ import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm')
 /* ===== Workstreams G/H — Flags, Session, Netz-Layer (defensiv: ohne Netz/Login zeigen die
    Sektionen Gates statt Fehlern; RLS ist serverseitig die Wahrheit, siehe FEATURES.md) ===== */
 const FLAGS={feed:true,projects:true,companies:true} // Kill-Switches; Server-Override aus app_flags beim Boot
-let SB_USER=null
+let SB_USER=null, SB_ROLE='student', SB_COMPANY=null
+const SECTIONS_COMPANY=[['cprojekte','Projekte entdecken'],['einstellungen','Einstellungen']] // I: Company-Minimal-UI (kein Feed/Chat/Gruppen/Feuer/Credits)
+/* ---- I Company-Modus: Projekt-Discovery (RLS liefert NUR companies_too) ---- */
+const CPRJ={items:[],q:'',loaded:false,loading:false}
+function cprjLoad(force){ if(!window.__sb||!SB_USER||CPRJ.loading||(CPRJ.loaded&&!force)) return
+  CPRJ.loading=true
+  window.__sb.from('projects').select('id,title,summary,tags,status,created_at').order('created_at',{ascending:false}).limit(50).then(r=>{
+    CPRJ.items=r.data||[]; CPRJ.loaded=true; CPRJ.loading=false; render() }).catch(()=>{ CPRJ.loading=false }) }
 function sbBoot(){ if(!window.__sb) return
   try{ window.__sb.from('app_flags').select('key,enabled').then(r=>{ (r.data||[]).forEach(f=>{ FLAGS[f.key]=!!f.enabled }); render() }).catch(()=>{}) }catch(e){}
-  try{ window.__sb.auth.getUser().then(r=>{ SB_USER=(r.data&&r.data.user)||null; render() }).catch(()=>{}) }catch(e){} }
+  try{ window.__sb.auth.getUser().then(r=>{ SB_USER=(r.data&&r.data.user)||null
+    if(SB_USER&&FLAGS.companies){ window.__sb.rpc('claim_company_role').then(rr=>{ const v=rr.data // I: Rolle nur bei approved Domain
+      if(v&&v!=='waitlist'&&v!=='no-user'){ SB_ROLE='company'; SB_COMPANY=v; state.section='cprojekte' } render() }).catch(()=>render()) }
+    render() }).catch(()=>{}) }catch(e){} }
 /* ---- G Campus Feed: Cache + Laden (feed_visible_posts = Report-Schwelle serverseitig) ---- */
 const FEED={items:[],likes:{},mine:{},loaded:false,loading:false,err:null}
 function feedLoad(force){ if(!window.__sb||!SB_USER||FEED.loading||(FEED.loaded&&!force)) return
@@ -3033,6 +3043,21 @@ const actions={
      v.onerror=()=>{ doUpload() }; v.src=URL.createObjectURL(f) }
    else doUpload() },
  feedReels(){ openReels() },
+ cprjSearch(q){ CPRJ.q=q; render() },
+ cprjOpen(pid){ if(!window.__sb||!SB_USER) return
+   window.__sb.from('projects').select('*').eq('id',pid).single().then(async r=>{ const pr=r.data; if(!pr) return
+     window.__sb.from('company_views').insert({project_id:pid,company_user:SB_USER.id,company_name:SB_COMPANY||null}).then(()=>{}).catch(()=>{}) // Audit (für Studierende sichtbar)
+     let mail=null; const c=await window.__sb.rpc('company_get_contact',{p_project:pid}).catch(()=>null)
+     if(c&&c.data) mail=c.data
+     let cover=null; if(pr.cover_path){ const su=await window.__sb.storage.from('media').createSignedUrl(pr.cover_path,3600).catch(()=>null); cover=su&&su.data?su.data.signedUrl:null }
+     openModal('<div class="eyebrow">Projekt</div><h3>'+esc(pr.title)+'</h3>'+
+      (cover?'<img src="'+cover+'" style="width:100%;border-radius:10px;max-height:220px;object-fit:cover;margin:6px 0">':'')+
+      (pr.summary?'<p class="sub">'+esc(pr.summary)+'</p>':'')+
+      (pr.description?'<p style="white-space:pre-wrap;max-height:220px;overflow:auto">'+esc(pr.description)+'</p>':'')+
+      ((pr.tags||[]).length?'<div class="mrow">'+(pr.tags||[]).map(t=>'<span class="tag viol">#'+esc(t)+'</span>').join('')+'</div>':'')+
+      ((pr.links||[]).length?'<div class="sub">'+(pr.links||[]).map(l=>'<a href="'+esc(l.url)+'" target="_blank" rel="noopener noreferrer">'+esc(l.label)+'</a>').join(' · ')+'</div>':'')+
+      '<p class="hint">'+(mail?'Kontakt (freigegeben): <b>'+esc(mail)+'</b>':'Die Studierende Person hat den Kontakt (noch) nicht freigegeben.')+'</p>'+
+      '<button class="btn ghost w" onclick="closeModal()">Schließen</button>') }).catch(()=>{}) },
  feedLike(pid){ if(!window.__sb||!SB_USER) return
    const was=!!FEED.mine[pid]
    FEED.mine[pid]=!was; FEED.likes[pid]=Math.max(0,(FEED.likes[pid]||0)+(was?-1:1)); render() // optimistisch
@@ -3553,12 +3578,12 @@ function current(){ const s=state.section
   if(s==='international') return globeScene
   if(s==='profil') return avScene
   if(s==='matches') return matchScene
-  if(s==='unterlagen'||s==='feed') return docScene
+  if(s==='unterlagen'||s==='feed'||s==='cprojekte') return docScene
   if(s==='einladungen') return invScene
   if(s==='einstellungen') return gearScene
   if(s==='campus'||s==='gruppen'||s==='partner'||s==='aktivitaeten') return scene
   return ambScene }
-const CAMS={campus:{p:[30,2.6,15],t:[2,2,-10]},aktivitaeten:{p:[-30,7,18],t:[-14,1,4]},gruppen:{p:[26,5.2,38],t:[0,3.4,0]},partner:{p:[22,6.5,30],t:[0,2.2,0]},international:{p:[0,1.2,7],t:[0,0,0]},profil:{p:[0,1.5,3.6],t:[0,1,0]},matches:{p:[2.6,1.9,3.4],t:[0,1.1,0]},unterlagen:{p:[0,1.9,4.6],t:[0,1.2,-.6]},feed:{p:[0,1.9,4.6],t:[0,1.2,-.6]},einladungen:{p:[0,1.6,4.8],t:[0,1.2,0]},einstellungen:{p:[.4,1.5,4.6],t:[.3,1.4,0]},amb:{p:[0,0,10],t:[0,0,0]}}
+const CAMS={campus:{p:[30,2.6,15],t:[2,2,-10]},aktivitaeten:{p:[-30,7,18],t:[-14,1,4]},gruppen:{p:[26,5.2,38],t:[0,3.4,0]},partner:{p:[22,6.5,30],t:[0,2.2,0]},international:{p:[0,1.2,7],t:[0,0,0]},profil:{p:[0,1.5,3.6],t:[0,1,0]},matches:{p:[2.6,1.9,3.4],t:[0,1.1,0]},unterlagen:{p:[0,1.9,4.6],t:[0,1.2,-.6]},feed:{p:[0,1.9,4.6],t:[0,1.2,-.6]},cprojekte:{p:[0,1.9,4.6],t:[0,1.2,-.6]},einladungen:{p:[0,1.6,4.8],t:[0,1.2,0]},einstellungen:{p:[.4,1.5,4.6],t:[.3,1.4,0]},amb:{p:[0,0,10],t:[0,0,0]}}
 /* Tag/Nacht: die Sonnenscheibe liefert der Himmels-Shader; Mond + Sterne nur nachts */
 const moonMesh=new THREE.Mesh(new THREE.SphereGeometry(5,20,16),new THREE.MeshBasicMaterial({color:0xe8ecf4,fog:false}))
 const mShadow=new THREE.Mesh(new THREE.SphereGeometry(4.6,20,16),new THREE.MeshBasicMaterial({color:0x10182a,fog:false}))
@@ -3788,7 +3813,7 @@ function hasActiveGroup(){ return DB.myGroups.some(g=>g.status==='active') }
 function jrFor(gid){ return DB.joinRequests.find(r=>r.group_id===gid&&['requested','approved_payment_pending','joined'].includes(r.status)) }
 function render(){ const unread=DB.notifications.some(n=>!n.read_at)
   const dot=document.getElementById('bellDot'); if(dot)dot.style.display=unread?'block':'none'
-  const NAVS=SECTIONS.filter(([id])=>(id!=='feed'||FLAGS.feed)) // G: Campus-Feed folgt dem Kill-Switch
+  const NAVS = SB_ROLE==='company' ? SECTIONS_COMPANY : SECTIONS.filter(([id])=>(id!=='feed'||FLAGS.feed)) // I: Company-Minimal-UI · G: Feed-Kill-Switch
   document.getElementById('nav').innerHTML=NAVS.map(([id,label])=>{ const badge=id==='matches'?DB.matches.length:(id==='einladungen'?(state.invitations.length+DB.joinRequests.filter(r=>r.status==='approved_payment_pending').length):0)
     return '<button class="nitem'+(state.section===id?' act':'')+'" onclick="actions.nav(\''+id+'\')">'+
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="'+ICONS[id]+'"/></svg>'+
@@ -3796,7 +3821,7 @@ function render(){ const unread=DB.notifications.some(n=>!n.read_at)
   document.getElementById('t-title').textContent=((NAVS.find(s=>s[0]===state.section)||SECTIONS.find(s=>s[0]===state.section)||['','Kommilo'])[1])
   document.getElementById('t-uni').innerHTML='<span class="dot" style="background:'+uni().color+'"></span>'+uni().short
   const tcr=document.getElementById('t-credits'); if(tcr)tcr.textContent='Credits: '+credits()
-  const g=currentGuard()
+  const g=SB_ROLE==='company'?null:currentGuard() // I: Companies durchlaufen kein Studi-Onboarding
   const hud=document.getElementById('hud')
   if(g){ hud.innerHTML=gateHTML(g); document.getElementById('labels').style.display='none'; return }
   if(state.section==='international'&&!DB.user.intlWarningAccepted){ hud.innerHTML=intlWarnHTML(); document.getElementById('labels').style.display='none'; return }
@@ -3913,6 +3938,14 @@ const HUD={
           :'<button class="btn ghost sm" onclick="actions.feedReport(\''+p2.id+'\')">Melden</button><button class="btn ghost sm" onclick="actions.feedBlock(\''+esc(p2.author)+'\')">Blockieren</button>')+'</div></div>' }).join('')
    :'<div class="card mut">Noch keine Beiträge — poste den ersten Campus-Moment!</div>'
   return head+'<div class="col below" style="max-width:430px">'+cards+'</div>' },
+ cprojekte(){ if(!window.__sb||!SB_USER) return '<div class="card tl"><div class="eyebrow">Unternehmen</div><h2>Login nötig</h2><p>Bitte mit Firmen-Mail einloggen (kuratierte Allowlist).</p></div>'
+  cprjLoad()
+  const q=(CPRJ.q||'').toLowerCase()
+  const items=CPRJ.items.filter(p2=>!q||String(p2.title+' '+(p2.tags||[]).join(' ')).toLowerCase().includes(q))
+  return '<div class="card tl" style="max-width:430px"><div class="eyebrow">'+esc(SB_COMPANY||'Unternehmen')+'</div><h2>Studierenden-Projekte entdecken</h2>'+
+   '<p>Nur Projekte, die Studierende ausdrücklich für Unternehmen freigegeben haben (read-only, jeder Aufruf ist für die Studierenden sichtbar). Kontakt nur bei aktiver Freigabe.</p>'+
+   '<input placeholder="Suchen (Titel, Tags) …" value="'+esc(CPRJ.q||'')+'" oninput="actions.cprjSearch(this.value)"></div>'+
+   '<div class="card br list" style="max-width:430px">'+(CPRJ.loaded?(items.length?items.map(p2=>'<button class="litem" onclick="actions.cprjOpen(\''+p2.id+'\')"><span class="li-t grow"><b>'+esc(p2.title)+'</b><i>'+esc(p2.summary||'')+' · '+(p2.tags||[]).map(t=>'#'+esc(t)).join(' ')+'</i></span><em>'+esc(p2.status)+'</em></button>').join(''):'<div class="mut">Keine freigegebenen Projekte gefunden.</div>'):'<div class="mut">Lädt …</div>')+'</div>' },
  unterlagen(){ if(!hasActiveGroup()) return '<div class="card tl" style="max-width:460px"><div class="eyebrow">Club Unterlagen</div><h2>Nur für Gruppenmitglieder</h2>'+
    '<p>Club Unterlagen sind Modul-Dokumentenräume und nur für Mitglieder mindestens einer verknüpften Lerngruppe zugänglich. 1:1-Matches haben keinen Zugriff. Kein öffentlicher Zugriff, privater Storage, keine Roh-URLs.</p>'+
    '<button class="btn grad" onclick="actions.nav(\'gruppen\')">Zu den Lerngruppen</button></div>'
