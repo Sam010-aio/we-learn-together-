@@ -617,7 +617,7 @@ const windUniform={ value:0 }
    während des AO-G-Buffers ausgeblendet (spart zugleich 42k Instanzen in zwei Re-Renders). */
 const AO_EXCLUDE=[]
 /* Referenzen der Landmarken für die Site-Plan-Assertions (Dev-Verifikation) */
-const SITE={riverZ:39}
+const SITE={} // Lageplan-Registry — Sollwerte siehe SITEPLAN.md (riverX wird im Oker-Block gesetzt)
 /* Foliage-Shader-Hook (onBeforeCompile ist Single-Slot, daher kombiniert):
    - wind: Vertex-Sway, Phase aus der Instanz-Weltposition — nichts bewegt sich synchron.
      weight 'tip' = Halmspitzen biegen (y 0→1), 'unit' = ganzes Blattbüschel schwingt.
@@ -968,7 +968,10 @@ function standPerson(gp,x,z,ry,seed){ const F=makeFigure(seed)
   poseStand(F); registerFigure(F,'stand')
   gp.add(F.root) }
 /* ===== Park: entsättigt, große Parkbäume mit hoher Krone ===== */
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(320,340),M.grass); ground.rotation.x=-Math.PI/2; ground.position.y=-.002; ground.position.z=-45; ground.receiveShadow=true; buildingGroup.add(ground) // Bible: vergrößert für Nord/Ost-Campus (B2 bis z≈−158, Audimax x≈140, Forum z≈−168)
+/* Boden in ZWEI Platten geteilt — der Oker-Kanal (C6, App-x ≈ 79…101) liegt DAZWISCHEN:
+   Wasser −2,5 m unter Gelände zwischen echten Böschungen statt „flachem Band auf dem Rasen". */
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(239,340),M.grass); ground.rotation.x=-Math.PI/2; ground.position.y=-.002; ground.position.x=-40.5; ground.position.z=-45; ground.receiveShadow=true; buildingGroup.add(ground) // Westplatte: x −160…78.5
+const groundE=new THREE.Mesh(new THREE.PlaneGeometry(58.5,340),M.grass); groundE.rotation.x=-Math.PI/2; groundE.position.y=-.002; groundE.position.x=130.75; groundE.position.z=-45; groundE.receiveShadow=true; buildingGroup.add(groundE) // Ostufer-Platte: x 101.5…160
 const apron=new THREE.Mesh(new THREE.PlaneGeometry(W+2*OV+3.4,D+2*OV+3.4),M.paver); apron.rotation.x=-Math.PI/2; apron.position.y=.015; apron.receiveShadow=true; buildingGroup.add(apron)
 const bolls=[]
 for(let x=-19;x<=19;x+=2.4){ bolls.push({x,y:.42,z:D/2+OV+3.9},{x,y:.42,z:-18.6}) }
@@ -1289,9 +1292,7 @@ function bladeTexture(){ const s=128,c=cvs(s),x=c.getContext('2d'); x.clearRect(
     if(Math.abs(px)<AX && Math.abs(pz)<AZ) continue
     if(px>-46&&px<46&&pz<-15&&pz>-27.2) continue   // E1 Straße + Radweg + Gehweg
     if(px>-28&&px<34&&pz<-29.5&&pz>-59) continue    // E2 Parkplatz
-    if(px>-53&&px<-35&&pz<-21&&pz>-47) continue      // B3 gelbes Haus (24×16 bei -44,-34)
-    if(px>34&&px<58&&pz<-30) continue                // Via-Dentis-Weg zwischen Altgebäude und Audimax
-    if(pz>39+Math.sin(px*.045)*3-4.8&&pz<39+Math.sin(px*.045)*3+4.8) continue // Oker
+    /* Kinzig/Fluss/Via-Dentis-Guards entfernt — alle drei liegen laut SITEPLAN außerhalb des ±45×±36-Feldes */
     const d2=Math.abs((px+26)*Math.cos(1.2)+(pz+12)*Math.sin(1.2))
     if(d2<2.3) continue
     e.set(0,Math.random()*Math.PI,(Math.random()-.5)*.16); q.setFromEuler(e)
@@ -1311,8 +1312,7 @@ function bladeTexture(){ const s=128,c=cvs(s),x=c.getContext('2d'); x.clearRect(
   while(f<120&&fg<1500){ fg++
     const px=(Math.random()-.5)*104, pz=(Math.random()-.5)*84
     if(Math.abs(px)<AX+.2&&Math.abs(pz)<AZ+.2) continue
-    if(pz>39+Math.sin(px*.045)*3-6.2) continue
-    m4.makeTranslation(px,.05,pz); fm.setMatrixAt(f,m4); f++ }
+    m4.makeTranslation(px,.05,pz); fm.setMatrixAt(f,m4); f++ } // Kiesel frei auf dem Rasen — der Fluss liegt jetzt weit östlich (SITEPLAN)
   fm.count=f; fm.instanceMatrix.needsUpdate=true; fm.castShadow=false; fm.frustumCulled=false; buildingGroup.add(fm)
 }
 /* Straeucher / Unterwuchs */
@@ -1392,10 +1392,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
   const frameW=new THREE.MeshStandardMaterial({color:'#efe9da',roughness:.6})
   const roofD=new THREE.MeshStandardMaterial({color:'#5c554a',roughness:.95})
   const doorM=new THREE.MeshStandardMaterial({color:'#4a3a28',roughness:.7})
-  /* ===== B2 ALTGEBÄUDE — CAMPUS BIBLE Kapitel 2: 90°-KORREKTUR (F19 behoben) =====
-     Langer N-S-Block. Die LANGE Ostfront mit dem Drei-Portal-Eingangsrisalit zeigt nach OSTEN zum
-     Platz; die SIEBEN-Achsen-Steinfassade (2-3-2) ist die KURZE Südstirn zum Parkplatz/Studierenden-
-     haus. Site (E10,N112) → Szene (10,−110). Grundriss 40 (O-W) × 96 (N-S). */
+  /* ===== ALTGEBÄUDE — SITEPLAN.md (Dossier Teil A/B4): (15,−98), 105×16 m, Portal-Langfront → Nord ===== */
   { /* SITEPLAN: Altgebäude (15,−98), 105 (O-W) × 16 (N-S) m, Portal-LANGFRONT → Nord (−z, zum
        Forumsplatz). Gruppe um +90° gedreht: lokale +x-Front (Risalit/Portale/CAROLO) → Welt −z,
        lokale z-Längsachse → Welt x. Dossier Teil A + B4. */
@@ -1633,7 +1630,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
   { /* SITEPLAN/Dossier B7+C10: Kinzig-Giebelhaus (70,−86), 22×12 m, Traufe 9 / First 13,5 m,
        −8°; First O-W (Dachflächen → Nord/Süd), PV-Feld auf der SÜD-Fläche; Eingangs-Giebel
        (lokal +x) → Osten zur Ufergasse (B7), Fassade P (lokal −x) → Westen zum Parkplatz. */
-    const gb=new THREE.Group(); gb.position.set(70,0,-86); gb.rotation.y=-8*Math.PI/180; buildingGroup.add(gb); SITE.yellow=gb
+    const gb=new THREE.Group(); gb.position.set(67,0,-91); gb.rotation.y=-8*Math.PI/180; buildingGroup.add(gb); SITE.yellow=gb // (67,−91): 3–5 m SE der Tabellenzelle — löst den Dossier-internen Überlapp Turm/Kinzig/Fluss (SITEPLAN „Abweichungen")
     const GW=22, GD=12, GBODY=9, GPEAK=4.5, RIDGE=GBODY+GPEAK // 22×12, Traufe 9, First 13,5 (Dossier)
     SITE.b3=[GW,GD,RIDGE] // für Assertion (Grundriss + Firsthöhe)
     /* Keramik-Paneele: horizontale Läuferverband-Platten (120×30 cm), dünne dunkle Fugen, leichter Glanz */
@@ -1923,20 +1920,25 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
 /* Verbindungsweg SH ↔ Forumsplatz (Klinker, quert die Parkzone) */
 { const link=new THREE.Mesh(new THREE.PlaneGeometry(8,47),paverMat(4,23)); link.rotation.x=-Math.PI/2
   link.position.set(11,.012,-83.5); link.receiveShadow=true; buildingGroup.add(link) }
-/* Fluss (Oker) mit Ufern und Holzsteg */
-function ribbon(w,yOff){ const segs=160
-  const pos=[],uv=[],idx=[]
-  for(let i=0;i<=segs;i++){ const x=-95+190*i/segs, z=39+Math.sin(x*.045)*3
-    pos.push(x,yOff,z-w/2, x,yOff,z+w/2); uv.push(i/segs,0,i/segs,1)
+/* ===== OKER (C6/B8): OSTGRENZE des Campus — eingeschnittener N-S-Lauf, Wasser 13 m breit,
+   Spiegel −2,45 m ZWISCHEN beidseitigen weichen, bewachsenen Böschungen (KEIN flaches Band).
+   Achse App-x ≈ 90 (Dossier x_d≈68–75; +Abweichungsnote in SITEPLAN.md), sanfte S-Kurve. ===== */
+const OKER={ x:90, curve:2.5, freq:.03, halfW:6.5, level:-2.45, slope:4.5, z0:-212, z1:118 }
+SITE.riverX=OKER.x
+const okerX=z=>OKER.x+Math.sin(z*OKER.freq)*OKER.curve
+function riverStrip(o0,y0,o1,y1){ const segs=160, pos=[],uv=[],idx=[]
+  for(let i=0;i<=segs;i++){ const z=OKER.z0+(OKER.z1-OKER.z0)*i/segs, xc=okerX(z)
+    pos.push(xc+o0,y0,z, xc+o1,y1,z); uv.push(i/segs,0,i/segs,1)
     if(i<segs){ const a=i*2; idx.push(a,a+1,a+2, a+1,a+3,a+2) } }
   const g2=new THREE.BufferGeometry()
   g2.setAttribute('position',new THREE.Float32BufferAttribute(pos,3))
   g2.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2))
   g2.setIndex(idx); g2.computeVertexNormals(); return g2 }
-const bank=new THREE.Mesh(ribbon(9.2,.02),new THREE.MeshStandardMaterial({color:'#6d7355',roughness:1}))
-bank.receiveShadow=true; buildingGroup.add(bank)
-const bankWet=new THREE.Mesh(ribbon(8.2,.032),new THREE.MeshStandardMaterial({color:'#4a5240',roughness:.9}))
-buildingGroup.add(bankWet)
+const bankM=new THREE.MeshStandardMaterial({color:'#6d7355',roughness:1,side:THREE.DoubleSide})
+const bedM=new THREE.MeshStandardMaterial({color:'#3d4438',roughness:.95,side:THREE.DoubleSide})
+{ const bw=new THREE.Mesh(riverStrip(-(OKER.halfW+OKER.slope),.02,-OKER.halfW,-2.3),bankM); bw.receiveShadow=true; buildingGroup.add(bw)   // West-Böschung
+  const be=new THREE.Mesh(riverStrip(OKER.halfW,-2.3,OKER.halfW+OKER.slope,.02),bankM); be.receiveShadow=true; buildingGroup.add(be)        // Ost-Böschung
+  const bed=new THREE.Mesh(riverStrip(-OKER.halfW-.3,-2.55,OKER.halfW+.3,-2.55),bedM); buildingGroup.add(bed) }                             // Flussbett unter dem Wasser
 /* Echtes Wasser (Nutzeranweisung): three/addons-Water mit planarer Echtzeit-Spiegelung —
    Ufer, Bäume und Nachtlichter spiegeln sich wirklich. Kosten = 1 zusätzlicher Szenen-
    Render ins kleine Target; über reflectEveryN gedrosselt. In AO_EXCLUDE, damit der
@@ -1946,8 +1948,8 @@ buildingGroup.add(bankWet)
    einer senkrechten Ebene spiegeln. Daher eigener XY-Ribbon nur für das Wasser. */
 function ribbonXY(w){ const segs=160
   const pos=[],uv=[],idx=[]
-  for(let i=0;i<=segs;i++){ const x=-95+190*i/segs, z=39+Math.sin(x*.045)*3
-    pos.push(x,-(z-w/2),0, x,-(z+w/2),0); uv.push(i/segs,0,i/segs,1)
+  for(let i=0;i<=segs;i++){ const z=OKER.z0+(OKER.z1-OKER.z0)*i/segs, xc=okerX(z)
+    pos.push(xc-w/2,-z,0, xc+w/2,-z,0); uv.push(i/segs,0,i/segs,1)
     if(i<segs){ const a=i*2; idx.push(a,a+1,a+2, a+1,a+3,a+2) } }
   const g2=new THREE.BufferGeometry()
   g2.setAttribute('position',new THREE.Float32BufferAttribute(pos,3))
@@ -1964,62 +1966,135 @@ const waterTex=(()=>{ const s=256,c=cvs(s),x=c.getContext('2d'),d=x.createImageD
     d.data[k]=(nx*il*.5+.5)*255; d.data[k+1]=(ny*il*.5+.5)*255; d.data[k+2]=(il*.5+.5)*255; d.data[k+3]=255 }
   x.putImageData(d,0,0)
   const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; return t })()
-const water=new Water(ribbonXY(7.6),{
+const water=new Water(ribbonXY(13),{
   textureWidth:sceneConfig.water.textureSize, textureHeight:sceneConfig.water.textureSize,
   waterNormals:waterTex, sunDirection:new THREE.Vector3(0,1,0),
   sunColor:0xffffff, waterColor:0x2b4634, distortionScale:sceneConfig.modes.tag.water.distortion, fog:true })
-water.rotation.x=-Math.PI/2; water.position.y=.06
+water.rotation.x=-Math.PI/2; water.position.y=OKER.level // −2,45 m: Wasser UNTER Geländeniveau zwischen den Böschungen (C6)
 water.material.uniforms.size.value=sceneConfig.water.size
 { let fr=0; const obr=water.onBeforeRender.bind(water)
   water.onBeforeRender=(...a)=>{ if((fr++%sceneConfig.water.reflectEveryN)===0) obr(...a) } }
 buildingGroup.add(water); AO_EXCLUDE.push(water)
-/* Ufer-Bäume, die sich im Wasser spiegeln */
-tree(-8,39+Math.sin(-8*.045)*3-5.4,1.6,21)
-tree(2,39+Math.sin(2*.045)*3-5.0,1.25,23)
-tree(30,39+Math.sin(30*.045)*3+5.4,1.5,22)
-tree(-24,39+Math.sin(-24*.045)*3+5.6,1.35,24)
-{ /* Holzsteg — reale Konstruktion: eingebaute Widerlager, Pfähle im Wasser, Ufer-zu-Ufer */
-  const bx2=14, bz2=39+Math.sin(bx2*.045)*3
-  const span=15.4, z0=bz2-span/2, wpl=2.3
+/* Dichter Ufer-Baumbestand (Erlen/Weiden, B8) beidseits — spiegelt sich im Wasser.
+   Westufer im Kinzig-/Ufergassen-Abschnitt (z −105…−78) ausgespart. */
+for(let z=-196;z<=104;z+=22){ const j=((z*13)&7)-3.5
+  if(z<-105||z>-78) tree(okerX(z)-OKER.halfW-OKER.slope-2.5+j*.3, z+j, 1.5+((z&3))*.15, 300+(z&255))
+  tree(okerX(z+11)+OKER.halfW+OKER.slope+2.5-j*.3, z+11-j, 1.55+((z&2))*.2, 340+(z&255)) }
+/* Röhricht-Säume: Gras-Cluster entlang beider Böschungs-Oberkanten */
+for(let z=-200;z<=108;z+=13){ grassCluster(okerX(z)-OKER.halfW-OKER.slope+.6, z, 1.25, false)
+  grassCluster(okerX(z+6)+OKER.halfW+OKER.slope-.6, z+6, 1.2, false) }
+/* ===== UFERGASSE (B7): schmale Asphaltgasse am Westufer mit verzinktem 2-Gurt-Stahlgeländer
+   (H 1,1 m) zur Böschung + Blockbalken-Bänken ===== */
+{ const lane=new THREE.Mesh(new THREE.PlaneGeometry(3,52),new THREE.MeshStandardMaterial({color:'#43454a',roughness:.98}))
+  lane.rotation.x=-Math.PI/2; lane.position.set(77,.013,-86); lane.receiveShadow=true; buildingGroup.add(lane)
+  const galvM=new THREE.MeshStandardMaterial({color:'#b7bcbf',roughness:.45,metalness:.6})
+  const posts=[]; for(let z=-110;z<=-62;z+=2.6) posts.push({x:okerX(z)-OKER.halfW-OKER.slope+.25,y:.55,z})
+  instanced(new THREE.CylinderGeometry(.03,.03,1.1,8),galvM,posts,false)
+  for(const gy of [.62,1.05]){ const segs2=[]; for(let z=-110;z<=-62;z+=2.6){ segs2.push({x:okerX(z+1.3)-OKER.halfW-OKER.slope+.25,y:gy,z:z+1.3}) }
+    const im=new THREE.InstancedMesh(new THREE.BoxGeometry(.05,.05,2.62),galvM,segs2.length), m4=new THREE.Matrix4()
+    segs2.forEach((p,i)=>{ m4.makeTranslation(p.x,p.y,p.z); im.setMatrixAt(i,m4) })
+    im.instanceMatrix.needsUpdate=true; im.frustumCulled=false; buildingGroup.add(im) } // 2 Gurte
+  const beamM=new THREE.MeshStandardMaterial({color:'#8a7a62',roughness:.9})
+  for(const bz of [-72,-96]){ for(let b=0;b<2;b++){ const bench2=new THREE.Mesh(new THREE.BoxGeometry(.34,.18,2.2),beamM)
+      bench2.position.set(76.2,.38+b*.19,bz); bench2.castShadow=true; buildingGroup.add(bench2) }
+    for(const fz of [bz-.8,bz+.8]){ const foot=new THREE.Mesh(new THREE.BoxGeometry(.4,.3,.3),new THREE.MeshStandardMaterial({color:'#9d9689',roughness:.95}))
+      foot.position.set(76.2,.15,fz); buildingGroup.add(foot) } } // Blockbalken-Bänke auf Betonfüßen
+  SITE.ufergasse=1 }
+/* ===== POCKELSSTRASSEN-BRÜCKE (B8): STRASSENbrücke (App ~(90,−40)), 18 m Spannweite × 14 m breit,
+   Fahrbahn = 0 m; massive niedrige Beton-Brüstungen innen + filigranes dunkles Metallgeländer außen,
+   Brückenköpfe mit Natursteinpfeilern + Laternen; Gehwege aus großen hellen Betonplatten. ===== */
+{ const bx=okerX(-40), bz=-40
+  const conc=new THREE.MeshStandardMaterial({color:'#b9b6ae',roughness:.9})
+  const deck=new THREE.Mesh(new THREE.BoxGeometry(21,.7,14),conc); deck.position.set(bx,-.3,bz); deck.castShadow=true; deck.receiveShadow=true; buildingGroup.add(deck)
+  const asph=new THREE.Mesh(new THREE.PlaneGeometry(21,6.5),new THREE.MeshStandardMaterial({color:'#3b3d40',roughness:.98}))
+  asph.rotation.x=-Math.PI/2; asph.position.set(bx,.061,bz); asph.receiveShadow=true; buildingGroup.add(asph) // Fahrbahn
+  const plateTex=(()=>{ const c=cvs(128),x=c.getContext('2d'); x.fillStyle='#c8c5bc'; x.fillRect(0,0,128,128)
+    x.strokeStyle='#a5a299'; x.lineWidth=3; x.strokeRect(1,1,126,126); const t=tx(c); t.repeat.set(10,2); return t })()
+  for(const sd of [-1,1]){ const walk2=new THREE.Mesh(new THREE.PlaneGeometry(21,3.4),new THREE.MeshStandardMaterial({map:plateTex,roughness:.92}))
+    walk2.rotation.x=-Math.PI/2; walk2.position.set(bx,.062,bz+sd*5.2); walk2.receiveShadow=true; buildingGroup.add(walk2)   // Gehwege (Betonplatten)
+    const par=new THREE.Mesh(new THREE.BoxGeometry(21,.55,.35),conc); par.position.set(bx,.34,bz+sd*6.7); par.castShadow=true; buildingGroup.add(par) // Beton-Brüstung innen
+    const railM2=new THREE.MeshStandardMaterial({color:'#2e3134',roughness:.5,metalness:.5})
+    for(let x=-10;x<=10;x+=2){ const p=new THREE.Mesh(new THREE.BoxGeometry(.05,.75,.05),railM2); p.position.set(bx+x,.95,bz+sd*7.0); buildingGroup.add(p) }
+    const hr=new THREE.Mesh(new THREE.BoxGeometry(21,.06,.06),railM2); hr.position.set(bx,1.32,bz+sd*7.0); buildingGroup.add(hr) } // Metallgeländer außen
+  for(const sx of [-1,1]) for(const sz of [-1,1]){ const pier=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.5,1.1),new THREE.MeshStandardMaterial({color:'#9d9689',roughness:.9}))
+    pier.position.set(bx+sx*10.2,.75,bz+sz*6.9); pier.castShadow=true; buildingGroup.add(pier)
+    if(sz>0) streetLamp(bx+sx*9.4,bz+7.8) } // Natursteinpfeiler + Laternen an den Köpfen
+  ;[-1,1].forEach(sd=>{ const ab=new THREE.Mesh(new THREE.BoxGeometry(2.2,2.6,14),conc)
+    ab.position.set(bx+sd*10.4,-1.35,bz); ab.receiveShadow=true; buildingGroup.add(ab) }) // Widerlager in den Böschungen
+  SITE.roadBridge={x:bx,z:bz,span:18,w:14} }
+/* ===== VORDACH-PERGOLA (B6): dünne weiße Flachdach-Platte (0,45 m) auf quadratischen Stützen
+   (Raster ~6 m, lichte Höhe ~4 m), L-Band am WEST- und SÜDRAND der Audimax-Plaza;
+   Untersicht aus warmem Holzlamellen-Belag (Clip 7). ===== */
+{ const pg=new THREE.Group(); buildingGroup.add(pg); SITE.pergola=pg
+  const plateM=new THREE.MeshStandardMaterial({color:'#f0f2f3',roughness:.55})
+  const lamTex=(()=>{ const c=cvs(128),x=c.getContext('2d'); x.fillStyle='#a9834f'; x.fillRect(0,0,128,128)
+    for(let s=0;s<128;s+=10){ x.fillStyle='#8a6a3e'; x.fillRect(s,0,3,128) } const t=tx(c); t.repeat.set(8,2); return t })()
+  const soffitM=new THREE.MeshStandardMaterial({map:lamTex,roughness:.8})
+  const colM=new THREE.MeshStandardMaterial({color:'#e8eaeb',roughness:.6})
+  const leg=(cx,cz,lenX,lenZ)=>{ const plate=new THREE.Mesh(new THREE.BoxGeometry(lenX,.45,lenZ),plateM)
+    plate.position.set(cx,4.2,cz); plate.castShadow=true; pg.add(plate)
+    const sof=new THREE.Mesh(new THREE.BoxGeometry(lenX-.2,.06,lenZ-.2),soffitM); sof.position.set(cx,3.95,cz); pg.add(sof) // Holzlamellen-Untersicht
+    const nx=Math.max(1,Math.round(lenX/6)), nz=Math.max(1,Math.round(lenZ/6))
+    for(let i=0;i<=nx;i++)for(let j=0;j<=nz;j++){ if(nx>1&&nz>1&&i>0&&i<nx&&j>0&&j<nz) continue
+      const col=new THREE.Mesh(new THREE.BoxGeometry(.35,3.98,.35),colM)
+      col.position.set(cx-lenX/2+.5+(lenX-1)*i/nx,1.99,cz-lenZ/2+.5+(lenZ-1)*j/nz); col.castShadow=true; pg.add(col) } }
+  leg(-15.5,-165.5,5,15)   // West-Schenkel der L-Pergola
+  leg(-3,-171.2,30,5) }    // Süd-Schenkel entlang der Audimax-Front
+/* ===== OSTUFER-WOHNBEBAUUNG (B7): 3–4-geschossige Altbauten (teils gelb) gegenüber am Ostufer —
+   Kulissenbauten: einfache Volumina mit gebackenem Fassadenrhythmus. ===== */
+{ const facTex=col=>{ const c=cvs(256),x=c.getContext('2d'); x.fillStyle=col; x.fillRect(0,0,256,256)
+    for(let fy=20;fy<256;fy+=62)for(let fx=16;fx<256;fx+=48){ x.fillStyle='#2e3338'; x.fillRect(fx,fy,22,34)
+      x.fillStyle='#e9e4d5'; x.fillRect(fx-3,fy-3,28,3); x.fillRect(fx-3,fy+34,28,3) }
+    const t=tx(c); return t }
+  const roofM2=new THREE.MeshStandardMaterial({color:'#54504a',roughness:.95})
+  ;[['#d9c47a',108,-150,16,13],['#cfc6b4',110,-116,18,10],['#d9c47a',108,-78,15,12.5],['#c9b998',111,-44,20,10.5],['#d3c8b2',109,4,16,12],['#cbbd9d',110,44,18,10.5]].forEach(([col,hx,hz,hw,hh2])=>{
+    const m=new THREE.MeshStandardMaterial({map:facTex(col),roughness:.85})
+    const b=new THREE.Mesh(new THREE.BoxGeometry(hw,hh2,12),m); b.position.set(hx,hh2/2,hz); b.castShadow=true; b.receiveShadow=true; buildingGroup.add(b)
+    const r=new THREE.Mesh(new THREE.BoxGeometry(hw+.8,1.6,13),roofM2); r.position.set(hx,hh2+.8,hz); r.castShadow=true; buildingGroup.add(r) }) }
+{ /* Holzsteg (Gestaltungselement, Dossier B8: „weiter nördlich, mit Widerlagern in den Böschungen"):
+     Gruppe quert den Fluss O-W bei z=−140; lokale Spannachse z → Welt-x via 90°-Drehung. */
+  const wb=new THREE.Group(); wb.position.set(okerX(-140),0,-140); wb.rotation.y=Math.PI/2; buildingGroup.add(wb)
+  const bx2=0
+  const span=17.4, z0=-span/2, wpl=2.3
   const wood=new THREE.MeshStandardMaterial({color:'#84725a',roughness:.85})
   const woodB=new THREE.MeshStandardMaterial({color:'#776650',roughness:.88})
   const woodD=new THREE.MeshStandardMaterial({color:'#5e5040',roughness:.9})
   const pileM=new THREE.MeshStandardMaterial({color:'#4e4336',roughness:.95})
   const arch=t2=>Math.sin(t2*Math.PI)*.42
   ;[z0+.5,z0+span-.5].forEach(zz=>{ const ab=new THREE.Mesh(new THREE.BoxGeometry(wpl+.5,.6,1.5),new THREE.MeshStandardMaterial({color:'#b3ac9e',roughness:.95}))
-    ab.position.set(bx2,.28,zz); ab.castShadow=true; ab.receiveShadow=true; buildingGroup.add(ab) })
+    ab.position.set(bx2,.28,zz); ab.castShadow=true; ab.receiveShadow=true; wb.add(ab) })
   ;[z0-1.1,z0+span+1.1].forEach(zz=>{ const pad=new THREE.Mesh(new THREE.BoxGeometry(2.8,.05,2.0),new THREE.MeshStandardMaterial({color:'#cfc6b6',roughness:1}))
-    pad.position.set(bx2,.03,zz); pad.receiveShadow=true; buildingGroup.add(pad) })
+    pad.position.set(bx2,.03,zz); pad.receiveShadow=true; wb.add(pad) })
   ;[.3,.7].forEach(tp=>{ const zz=z0+tp*span, topY=.5+arch(tp)-.1
-    ;[-1,1].forEach(sd=>{ const h=topY+.2
+    ;[-1,1].forEach(sd=>{ const h=topY+2.9 // Pfähle reichen durch den eingeschnittenen Kanal bis ins Flussbett (−2,55)
       const pi=new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,h,10),pileM)
-      pi.position.set(bx2+sd*(wpl/2-.15),topY-h/2,zz); pi.castShadow=true; buildingGroup.add(pi) })
+      pi.position.set(bx2+sd*(wpl/2-.15),topY-h/2,zz); pi.castShadow=true; wb.add(pi) })
     const quer=new THREE.Mesh(new THREE.BoxGeometry(wpl,.12,.16),pileM)
-    quer.position.set(bx2,topY,zz); quer.castShadow=true; buildingGroup.add(quer) })
+    quer.position.set(bx2,topY,zz); quer.castShadow=true; wb.add(quer) })
   const segs=18
   ;[-1,1].forEach(sd=>{ for(let i=0;i<segs;i++){ const ta=i/segs, tb=(i+1)/segs
       const za=z0+ta*span, zb=z0+tb*span, ya=.5+arch(ta), yb=.5+arch(tb)
       const len=Math.hypot(zb-za,yb-ya)
       const g2=new THREE.Mesh(new THREE.BoxGeometry(.14,.26,len+.03),woodD)
       g2.position.set(bx2+sd*(wpl/2-.12),(ya+yb)/2,(za+zb)/2)
-      g2.rotation.x=Math.atan2(yb-ya,zb-za); g2.castShadow=true; buildingGroup.add(g2) } })
+      g2.rotation.x=Math.atan2(yb-ya,zb-za); g2.castShadow=true; wb.add(g2) } })
   const npl=40
   for(let i=0;i<npl;i++){ const t2=(i+.5)/npl, zz=z0+t2*span, y=.5+arch(t2)+.16
     const sl=Math.atan2(arch(Math.min(1,t2+.03))-arch(Math.max(0,t2-.03)),.06*span)
     const pl=new THREE.Mesh(new THREE.BoxGeometry(wpl,.05,span/npl*.92),i%2?wood:woodB)
     pl.position.set(bx2,y,zz); pl.rotation.x=sl
-    pl.castShadow=true; pl.receiveShadow=true; buildingGroup.add(pl) }
+    pl.castShadow=true; pl.receiveShadow=true; wb.add(pl) }
   ;[-1,1].forEach(sd=>{ const xs=bx2+sd*(wpl/2-.06)
     const npo=9, pts=[]
     for(let i=0;i<npo;i++){ const t2=i/(npo-1), zz=z0+t2*span, yD=.5+arch(t2)+.19
       const po=new THREE.Mesh(new THREE.BoxGeometry(.07,1.0,.07),woodD)
-      po.position.set(xs,yD+.5,zz); po.castShadow=true; buildingGroup.add(po)
+      po.position.set(xs,yD+.5,zz); po.castShadow=true; wb.add(po)
       pts.push([zz,yD]) }
     ;[1.0,.55].forEach(hh=>{ for(let i=0;i<npo-1;i++){ const za=pts[i][0],ya=pts[i][1]+hh,zb=pts[i+1][0],yb=pts[i+1][1]+hh
         const len=Math.hypot(zb-za,yb-ya), slope=Math.atan2(yb-ya,zb-za)
         const ra=new THREE.Mesh(new THREE.CylinderGeometry(.032,.032,len+.02,8),woodD)
         ra.rotation.x=Math.PI/2-slope
-        ra.position.set(xs,(ya+yb)/2,(za+zb)/2); ra.castShadow=true; buildingGroup.add(ra) } }) }) }
+        ra.position.set(xs,(ya+yb)/2,(za+zb)/2); ra.castShadow=true; wb.add(ra) } }) }) }
 /* Menschen im Park */
 standPerson(peopleGroup,21.6,4.6,-1.9,5)
 standPerson(peopleGroup,22.5,6.4,1.4,11)
@@ -2033,7 +2108,7 @@ standPerson(peopleGroup,-24,-9,.7,8)
   G.forEach(([px,pz,ry,sd],i)=>{ const F=makeFigure(sd); F.root.position.set(px,0,pz); F.root.rotation.y=ry
     poseStand(F); registerFigure(F,i===1?'talk':'stand'); peopleGroup.add(F.root) }) }
 /* Studierendengruppen auf dem Universitätsplatz (Sitzen/Quatschen, Foto 2) — keine Läufer */
-{ const P=[[64,-80,1.1,51],[66.2,-81,-2.0,52],[67.6,-79.4,2.6,53],[74,-86,-.6,54],[75.8,-87,2.4,55]]
+{ const P=[[10,-140,1.1,51],[12.2,-141,-2.0,52],[13.6,-139.4,2.6,53],[27,-146,-.6,54],[28.8,-147,2.4,55]] // Forumsplatz (SITEPLAN)
   P.forEach(([px,pz,ry,sd],i)=>{ const F=makeFigure(sd); F.root.position.set(px,0,pz); F.root.rotation.y=ry
     poseStand(F); registerFigure(F,(i===1||i===4)?'talk':'stand'); peopleGroup.add(F.root) }) }
 /* Lichterketten & Außenbeleuchtung — romantisch bei Nacht */
