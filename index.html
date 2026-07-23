@@ -1932,48 +1932,24 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
   /* Aufständerung: EXAKT 2 Stützenpaare bei 1/3 und 2/3 der Spannweite (Dossier B5) */
   for(const x of [-dist/6,dist/6]){ [-1,1].forEach(sd=>{ const col=new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,fy,12),alu)
     col.position.set(x,fy/2,sd*(bw/2-.3)); col.castShadow=true; bg.add(col) }) } }
-/* ===== PARKHOF (Dossier B5): Asphalt-Parkhof zwischen Altgebäude-Rückseite (z −90) und Turm,
-   Reihen-Parkstände, hohe braune Hainbuchen-Hecken (H 1,2 m) als Einfassung, vereinzelte
-   Großbäume; Klinker-Zufahrt nach Süden Richtung Straße. ===== */
-{ const asphM=new THREE.MeshStandardMaterial({color:'#3b3d40',roughness:.98})
-  const court=new THREE.Mesh(new THREE.PlaneGeometry(38,28),asphM); court.rotation.x=-Math.PI/2
-  court.position.set(48,.011,-76); court.receiveShadow=true; buildingGroup.add(court)
-  /* Parkstand-Markierungen (weiße Linien) als Instanzen — 2 Reihen à 8 Stände (2,5 m Raster) */
-  const lineM=new THREE.MeshStandardMaterial({color:'#c9cbc9',roughness:.9})
-  const stalls=[]; for(let i=0;i<=8;i++){ stalls.push({x:32+i*2.5,y:.02,z:-69},{x:32+i*2.5,y:.02,z:-83}) }
-  instanced(new THREE.BoxGeometry(.1,.012,5),lineM,stalls,false)
-  /* Klinker-Zufahrt vom Parkhof zur Straße (Süd) */
-  const drive=new THREE.Mesh(new THREE.PlaneGeometry(7,30),paverMat(3.5,15)); drive.rotation.x=-Math.PI/2
-  drive.position.set(48,.012,-47); drive.receiveShadow=true; buildingGroup.add(drive)
-  /* Hainbuchen-Hecken (H 1,2) fassen den Hof; Lücken an Zufahrt + Brückenstützen */
-  HEDGE_RUNS.push([31,-76,24,Math.PI/2,1.2],[66,-76,24,Math.PI/2,1.2],[39,-63,14,0,1.2],[57.5,-63,13,0,1.2])
-  tree(35,-73,1.9,140); tree(62,-84,2.0,171)   // vereinzelte Großbäume (Validator sichert Abstände)
-  SITE.parkhof={x0:29,x1:67,z0:-90,z1:-62} }
-/* ===== PROMENADE (Dossier B3/C8): Fußgängerachse zwischen Altgebäude-Westflanke und
-   Bibliothek/Forum-Bereich — 13 m rotbrauner Klinker (Fischgrät) mit Granit-Läuferbändern,
-   beidseitig heckengefasste Rasenstreifen mit Einzelbäumen, Poller, Briefkasten, Mastleuchten. ===== */
-{ const pz0=-100, pz1=-186, pcz=(pz0+pz1)/2, pLen=pz0-pz1
-  const walk=new THREE.Mesh(new THREE.PlaneGeometry(13,pLen),paverMat(6.5,43)); walk.rotation.x=-Math.PI/2
-  walk.position.set(-24,.012,pcz); walk.receiveShadow=true; buildingGroup.add(walk)
-  const granM=new THREE.MeshStandardMaterial({color:'#b9b6ad',roughness:.8})
-  for(const gx of [-27.5,-20.5]){ const band=new THREE.Mesh(new THREE.PlaneGeometry(.6,pLen),granM)
-    band.rotation.x=-Math.PI/2; band.position.set(gx,.016,pcz); band.receiveShadow=true; buildingGroup.add(band) } // Granit-Läuferbänder
-  /* Heckengefasste Rasenstreifen (H 0,5) beidseitig + Baumreihen */
-  HEDGE_RUNS.push([-31.6,pcz+20,42,Math.PI/2,.5],[-31.6,pcz-24,36,Math.PI/2,.5],[-16.4,pcz+20,42,Math.PI/2,.5],[-16.4,pcz-24,36,Math.PI/2,.5])
-  for(let z=pz0-8;z>=pz1+8;z-=14){ tree(-33.5,z,1.8,190+((z*3)&255)); tree(-14.5,z,1.75,210+((z*5)&255)) }
-  /* Poller-Reihen an beiden Enden (Abstand ~5 m) */
-  const pb=[]; for(const bz of [pz0-1,pz1+1]) for(let x=-29;x<=-19;x+=5) pb.push({x,y:.42,z:bz})
-  instanced(new THREE.CylinderGeometry(.05,.055,.84,10),new THREE.MeshStandardMaterial({color:'#2b2b2e',roughness:.55,metalness:.35}),pb,false)
-  /* Rote Briefkasten-Säule + einfache Mastleuchten (H 4,5) */
-  { const post=new THREE.Mesh(new THREE.CylinderGeometry(.22,.24,1.1,12),new THREE.MeshStandardMaterial({color:'#b3231b',roughness:.55}))
-    post.position.set(-19.5,.55,-104); post.castShadow=true; buildingGroup.add(post)
-    const cap=new THREE.Mesh(new THREE.SphereGeometry(.24,12,8,0,Math.PI*2,0,Math.PI/2),new THREE.MeshStandardMaterial({color:'#8e1b14',roughness:.55}))
-    cap.position.set(-19.5,1.1,-104); buildingGroup.add(cap) }
-  for(const z of [-112,-140,-168]) streetLamp(-29.5,z)
-  SITE.promenade={x:-24,w:13,z0:pz0,z1:pz1} }
-/* Verbindungsweg SH ↔ Forumsplatz (Klinker, quert die Parkzone) */
-{ const link=new THREE.Mesh(new THREE.PlaneGeometry(8,47),paverMat(4,23)); link.rotation.x=-Math.PI/2
-  link.position.set(11,.012,-83.5); link.receiveShadow=true; buildingGroup.add(link) }
+/* ===== V2-STRASSENNETZ (Satellit): Pockelsstraße als zentrales N-S-Rückgrat direkt östlich am
+   Studierendenhaus + Abt-Jerusalem- und Schleinitzstraße (E-W). Ersetzt Parkhof/Promenade. ===== */
+{ const asph=new THREE.MeshStandardMaterial({color:'#3c3e42',roughness:.98})
+  const mkStreet=(cx,cz,w,len,ew)=>{ const road=new THREE.Mesh(new THREE.PlaneGeometry(ew?len:w,ew?w:len),asph)
+    road.rotation.x=-Math.PI/2; road.position.set(cx,.011,cz); road.receiveShadow=true; buildingGroup.add(road)
+    for(const s of [-1,1]){ const gw=new THREE.Mesh(new THREE.PlaneGeometry(ew?len:1.6,ew?1.6:len),paverMat(ew?len/3:1,ew?1:len/3)) // Gehwege
+      gw.rotation.x=-Math.PI/2; gw.position.set(cx+(ew?0:s*(w/2+.8)),.012,cz+(ew?s*(w/2+.8):0)); gw.receiveShadow=true; buildingGroup.add(gw) } }
+  /* Pockelsstraße: N-S, X≈+20, Z −170…+35, 12 m breit (Fahrbahn 6,5 + Wege) */
+  mkStreet(20,-67.5,7,205,false)
+  for(let z=-160;z<=28;z+=13){ tree(12.5,z,1.7,300+(z&255)); tree(27.5,z+6,1.7,340+(z&255)) } // Platanenreihen beidseits
+  for(const z of [-150,-110,-70,-30,12]) streetLamp(28,z)
+  /* Abt-Jerusalem-Straße: E-W, Z≈−21, X +20…+115, 10 m breit (südlich am Audimax vorbei) */
+  mkStreet(67.5,-21,6,95,true)
+  for(let x=28;x<=112;x+=13) tree(x,-14.5,1.6,120+(x&255))
+  /* Schleinitzstraße: E-W, Z≈−137, X −70…−10, 10 m breit (nördlich am Altgebäude) */
+  mkStreet(-40,-137,6,60,true)
+  for(let x=-66;x<=-14;x+=13) tree(x,-130.5,1.6,80+(x&255))
+  SITE.streets={pockels:{x:20,z0:-170,z1:35},abtJ:{z:-21},schleinitz:{z:-137}} }
 /* ===== OKER (C6/B8): OSTGRENZE des Campus — eingeschnittener N-S-Lauf, Wasser 13 m breit,
    Spiegel −2,45 m ZWISCHEN beidseitigen weichen, bewachsenen Böschungen (KEIN flaches Band).
    Achse App-x ≈ 90 (Dossier x_d≈68–75; +Abweichungsnote in SITEPLAN.md), sanfte S-Kurve. ===== */
@@ -2492,8 +2468,8 @@ const ACTIVITY_TIPS={
  kochen:['Wochenmarkt Altstadtmarkt (Sa) für Zutaten','Gemeinschaftsküchen im Wohnheim'],
  karten:['Skat-/Doppelkopf-Runden im EG','Café-Abende im Magniviertel']}
 /* 8 Feuerstellen auf den Rasenflächen ums Studierendenhaus (frei von Wegen/Straße/Hecken/Tischen) */
-const FIRE_SLOTS=[{id:'fs1',x:-27,z:-2},{id:'fs2',x:-31,z:7},{id:'fs3',x:-24,z:16},{id:'fs4',x:26,z:-8},
- {id:'fs5',x:29,z:3},{id:'fs6',x:24,z:13},{id:'fs7',x:-9,z:29},{id:'fs8',x:12,z:30}]
+const FIRE_SLOTS=[{id:'fs1',x:-27,z:-6},{id:'fs2',x:-30,z:4},{id:'fs3',x:-24,z:14},{id:'fs4',x:-14,z:-14},
+ {id:'fs5',x:-6,z:16},{id:'fs6',x:5,z:-15},{id:'fs7',x:10,z:6},{id:'fs8',x:2,z:18}] // V2: alle auf dem SH-Rasen, frei von Pockelsstraße (x14..26) + SW-Oker/Brücke
 const FIRE_EXPIRY_H=24 // Feuer erlöschen automatisch nach spätestens 24 h (konfigurierbar; Ende des Tages siehe fireExpiry())
 function fireExpiry(){ const d=new Date(); d.setHours(23,59,0,0); const eod=d.getTime()
   return Math.min(eod, Date.now()+FIRE_EXPIRY_H*3600*1000) }
