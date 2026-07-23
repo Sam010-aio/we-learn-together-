@@ -14,11 +14,11 @@
 /* ===== Delivery / Build-Sichtbarkeit (LIGHTNESS RESCUE Ph0) =====
    EINE Quelle der Build-Kennung — geteilt mit sw.js (Cache-Name = kommilo-v${id}). Sichtbar als
    dezenter Fuß-Stempel und im ?debug=perf-Overlay; so ist am Bildschirm ablesbar, welcher Build läuft. */
-window.__BUILD = { id: '2026.07.23-3533c39', date: '2026-07-23', hash: '3533c39' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
+window.__BUILD = { id: '2026.07.23-fcb1d89', date: '2026-07-23', hash: 'fcb1d89' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
 (function(){
   // Fuß-Stempel setzen, sobald der Body existiert (robust — auch wenn die 3D-App nicht bootet)
   function stamp(){ var el=document.getElementById('buildstamp'); if(!el) return
-    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-3533c39 (Format laut Spezifikation)
+    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-fcb1d89 (Format laut Spezifikation)
   if(document.readyState!=='loading') stamp(); else addEventListener('DOMContentLoaded', stamp)
   if(!('serviceWorker' in navigator)) return
   // Selbst-enthaltener Reload-Hinweis — unabhängig vom App-Toast, wirkt auch bei kaputter/veralteter App
@@ -188,6 +188,15 @@ input:focus,select:focus{border-color:#4F46E5;box-shadow:0 0 0 3px rgba(79,70,22
 @keyframes splFade{to{opacity:0}}
 @keyframes splUp{to{transform:translateY(-12px)}}
 @keyframes splPulse{from{transform:translateY(-12px)}to{transform:translateY(-17px)}}
+/* G — Reels: swipebarer Vollbild-Player (vertikales Scroll-Snap, ein Video pro Bildschirm) */
+#reels{position:fixed;inset:0;z-index:60;background:#000}
+#reels .reels-scroll{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none}
+#reels .reels-scroll::-webkit-scrollbar{display:none}
+#reels .reel{position:relative;height:100%;scroll-snap-align:start;scroll-snap-stop:always;display:grid;place-items:center}
+#reels .reel video{width:100%;height:100%;object-fit:contain;background:#000;cursor:pointer}
+#reels .reel-meta{position:absolute;left:16px;right:16px;bottom:calc(24px + env(safe-area-inset-bottom));color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:2px;pointer-events:none}
+#reels .reel-meta b{font-size:15px}#reels .reel-meta span{font-size:13px;opacity:.92}#reels .reel-meta em{font-size:11px;opacity:.7;font-style:normal}
+#reels .reels-x{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:2;width:40px;height:40px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:20px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -2531,8 +2540,8 @@ const state={section:'campus',uniId:'tubs',selected:null,mode:'tag',myTable:null
  docs:[{t:'Klausur-Zusammenfassung Mathe 2',ty:'PDF',c:'Mathe 2',s:'2,4 MB'},{t:'Übungsblatt 5 — Lösungen',ty:'PDF',c:'Algorithmen',s:'820 KB'},{t:'Formelsammlung Thermodynamik',ty:'DOCX',c:'Thermodynamik',s:'1,1 MB'},{t:'Laborprotokoll Vorlage',ty:'XLSX',c:'Elektrotechnik',s:'340 KB'},{t:'Altklausuren 2019–2024',ty:'ZIP',c:'Technische Mechanik',s:'18 MB'}],
  invitations:[{id:'i1',from:'Lena Vogt',group:'Spezi Team',subject:'Mathe 2',gid:'g1'},{id:'i2',from:'Circuit Lab',group:'Circuit Lab',subject:'Elektrotechnik',gid:'g3'}],
  settings:{email:true,push:false,pub:true,times:true,semester:4,effects:true,glb:''}}
-const SECTIONS=[['campus','Campus'],['partner','Lernpartner finden'],['matches','Matches'],['gruppen','Lerngruppen'],['aktivitaeten','Aktivitäten'],['unterlagen','Club Unterlagen'],['international','International'],['einladungen','Einladungen'],['profil','Profil'],['einstellungen','Einstellungen']]
-const ICONS={campus:'M3 21V9l9-6 9 6v12h-6v-7H9v7H3z',partner:'M16 11a4 4 0 1 0-8 0M2 21c1.5-4 6-5 10-5s8.5 1 10 5',matches:'M12 21C6 16 3 12 3 8.5A4.5 4.5 0 0 1 12 6a4.5 4.5 0 0 1 9 2.5C21 12 18 16 12 21z',gruppen:'M4 10h16M6 10V6h12v4M8 10v10M16 10v10M4 20h16',aktivitaeten:'M12 3c2.2 2.8 5 4.6 5 8.2a5 5 0 1 1-10 0c0-2 .9-3.6 2-5.2.5 1.6 1.4 2.3 2.9 2.5-.9-1.9-.9-3.6.1-5.5z',unterlagen:'M3 7h6l2 2h10v11H3z',international:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3.5 3 14.5 0 18-3-3.5-3-14.5 0-18z',einladungen:'M3 6h18v12H3zM3 7l9 6 9-6',profil:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1-4.5 5-6 8-6s7 1.5 8 6',einstellungen:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-1-3-2.2.3-1.4-1.4L17 4.5l-3-1-1 2h-2l-1-2-3 1 .6 2.4L6.2 8.3 4 8l-1 3 2 1-2 1 1 3 2.2-.3 1.4 1.4L7 19.5l3 1 1-2h2l1 2 3-1-.6-2.4 1.4-1.4 2.2.3 1-3-2-1z'}
+const SECTIONS=[['campus','Campus'],['partner','Lernpartner finden'],['matches','Matches'],['gruppen','Lerngruppen'],['aktivitaeten','Aktivitäten'],['feed','Campus Feed'],['unterlagen','Club Unterlagen'],['international','International'],['einladungen','Einladungen'],['profil','Profil'],['einstellungen','Einstellungen']]
+const ICONS={campus:'M3 21V9l9-6 9 6v12h-6v-7H9v7H3z',partner:'M16 11a4 4 0 1 0-8 0M2 21c1.5-4 6-5 10-5s8.5 1 10 5',matches:'M12 21C6 16 3 12 3 8.5A4.5 4.5 0 0 1 12 6a4.5 4.5 0 0 1 9 2.5C21 12 18 16 12 21z',gruppen:'M4 10h16M6 10V6h12v4M8 10v10M16 10v10M4 20h16',aktivitaeten:'M12 3c2.2 2.8 5 4.6 5 8.2a5 5 0 1 1-10 0c0-2 .9-3.6 2-5.2.5 1.6 1.4 2.3 2.9 2.5-.9-1.9-.9-3.6.1-5.5z',feed:'M4 4h16v13H8l-4 4zM8 9h8M8 12.5h5',unterlagen:'M3 7h6l2 2h10v11H3z',international:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3.5 3 14.5 0 18-3-3.5-3-14.5 0-18z',einladungen:'M3 6h18v12H3zM3 7l9 6 9-6',profil:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1-4.5 5-6 8-6s7 1.5 8 6',einstellungen:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-1-3-2.2.3-1.4-1.4L17 4.5l-3-1-1 2h-2l-1-2-3 1 .6 2.4L6.2 8.3 4 8l-1 3 2 1-2 1 1 3 2.2-.3 1.4 1.4L7 19.5l3 1 1-2h2l1 2 3-1-.6-2.4 1.4-1.4 2.2.3 1-3-2-1z'}
 function uni(){ return UNIS.find(u=>u.id===state.uniId) }
 function groups(){ return state.groupsByUni[state.uniId]||[] }
 function fires(){ const list=state.firesByUni[state.uniId]||[]; const t=Date.now()
@@ -2560,7 +2569,56 @@ const KOMMILO_PAY={
 const SUPA={ url:'https://fizngpiywybwxrxwmqmx.supabase.co', key:'sb_publishable_bTueFt0eovhkQ1fjuk_fKQ_xLGcnR-l' }
 window.__sb=null
 try{ import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm')
-  .then(m=>{ window.__sb=m.createClient(SUPA.url,SUPA.key) }).catch(()=>{}) }catch(e){}
+  .then(m=>{ window.__sb=m.createClient(SUPA.url,SUPA.key); sbBoot() }).catch(()=>{}) }catch(e){}
+/* ===== Workstreams G/H — Flags, Session, Netz-Layer (defensiv: ohne Netz/Login zeigen die
+   Sektionen Gates statt Fehlern; RLS ist serverseitig die Wahrheit, siehe FEATURES.md) ===== */
+const FLAGS={feed:true,projects:true,companies:true} // Kill-Switches; Server-Override aus app_flags beim Boot
+let SB_USER=null
+function sbBoot(){ if(!window.__sb) return
+  try{ window.__sb.from('app_flags').select('key,enabled').then(r=>{ (r.data||[]).forEach(f=>{ FLAGS[f.key]=!!f.enabled }); render() }).catch(()=>{}) }catch(e){}
+  try{ window.__sb.auth.getUser().then(r=>{ SB_USER=(r.data&&r.data.user)||null; render() }).catch(()=>{}) }catch(e){} }
+/* ---- G Campus Feed: Cache + Laden (feed_visible_posts = Report-Schwelle serverseitig) ---- */
+const FEED={items:[],likes:{},mine:{},loaded:false,loading:false,err:null}
+function feedLoad(force){ if(!window.__sb||!SB_USER||FEED.loading||(FEED.loaded&&!force)) return
+  FEED.loading=true; FEED.err=null
+  window.__sb.from('feed_visible_posts').select('*').order('created_at',{ascending:false}).limit(30).then(async r=>{
+    if(r.error){ FEED.err='Feed nicht erreichbar'; FEED.loading=false; render(); return }
+    const items=(r.data||[]).filter(p2=>!(DB.user.blockedUsers||[]).includes(p2.author))
+    const lc=await window.__sb.from('post_like_counts').select('*').then(x=>x.data||[]).catch(()=>[])
+    FEED.likes={}; lc.forEach(l=>FEED.likes[l.post_id]=l.likes)
+    const ml=await window.__sb.from('post_likes').select('post_id').eq('user_id',SB_USER.id).then(x=>x.data||[]).catch(()=>[])
+    FEED.mine={}; ml.forEach(l=>FEED.mine[l.post_id]=true)
+    for(const it of items){ if(it.storage_path){ // kurzlebige signed URLs (privater Bucket)
+      const su=await window.__sb.storage.from('media').createSignedUrl(it.storage_path,3600).catch(()=>null)
+      it._url=su&&su.data?su.data.signedUrl:null } }
+    FEED.items=items; FEED.loaded=true; FEED.loading=false; render() }).catch(()=>{ FEED.err='Feed nicht erreichbar'; FEED.loading=false; render() }) }
+/* Swipebarer Vollbild-Reels-Player: vertikales Scroll-Snap über alle Feed-Videos, stumm-Autoplay
+   des sichtbaren Clips (IntersectionObserver), Tap = Ton, ✕ schließt. Kein Ton-Autoplay (Browser). */
+function openReels(){ const vids=FEED.items.filter(p2=>p2.type==='video'&&p2._url)
+  if(!vids.length){ toast('Noch keine Reels','Sobald Videos im Feed sind, laufen sie hier im Vollbild.','info'); return }
+  const ov=document.createElement('div'); ov.id='reels'
+  ov.innerHTML='<button class="reels-x" aria-label="Schließen">✕</button><div class="reels-scroll">'+
+    vids.map(p2=>'<div class="reel"><video src="'+p2._url+'" loop muted playsinline preload="metadata"></video>'+
+      '<div class="reel-meta"><b>'+esc('Studi-'+String(p2.author||'').slice(0,4))+'</b>'+
+      (p2.caption?'<span>'+esc(p2.caption)+'</span>':'')+'<em>Tippen für Ton · wischen für nächstes</em></div></div>').join('')+'</div>'
+  document.body.appendChild(ov)
+  const vEls=[...ov.querySelectorAll('video')]
+  const close=()=>{ vEls.forEach(v=>{ try{v.pause()}catch(e){} }); io.disconnect(); ov.remove() }
+  ov.querySelector('.reels-x').onclick=close
+  vEls.forEach(v=>v.addEventListener('click',()=>{ v.muted=!v.muted; if(!v.muted) v.play().catch(()=>{}) }))
+  const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting&&e.intersectionRatio>.6) e.target.play().catch(()=>{}); else e.target.pause() }),{threshold:[0,.6,1]})
+  vEls.forEach(v=>io.observe(v)); if(vEls[0]) vEls[0].play().catch(()=>{}) }
+/* ---- H Projekte: eigener Bestand + Company-Views-Audit (Tabelle company_views kommt aus 03;
+   ohne sie liefert die Query nichts → .catch, Audit-Zahl bleibt 0) ---- */
+const PROJ={mine:[],views:{},loaded:false,loading:false}
+function projLoad(force){ if(!window.__sb||!SB_USER||PROJ.loading||(PROJ.loaded&&!force)) return
+  PROJ.loading=true
+  window.__sb.from('projects').select('*').eq('owner',SB_USER.id).order('updated_at',{ascending:false}).then(async r=>{
+    PROJ.mine=r.data||[]
+    for(const pr of PROJ.mine){ if(pr.cover_path){ const su=await window.__sb.storage.from('media').createSignedUrl(pr.cover_path,3600).catch(()=>null); pr._cover=su&&su.data?su.data.signedUrl:null } }
+    const vs=await window.__sb.from('company_views').select('project_id,company_name,viewed_at').then(x=>x.data||[]).catch(()=>[])
+    PROJ.views={}; vs.forEach(v=>{ (PROJ.views[v.project_id]=PROJ.views[v.project_id]||[]).push(v) })
+    PROJ.loaded=true; PROJ.loading=false; render() }).catch(()=>{ PROJ.loading=false }) }
 const PRICING={ CREDIT_PACKS:[{n:5,cents:99},{n:10,cents:189},{n:15,cents:229,rec:true}], INTL_CREDITS:5,
  LOCAL_MATCH_DEPOSIT_CENTS:25, GROUP_CREATE_DEPOSIT_CENTS:25, GROUP_JOIN_DEPOSIT_CENTS:25, INTERNATIONAL_CONNECTION_PRICE_CENTS:200, CURRENCY:'EUR' }
 const BLOCKED_DOMAINS=['gmail.com','googlemail.com','outlook.com','hotmail.com','live.com','yahoo.com','icloud.com','proton.me','protonmail.com','gmx.de','web.de','t-online.de','aol.com']
@@ -2944,6 +3002,98 @@ const actions={
    notify('Mitgliedschaft aktiviert','Willkommen bei „'+g.name+'“.'+(freeJ?' Dein erster Gruppenbeitritt ist kostenlos.':' 1 Credit eingelöst — Guthaben: '+credits()+' Credits.'),'group')
    toast('Du bist „'+g.name+'“ beigetreten',freeJ?'Erster Beitritt kostenlos.':'1 Credit eingelöst · Guthaben: '+credits()+' Credits')
    render() },
+ feedUploadModal(){ if(!SB_USER){ toast('Bitte einloggen','','info'); return }
+   openModal('<div class="eyebrow">Campus Feed</div><h3>Beitrag posten</h3>'+
+    '<label>Foto (JPG/PNG ≤ 10 MB) oder Video (MP4/WebM ≤ 60 s, ≤ 50 MB) — optional</label><input type="file" id="fd-file" accept="image/jpeg,image/png,video/mp4,video/webm">'+
+    '<label>Caption (≤ 500 Zeichen)</label><textarea id="fd-cap" maxlength="500" rows="3" placeholder="Was passiert auf dem Campus?"></textarea>'+
+    '<div class="mrow"><button class="btn ghost" onclick="closeModal()">Abbrechen</button>'+
+    '<button class="btn grad" id="fd-go" onclick="actions.feedUpload()">Posten</button></div>'+
+    '<p class="hint">Tipp: große Videos vorher kürzen/komprimieren (≤ 60 s). Captions werden moderiert; ab 3 Meldungen wird ein Beitrag ausgeblendet. Löschen entfernt auch die Datei (DSGVO).</p>') },
+ feedUpload(){ const f=(document.getElementById('fd-file').files||[])[0], cap=(document.getElementById('fd-cap').value||'').trim()
+   if(!f&&!cap){ toast('Bitte Datei oder Text angeben','','info'); return }
+   if(cap){ const bad=modCheck(cap); if(bad){ const r=modStrike(bad,cap); if(r.banned){ closeModal(); render() } return } }
+   const go=document.getElementById('fd-go'); const reset=()=>{ if(go){ go.disabled=false; go.textContent='Posten' } }
+   const finish=(type,path)=>{ window.__sb.from('posts').insert({author:SB_USER.id,type,storage_path:path,caption:cap||null}).then(r=>{
+     closeModal(); if(r.error){ toast('Posten fehlgeschlagen','Bitte später erneut versuchen.','info'); return }
+     toast('Gepostet ✓','Dein Beitrag ist im Campus Feed.'); feedLoad(true) }).catch(()=>{ closeModal(); toast('Posten fehlgeschlagen','','info') }) }
+   if(!f){ if(go){ go.disabled=true; go.textContent='Postet …' } finish('text',null); return }
+   const okImg=['image/jpeg','image/png'], okVid=['video/mp4','video/webm'], isVid=okVid.includes(f.type)
+   if(!isVid&&!okImg.includes(f.type)){ toast('Dateityp nicht erlaubt','Nur JPG, PNG, MP4 oder WebM.','info'); return }
+   if(!isVid&&f.size>10*1024*1024){ toast('Bild zu groß','Max. 10 MB — bitte komprimieren.','info'); return }
+   if(isVid&&f.size>50*1024*1024){ toast('Video zu groß','Max. 50 MB / 60 s.','info'); return }
+   if(go){ go.disabled=true; go.textContent='Lädt hoch …' }
+   const doUpload=()=>{ const ext=(f.name.split('.').pop()||'bin').toLowerCase()
+     const path='feed/'+SB_USER.id+'/'+uid()+'.'+ext
+     window.__sb.storage.from('media').upload(path,f,{contentType:f.type}).then(r=>{
+       if(r.error){ closeModal(); toast('Upload fehlgeschlagen','','info'); return }
+       finish(isVid?'video':'image',path) }).catch(()=>{ closeModal(); toast('Upload fehlgeschlagen','','info') }) }
+   if(isVid){ const v=document.createElement('video'); v.preload='metadata'
+     v.onloadedmetadata=()=>{ URL.revokeObjectURL(v.src)
+       if(v.duration>61){ toast('Video zu lang','Max. 60 Sekunden.','info'); reset(); return } doUpload() }
+     v.onerror=()=>{ doUpload() }; v.src=URL.createObjectURL(f) }
+   else doUpload() },
+ feedReels(){ openReels() },
+ feedLike(pid){ if(!window.__sb||!SB_USER) return
+   const was=!!FEED.mine[pid]
+   FEED.mine[pid]=!was; FEED.likes[pid]=Math.max(0,(FEED.likes[pid]||0)+(was?-1:1)); render() // optimistisch
+   const op=was?window.__sb.from('post_likes').delete().eq('post_id',pid).eq('user_id',SB_USER.id)
+             :window.__sb.from('post_likes').insert({post_id:pid,user_id:SB_USER.id})
+   op.then(()=>{}).catch(()=>{}) },
+ feedReport(pid){ if(!window.__sb||!SB_USER) return
+   window.__sb.from('post_reports').insert({post_id:pid,reporter:SB_USER.id,reason:'user_report'}).then(()=>{
+     FEED.items=FEED.items.filter(x=>x.id!==pid); render()
+     toast('Gemeldet','Danke — ab 3 Meldungen wird der Beitrag ausgeblendet und geprüft.') }).catch(()=>{}) },
+ feedBlock(author){ if(!(DB.user.blockedUsers||[]).includes(author)){ DB.user.blockedUsers.push(author); saveDB() }
+   FEED.items=FEED.items.filter(x=>x.author!==author); render(); toast('Nutzer blockiert','Du siehst keine Inhalte dieser Person mehr.') },
+ feedDelete(pid,path){ if(!window.__sb||!SB_USER) return
+   const done=()=>window.__sb.from('posts').delete().eq('id',pid).then(()=>{ feedLoad(true); toast('Gelöscht','Beitrag und Datei wurden entfernt (DSGVO).') }).catch(()=>{})
+   if(path) window.__sb.storage.from('media').remove([path]).then(done).catch(done) // DSGVO: erst Objekt, dann Zeile
+   else done() },
+ projContact(pid,on){ if(!window.__sb) return
+   window.__sb.from('projects').update({contact_release:on===true||on==='true'}).eq('id',pid).then(()=>{ projLoad(true)
+     toast('Kontaktfreigabe '+((on===true||on==='true')?'AN':'AUS'),'Unternehmen sehen deine Uni-Mail nur bei aktiver Freigabe.') }).catch(()=>{}) },
+ projEdit(pid){ if(!SB_USER){ toast('Bitte einloggen','','info'); return }
+   const pr=PROJ.mine.find(x=>x.id===pid)||{title:'',summary:'',description:'',tags:[],links:[],status:'idea',visibility:'private'}
+   state._projDraft=pid||''
+   openModal('<div class="eyebrow">Projekte & Ideen</div><h3>'+(pid?'Projekt bearbeiten':'Neues Projekt')+'</h3>'+
+    '<label>Titel (≤ 80)</label><input id="pj-t" maxlength="80" value="'+esc(pr.title)+'">'+
+    '<label>Kurzfassung (≤ 280)</label><textarea id="pj-s" maxlength="280" rows="2">'+esc(pr.summary||'')+'</textarea>'+
+    '<label>Beschreibung (Markdown, ≤ 5000)</label><textarea id="pj-d" maxlength="5000" rows="5">'+esc(pr.description||'')+'</textarea>'+
+    '<label>Tags (max. 8, mit Komma)</label><input id="pj-g" value="'+esc((pr.tags||[]).join(', '))+'">'+
+    '<label>Links (max. 5, je Zeile: Label | https://…)</label><textarea id="pj-l" rows="2">'+esc((pr.links||[]).map(l=>l.label+' | '+l.url).join('\n'))+'</textarea>'+
+    '<label>Cover-Bild (JPG/PNG ≤ 10 MB, optional)'+(pr.cover_path?' — vorhanden, neues ersetzt es':'')+'</label><input type="file" id="pj-cover" accept="image/jpeg,image/png">'+
+    '<label>Status</label><select id="pj-st">'+['idea','in_progress','done'].map(v=>'<option '+(pr.status===v?'selected':'')+' value="'+v+'">'+({idea:'Idee',in_progress:'In Arbeit',done:'Fertig'})[v]+'</option>').join('')+'</select>'+
+    '<label>Sichtbarkeit</label><select id="pj-v">'+[['private','Privat'],['public_students','Studierende'],['companies_too','Studierende + Unternehmen']].map(([v,l])=>'<option '+(pr.visibility===v?'selected':'')+' value="'+v+'">'+l+'</option>').join('')+'</select>'+
+    '<div class="mrow"><button class="btn ghost" onclick="closeModal()">Abbrechen</button>'+
+    '<button class="btn grad" onclick="actions.projSave()">Speichern</button></div>'+
+    '<p class="hint">Alle Texte laufen durch die Moderation. „Studierende + Unternehmen" zeigt das Projekt kuratierten Firmen (read-only, Aufrufe sind für dich sichtbar, Kontakt nur nach Freigabe).</p>') },
+ projSave(){ const t=(document.getElementById('pj-t').value||'').trim(), sum=(document.getElementById('pj-s').value||'').trim()
+   const de=(document.getElementById('pj-d').value||'').trim()
+   if(!t){ toast('Titel fehlt','','info'); return }
+   const bad=modCheck(t)||modCheck(sum)||modCheck(de)
+   if(bad){ const r=modStrike(bad,t); if(r.banned){ closeModal(); render() } return }
+   const tags=(document.getElementById('pj-g').value||'').split(',').map(x=>x.trim()).filter(Boolean).slice(0,8)
+   const links=[]; let badLink=false
+   ;(document.getElementById('pj-l').value||'').split('\n').map(x=>x.trim()).filter(Boolean).slice(0,5).forEach(line=>{
+     const i=line.indexOf('|'); const label=(i>0?line.slice(0,i):'Link').trim(), url=(i>0?line.slice(i+1):line).trim()
+     if(!/^https:\/\//i.test(url)){ badLink=true; return } links.push({label:label.slice(0,40),url}) })
+   if(badLink){ toast('Nur https-Links erlaubt','','info'); return }
+   const base={owner:SB_USER.id,title:t,summary:sum||null,description:de||null,tags,links,
+     status:document.getElementById('pj-st').value,visibility:document.getElementById('pj-v').value}
+   const write=cover=>{ const row=cover!==undefined?Object.assign({},base,{cover_path:cover}):base
+     const q=state._projDraft?window.__sb.from('projects').update(row).eq('id',state._projDraft)
+                             :window.__sb.from('projects').insert(row)
+     q.then(r=>{ closeModal(); if(r.error){ toast('Speichern fehlgeschlagen',String(r.error.message||'').slice(0,80),'info'); return }
+       projLoad(true); toast('Projekt gespeichert ✓','') }).catch(()=>{ closeModal(); toast('Speichern fehlgeschlagen','','info') }) }
+   const cf=(document.getElementById('pj-cover').files||[])[0]
+   if(cf){ if(cf.type!=='image/jpeg'&&cf.type!=='image/png'){ toast('Cover: nur JPG/PNG','','info'); return }
+     if(cf.size>10*1024*1024){ toast('Cover zu groß','Max. 10 MB.','info'); return }
+     const path='projects/'+SB_USER.id+'/'+uid()+'.'+(cf.type==='image/png'?'png':'jpg')
+     window.__sb.storage.from('media').upload(path,cf,{contentType:cf.type}).then(rr=>{
+       if(rr.error){ toast('Cover-Upload fehlgeschlagen','','info'); return } write(path) }).catch(()=>{ toast('Cover-Upload fehlgeschlagen','','info') }) }
+   else write() },
+ projDelete(pid){ if(!window.__sb) return
+   window.__sb.from('projects').delete().eq('id',pid).then(()=>{ projLoad(true); toast('Projekt gelöscht','') }).catch(()=>{}) },
  fireCat(c){ state.fireCat=c; render() },
  fireSelect(slotId){ state.fireSel=slotId; render() },
  fireCreateModal(slot){ if(guardBlock())return
@@ -3175,6 +3325,7 @@ const actions={
          document.getElementById('ob-err').textContent='Code stimmt nicht oder ist abgelaufen — bitte „Code erneut senden".'; return }
        DB.user.emailVerified=true; saveDB()
        try{ window.__sb.from('profiles').upsert({id:res.data.user.id,uni_email:String(DB.user.email||'').toLowerCase()}).then(()=>{}) }catch(e){}
+       sbBoot() // G/H: Flags + Session nach Login aktualisieren
        toast('Konto bestätigt ✓','Dein Kommilo-Konto ist serverseitig gesichert.')
        render() })
      return }
@@ -3402,12 +3553,12 @@ function current(){ const s=state.section
   if(s==='international') return globeScene
   if(s==='profil') return avScene
   if(s==='matches') return matchScene
-  if(s==='unterlagen') return docScene
+  if(s==='unterlagen'||s==='feed') return docScene
   if(s==='einladungen') return invScene
   if(s==='einstellungen') return gearScene
   if(s==='campus'||s==='gruppen'||s==='partner'||s==='aktivitaeten') return scene
   return ambScene }
-const CAMS={campus:{p:[30,2.6,15],t:[2,2,-10]},aktivitaeten:{p:[-30,7,18],t:[-14,1,4]},gruppen:{p:[26,5.2,38],t:[0,3.4,0]},partner:{p:[22,6.5,30],t:[0,2.2,0]},international:{p:[0,1.2,7],t:[0,0,0]},profil:{p:[0,1.5,3.6],t:[0,1,0]},matches:{p:[2.6,1.9,3.4],t:[0,1.1,0]},unterlagen:{p:[0,1.9,4.6],t:[0,1.2,-.6]},einladungen:{p:[0,1.6,4.8],t:[0,1.2,0]},einstellungen:{p:[.4,1.5,4.6],t:[.3,1.4,0]},amb:{p:[0,0,10],t:[0,0,0]}}
+const CAMS={campus:{p:[30,2.6,15],t:[2,2,-10]},aktivitaeten:{p:[-30,7,18],t:[-14,1,4]},gruppen:{p:[26,5.2,38],t:[0,3.4,0]},partner:{p:[22,6.5,30],t:[0,2.2,0]},international:{p:[0,1.2,7],t:[0,0,0]},profil:{p:[0,1.5,3.6],t:[0,1,0]},matches:{p:[2.6,1.9,3.4],t:[0,1.1,0]},unterlagen:{p:[0,1.9,4.6],t:[0,1.2,-.6]},feed:{p:[0,1.9,4.6],t:[0,1.2,-.6]},einladungen:{p:[0,1.6,4.8],t:[0,1.2,0]},einstellungen:{p:[.4,1.5,4.6],t:[.3,1.4,0]},amb:{p:[0,0,10],t:[0,0,0]}}
 /* Tag/Nacht: die Sonnenscheibe liefert der Himmels-Shader; Mond + Sterne nur nachts */
 const moonMesh=new THREE.Mesh(new THREE.SphereGeometry(5,20,16),new THREE.MeshBasicMaterial({color:0xe8ecf4,fog:false}))
 const mShadow=new THREE.Mesh(new THREE.SphereGeometry(4.6,20,16),new THREE.MeshBasicMaterial({color:0x10182a,fog:false}))
@@ -3637,11 +3788,12 @@ function hasActiveGroup(){ return DB.myGroups.some(g=>g.status==='active') }
 function jrFor(gid){ return DB.joinRequests.find(r=>r.group_id===gid&&['requested','approved_payment_pending','joined'].includes(r.status)) }
 function render(){ const unread=DB.notifications.some(n=>!n.read_at)
   const dot=document.getElementById('bellDot'); if(dot)dot.style.display=unread?'block':'none'
-  document.getElementById('nav').innerHTML=SECTIONS.map(([id,label])=>{ const badge=id==='matches'?DB.matches.length:(id==='einladungen'?(state.invitations.length+DB.joinRequests.filter(r=>r.status==='approved_payment_pending').length):0)
+  const NAVS=SECTIONS.filter(([id])=>(id!=='feed'||FLAGS.feed)) // G: Campus-Feed folgt dem Kill-Switch
+  document.getElementById('nav').innerHTML=NAVS.map(([id,label])=>{ const badge=id==='matches'?DB.matches.length:(id==='einladungen'?(state.invitations.length+DB.joinRequests.filter(r=>r.status==='approved_payment_pending').length):0)
     return '<button class="nitem'+(state.section===id?' act':'')+'" onclick="actions.nav(\''+id+'\')">'+
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="'+ICONS[id]+'"/></svg>'+
     '<span>'+label+'</span>'+(badge?'<em>'+badge+'</em>':'')+'</button>' }).join('')
-  document.getElementById('t-title').textContent=SECTIONS.find(s=>s[0]===state.section)[1]
+  document.getElementById('t-title').textContent=((NAVS.find(s=>s[0]===state.section)||SECTIONS.find(s=>s[0]===state.section)||['','Kommilo'])[1])
   document.getElementById('t-uni').innerHTML='<span class="dot" style="background:'+uni().color+'"></span>'+uni().short
   const tcr=document.getElementById('t-credits'); if(tcr)tcr.textContent='Credits: '+credits()
   const g=currentGuard()
@@ -3739,6 +3891,28 @@ const HUD={
     if(cat!=='Alle') return ''
     return '<button class="litem'+(state.fireSel===sl.id?' on':'')+'" onclick="actions.fireSelect(\''+sl.id+'\')"><span style="font-size:16px">◌</span><span class="li-t grow"><b style="color:#F59E0B">Frei — Feuer eröffnen</b></span><em>+</em></button>' }).join('')+'</div>'
   return head+tools+detail+list },
+ feed(){ if(!FLAGS.feed) return '<div class="card tl"><div class="eyebrow">Campus Feed</div><h2>Feed pausiert</h2><p>Der Campus Feed ist vorübergehend deaktiviert (Wartung/Moderation).</p></div>'
+  if(!window.__sb) return '<div class="card tl"><div class="eyebrow">Campus Feed</div><h2>Offline</h2><p>Der Feed braucht eine Verbindung — bitte später erneut versuchen.</p></div>'
+  if(!SB_USER) return '<div class="card tl"><div class="eyebrow">Campus Feed</div><h2>Login nötig</h2><p>Melde dich mit deiner Uni-Mail an, um Beiträge zu sehen und zu posten.</p><button class="btn grad" onclick="actions.nav(\'profil\')">Zum Login</button></div>'
+  feedLoad()
+  const head='<div class="card tl" style="max-width:420px"><div class="eyebrow">Campus Feed</div><h2>Momente vom Campus</h2>'+
+   '<p>Fotos & kurze Videos (≤ 60 s) aus dem Studi-Leben — chronologisch, ohne Algorithmus. Melden ab 3 Stimmen blendet aus; Captions laufen durch die Moderation.</p>'+
+   '<div class="mrow"><button class="btn grad" onclick="actions.feedUploadModal()">＋ Beitrag posten</button><button class="btn ghost" onclick="actions.feedReels()">▶ Reels</button></div></div>'
+  if(FEED.err) return head+'<div class="card br mut">'+esc(FEED.err)+'</div>'
+  if(!FEED.loaded) return head+'<div class="card br mut">Feed lädt …</div>'
+  const cards=FEED.items.length?FEED.items.map(p2=>{ const alias='Studi-'+String(p2.author||'').slice(0,4)
+    const mine=SB_USER&&p2.author===SB_USER.id
+    const media=p2.type==='image'&&p2._url?'<img src="'+p2._url+'" style="width:100%;border-radius:10px;max-height:340px;object-fit:cover" loading="lazy">'
+      :p2.type==='video'&&p2._url?'<video src="'+p2._url+'" style="width:100%;border-radius:10px;max-height:380px" muted autoplay loop playsinline onclick="this.muted=!this.muted"></video>':''
+    const liked=!!FEED.mine[p2.id], likes=FEED.likes[p2.id]||0
+    return '<div class="card">'+
+     '<div class="row sp"><b>'+esc(alias)+(mine?' <span class="tag" style="color:#14B8A6;background:#14B8A622">Du</span>':'')+'</b><span class="mut">'+new Date(p2.created_at).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span></div>'+
+     media+(p2.caption?'<p style="margin:8px 0 4px">'+esc(p2.caption)+'</p>':'')+
+     '<div class="row" style="gap:8px;margin-top:6px"><button class="btn ghost sm" onclick="actions.feedLike(\''+p2.id+'\')">'+(liked?'♥':'♡')+' '+likes+'</button>'+
+     (mine?'<button class="btn ghost sm" onclick="actions.feedDelete(\''+p2.id+'\',\''+(p2.storage_path||'')+'\')">Löschen</button>'
+          :'<button class="btn ghost sm" onclick="actions.feedReport(\''+p2.id+'\')">Melden</button><button class="btn ghost sm" onclick="actions.feedBlock(\''+esc(p2.author)+'\')">Blockieren</button>')+'</div></div>' }).join('')
+   :'<div class="card mut">Noch keine Beiträge — poste den ersten Campus-Moment!</div>'
+  return head+'<div class="col below" style="max-width:430px">'+cards+'</div>' },
  unterlagen(){ if(!hasActiveGroup()) return '<div class="card tl" style="max-width:460px"><div class="eyebrow">Club Unterlagen</div><h2>Nur für Gruppenmitglieder</h2>'+
    '<p>Club Unterlagen sind Modul-Dokumentenräume und nur für Mitglieder mindestens einer verknüpften Lerngruppe zugänglich. 1:1-Matches haben keinen Zugriff. Kein öffentlicher Zugriff, privater Storage, keine Roh-URLs.</p>'+
    '<button class="btn grad" onclick="actions.nav(\'gruppen\')">Zu den Lerngruppen</button></div>'
@@ -3802,6 +3976,23 @@ const HUD={
   '<p class="hint">Nutzer sehen nie fremde Zahlungen, Join-Requests anderer, Admin-Notizen oder Kartendaten. Volle RLS läuft in der Produktions-DB.</p></div>'+
   '<button class="btn grad w" onclick="actions.save()">Einstellungen speichern</button>'+
   '<button class="btn ghost w" onclick="actions.obReset()">Demo zurücksetzen (Onboarding neu)</button><div style="height:8px"></div></div>' }}
+
+/* H — „Projekte & Ideen" wird ADDITIV ans Profil angehängt (kein Eingriff ins Basis-Template) */
+function projCard(){ if(!FLAGS.projects) return ''
+  if(!window.__sb||!SB_USER) return '<div class="card bl" style="width:340px"><div class="eyebrow">Projekte & Ideen</div><p class="sub">Nach dem Login kannst du hier Projekte anlegen und optional für Unternehmen sichtbar machen.</p></div>'
+  projLoad()
+  const items=PROJ.mine.map(pr=>{ const views=(PROJ.views[pr.id]||[])
+    const vis=pr.visibility==='companies_too'?'<span class="tag" style="color:#F59E0B;background:#F59E0B22">Von Unternehmen sichtbar</span>':pr.visibility==='public_students'?'<span class="tag viol">Studierende</span>':'<span class="tag">Privat</span>'
+    return '<div class="litem" style="flex-wrap:wrap">'+(pr._cover?'<img src="'+pr._cover+'" style="width:100%;border-radius:8px;max-height:120px;object-fit:cover;margin-bottom:6px" loading="lazy">':'')+
+     '<span class="li-t grow"><b>'+esc(pr.title)+'</b><i>'+esc(pr.summary||'')+' · '+esc(pr.status)+'</i></span>'+vis+
+     '<span class="row" style="gap:6px;width:100%;margin-top:4px">'+
+     (pr.visibility==='companies_too'?'<button class="btn ghost sm" onclick="actions.projContact(\''+pr.id+'\','+(pr.contact_release?'false':'true')+')">Kontaktfreigabe: '+(pr.contact_release?'AN':'AUS')+'</button><span class="mut">'+views.length+'× angesehen</span>':'')+
+     '<button class="btn ghost sm" onclick="actions.projEdit(\''+pr.id+'\')">Bearbeiten</button>'+
+     '<button class="btn ghost sm" onclick="actions.projDelete(\''+pr.id+'\')">Löschen</button></span></div>' }).join('')
+  return '<div class="card bl list" style="width:360px;max-height:46vh"><div class="row sp"><b>Projekte & Ideen</b><button class="btn grad sm" onclick="actions.projEdit(\'\')">＋ Neu</button></div>'+
+   (PROJ.loaded?(items||'<div class="mut">Zeig, was du baust — von der Idee bis zum fertigen Projekt.</div>'):'<div class="mut">Lädt …</div>')+'</div>' }
+const _profilBase=HUD.profil
+HUD.profil=function(){ return _profilBase.call(HUD)+projCard() }
 actions.accept=function(iid){ const i=state.invitations.find(x=>x.id===iid); if(!i)return
   state.invitations=state.invitations.filter(x=>x.id!==iid)
   const m=createMatchFromInvitation({receiver_id:'u_'+iid,receiver_name:i.from,module_name:i.subject})
