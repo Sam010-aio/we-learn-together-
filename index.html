@@ -1450,7 +1450,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
   { /* SITEPLAN: Altgebäude (15,−98), 105 (O-W) × 16 (N-S) m, Portal-LANGFRONT → Nord (−z, zum
        Forumsplatz). Gruppe um +90° gedreht: lokale +x-Front (Risalit/Portale/CAROLO) → Welt −z,
        lokale z-Längsachse → Welt x. Dossier Teil A + B4. */
-    const A2=new THREE.Group(); A2.position.set(4,0,-78); A2.rotation.y=0; buildingGroup.add(A2); SITE.alt=A2 // Owner-Korrektur (rote Linie/Satellit): grand Risalit-Front OSTEN direkt an die Pockelsstraße (Ostfront ≈ X+12, Straße X+20) — N-S-Straßenflügel des L-Blocks, nördlich am Studierendenhaus vorbei
+    const A2=new THREE.Group(); A2.position.set(4,0,-96); A2.rotation.y=0; buildingGroup.add(A2); SITE.alt=A2 // Owner: nach NORDEN/hinten gezogen (−78→−96); Ostfront weiter an der Pockelsstraße
     const AX0=A2.position.x, AZ0=A2.position.z
     const WE=16, NL=105, hE=WE/2, hN=NL/2              // lokale Tiefe (→Welt-z) / lokale Länge (→Welt-x)
     const H1=2.4, H2=7.5, HB=.6, H4=6.5, wallTop=H1+H2+HB+H4
@@ -1614,7 +1614,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     /* Brückenanschluss-Öffnung in der Rückfassade am OSTFLÜGEL (lokal z=+45 → Welt x=60), OK Boden +7 m (C3) */
     { const opening=new THREE.Mesh(new THREE.BoxGeometry(.3,3.2,3.4),new THREE.MeshStandardMaterial({color:'#20242a',roughness:.4,metalness:.3})); opening.position.set(wFace-.04,8.6,45); A2.add(opening)
       const sur=new THREE.Mesh(new THREE.BoxGeometry(.2,3.7,3.9),trim); sur.position.set(wFace-.1,8.6,45); A2.add(sur)
-      SITE.altBridgeAnchor={x:AX0-hE,y:8.6,z:-42} } // Owner-Steg: Rückwand (West) des Prachtflügels bei Z−42 → lange Brücke zum weit links versetzten Okerhochhaus
+      SITE.altBridgeAnchor={x:AX0-hE,y:8.6,z:-55} } // Owner-Steg: Rückwand (West) des Prachtflügels → Brücke zum Okerhochhaus (an die neue Nordlage angepasst)
     for(let fl=0;fl<2;fl++)for(const px of [-5.4,-1.8,1.8,5.4]){ const w=new THREE.Mesh(new THREE.BoxGeometry(1.4,2.4,.1),glassM); w.position.set(px,H1+2+fl*(H2+HB)*.9,-hN-.02); A2.add(w) }
     /* ===== ZWEITER FLÜGEL — Owner: L/Γ-Form entlang der Pockelsstraße (rote Linie + Satellit-Blockrand).
        Der fertige N-S-Straßenflügel wird GEKLONT (Geometrie/Material geteilt → 0 neue Assets) und am
@@ -1993,29 +1993,24 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
   mkStreet(67.5,-21,6,95,true)
   for(let x=28;x<=112;x+=13) tree(x,-14.5,1.6,120+(x&255))
   /* Schleinitzstraße: E-W, Z≈−137, X −70…−10, 10 m breit (nördlich am Altgebäude) */
-  mkStreet(-40,-137,6,60,true)
+  mkStreet(-40,-160,6,60,true)   // Owner: nach Norden, damit sie den nach Norden gezogenen Altgebäude-Nordflügel nicht kreuzt
   for(let x=-66;x<=-14;x+=13) tree(x,-130.5,1.6,80+(x&255))
-  SITE.streets={pockels:{x:20,z0:-170,z1:35},abtJ:{z:-21},schleinitz:{z:-137}} }
+  SITE.streets={pockels:{x:20,z0:-170,z1:35},abtJ:{z:-21},schleinitz:{z:-160}} }
 /* ===== OKER (C6/B8): OSTGRENZE des Campus — eingeschnittener N-S-Lauf, Wasser 13 m breit,
    Spiegel −2,45 m ZWISCHEN beidseitigen weichen, bewachsenen Böschungen (KEIN flaches Band).
    Achse App-x ≈ 90 (Dossier x_d≈68–75; +Abweichungsnote in SITEPLAN.md), sanfte S-Kurve. ===== */
-const OKER={ halfW:6.5, level:-2.45, slope:4.5, z0:-30, z1:78 } // V2-Satellit: Oker als SW-Bogen (Punktzug), umschließt das SH im Südwesten
-SITE.riverX=-20
-/* Punktzug [z, x] aus dem Satellitenplan: (−95,−19)→(−74,−5)→(−44,+16)→(−20,+34)→SE, plus Nord-/SO-Verlängerung */
-const OKER_PTS=[[-30,-104],[-19,-95],[-5,-74],[16,-44],[34,-20],[56,2],[78,24]]
-const okerX=z=>{ const P=OKER_PTS; if(z<=P[0][0])return P[0][1]; if(z>=P[P.length-1][0])return P[P.length-1][1]
-  for(let i=0;i<P.length-1;i++){ if(z<=P[i+1][0]){ const t=(z-P[i][0])/(P[i+1][0]-P[i][0]); return P[i][1]+(P[i+1][1]-P[i][1])*t } } return P[P.length-1][1] }
-/* Boden mit Fluss-Korridor als Loch (Shape-y = −WeltZ; rotateX(−90°) legt sie flach) */
+const OKER={ halfW:6.5, level:-2.45, slope:4.5, z:-195, x0:-130, x1:70 } // Owner: Fluss QUER (Ost-West) durch die Nordwiese, nördlich hinter allen Gebäuden
+SITE.riverX=OKER.z
+const okerX=()=>OKER.x0   // Kompat-Stub für Alt-Referenzen (Fußgängersteg ist ausgeblendet)
+/* Boden mit E-W-Fluss-Loch (Shape-y = −WeltZ; rotateX(−90°) legt ihn flach) */
 { const gs=new THREE.Shape(); gs.moveTo(-160,215); gs.lineTo(160,215); gs.lineTo(160,-125); gs.lineTo(-160,-125); gs.closePath()
-  const OW=OKER.halfW+OKER.slope, hp=new THREE.Path()
-  OKER_PTS.forEach(([z,xc],i)=>{ const X=xc-OW, Y=-z; i?hp.lineTo(X,Y):hp.moveTo(X,Y) })
-  for(let i=OKER_PTS.length-1;i>=0;i--){ const [z,xc]=OKER_PTS[i]; hp.lineTo(xc+OW,-z) }
-  hp.closePath(); gs.holes.push(hp)
+  const OW=OKER.halfW+OKER.slope, yA=-(OKER.z+OW), yB=-(OKER.z-OW), hp=new THREE.Path()
+  hp.moveTo(OKER.x0,yA); hp.lineTo(OKER.x1,yA); hp.lineTo(OKER.x1,yB); hp.lineTo(OKER.x0,yB); hp.closePath(); gs.holes.push(hp)
   const gg=new THREE.ShapeGeometry(gs); gg.rotateX(-Math.PI/2)
   const ground=new THREE.Mesh(gg,M.grass); ground.position.y=-.002; ground.receiveShadow=true; buildingGroup.add(ground) }
-function riverStrip(o0,y0,o1,y1){ const segs=160, pos=[],uv=[],idx=[]
-  for(let i=0;i<=segs;i++){ const z=OKER.z0+(OKER.z1-OKER.z0)*i/segs, xc=okerX(z)
-    pos.push(xc+o0,y0,z, xc+o1,y1,z); uv.push(i/segs,0,i/segs,1)
+function riverStrip(o0,y0,o1,y1){ const segs=140, pos=[],uv=[],idx=[]   // E-W: entlang X sweepen, Querschnitt in Z
+  for(let i=0;i<=segs;i++){ const x=OKER.x0+(OKER.x1-OKER.x0)*i/segs
+    pos.push(x,y0,OKER.z+o0, x,y1,OKER.z+o1); uv.push(i/segs,0,i/segs,1)
     if(i<segs){ const a=i*2; idx.push(a,a+1,a+2, a+1,a+3,a+2) } }
   const g2=new THREE.BufferGeometry()
   g2.setAttribute('position',new THREE.Float32BufferAttribute(pos,3))
@@ -2023,8 +2018,8 @@ function riverStrip(o0,y0,o1,y1){ const segs=160, pos=[],uv=[],idx=[]
   g2.setIndex(idx); g2.computeVertexNormals(); return g2 }
 const bankM=new THREE.MeshStandardMaterial({color:'#6d7355',roughness:1,side:THREE.DoubleSide})
 const bedM=new THREE.MeshStandardMaterial({color:'#3d4438',roughness:.95,side:THREE.DoubleSide})
-{ const bw=new THREE.Mesh(riverStrip(-(OKER.halfW+OKER.slope),.02,-OKER.halfW,-2.3),bankM); bw.receiveShadow=true; buildingGroup.add(bw)   // West-Böschung
-  const be=new THREE.Mesh(riverStrip(OKER.halfW,-2.3,OKER.halfW+OKER.slope,.02),bankM); be.receiveShadow=true; buildingGroup.add(be)        // Ost-Böschung
+{ const bn=new THREE.Mesh(riverStrip(-(OKER.halfW+OKER.slope),.02,-OKER.halfW,-2.3),bankM); bn.receiveShadow=true; buildingGroup.add(bn)   // Nord-Böschung
+  const bs=new THREE.Mesh(riverStrip(OKER.halfW,-2.3,OKER.halfW+OKER.slope,.02),bankM); bs.receiveShadow=true; buildingGroup.add(bs)        // Süd-Böschung
   const bed=new THREE.Mesh(riverStrip(-OKER.halfW-.3,-2.55,OKER.halfW+.3,-2.55),bedM); buildingGroup.add(bed) }                             // Flussbett unter dem Wasser
 /* Echtes Wasser (Nutzeranweisung): three/addons-Water mit planarer Echtzeit-Spiegelung —
    Ufer, Bäume und Nachtlichter spiegeln sich wirklich. Kosten = 1 zusätzlicher Szenen-
@@ -2034,9 +2029,9 @@ const bedM=new THREE.MeshStandardMaterial({color:'#3d4438',roughness:.95,side:TH
    Normale +Z, Mesh um -90° gekippt wie PlaneGeometry) — ein Ribbon direkt in XZ würde an
    einer senkrechten Ebene spiegeln. Daher eigener XY-Ribbon nur für das Wasser. */
 function ribbonXY(w){ const segs=160
-  const pos=[],uv=[],idx=[]
-  for(let i=0;i<=segs;i++){ const z=OKER.z0+(OKER.z1-OKER.z0)*i/segs, xc=okerX(z)
-    pos.push(xc-w/2,-z,0, xc+w/2,-z,0); uv.push(i/segs,0,i/segs,1)
+  const pos=[],uv=[],idx=[]   // E-W: geomX = WeltX (x0→x1), geomY = −WeltZ; Querschnitt w in Z um OKER.z
+  for(let i=0;i<=segs;i++){ const x=OKER.x0+(OKER.x1-OKER.x0)*i/segs
+    pos.push(x,-(OKER.z-w/2),0, x,-(OKER.z+w/2),0); uv.push(i/segs,0,i/segs,1)
     if(i<segs){ const a=i*2; idx.push(a,a+1,a+2, a+1,a+3,a+2) } }
   const g2=new THREE.BufferGeometry()
   g2.setAttribute('position',new THREE.Float32BufferAttribute(pos,3))
@@ -2064,35 +2059,35 @@ water.material.uniforms.size.value=sceneConfig.water.size
 buildingGroup.add(water); AO_EXCLUDE.push(water)
 /* Dichter Ufer-Baumbestand (Erlen/Weiden, B8) beidseits — spiegelt sich im Wasser.
    Westufer im Kinzig-/Ufergassen-Abschnitt (z −105…−78) ausgespart. */
-for(let z=-28;z<=76;z+=12){ const j=((z*13)&7)-3.5
-  tree(okerX(z)-OKER.halfW-OKER.slope-2.5+j*.3, z+j, 1.5+((z&3))*.15, 300+(z&255))
-  tree(okerX(z+6)+OKER.halfW+OKER.slope+2.5-j*.3, z+6-j, 1.55+((z&2))*.2, 340+(z&255)) }
+for(let x=OKER.x0+10;x<=OKER.x1-10;x+=12){ const j=(((x&255)*13)&7)-3.5   // E-W: entlang X, Nord-/Süd-Ufer in Z
+  tree(x+j*.3, OKER.z-OKER.halfW-OKER.slope-2.5-j, 1.5+((x&3))*.15, 300+(x&255))
+  tree(x+6-j*.3, OKER.z+OKER.halfW+OKER.slope+2.5+j, 1.55+((x&2))*.2, 340+(x&255)) }
 /* Röhricht-Säume: Gras-Cluster entlang beider Böschungs-Oberkanten */
-for(let z=-28;z<=76;z+=11){ grassCluster(okerX(z)-OKER.halfW-OKER.slope+.6, z, 1.25, false)
-  grassCluster(okerX(z+6)+OKER.halfW+OKER.slope-.6, z+6, 1.2, false) }
+for(let x=OKER.x0+8;x<=OKER.x1-8;x+=11){ grassCluster(x, OKER.z-OKER.halfW-OKER.slope+.6, 1.25, false)
+  grassCluster(x+6, OKER.z+OKER.halfW+OKER.slope-.6, 1.2, false) }
 /* UFERGASSE (B7) entfernt — war an die alte Kinzig-Lage gebunden; Kinzig ist jetzt NO-Kulisse (V2). */
 SITE.ufergasse=0
 /* ===== POCKELSSTRASSEN-BRÜCKE (B8): STRASSENbrücke (App ~(90,−40)), 18 m Spannweite × 14 m breit,
    Fahrbahn = 0 m; massive niedrige Beton-Brüstungen innen + filigranes dunkles Metallgeländer außen,
    Brückenköpfe mit Natursteinpfeilern + Laternen; Gehwege aus großen hellen Betonplatten. ===== */
-{ const bx=okerX(32), bz=32 // V2: Pockelsstraßen-Brücke südlich des SH über die SW-Oker
+{ const bx=20, bz=OKER.z // Owner (Bild 3): breite Straßenbrücke am Ende des Nordwegs — quert die E-W-Oker in N-S-Richtung
   const conc=new THREE.MeshStandardMaterial({color:'#b9b6ae',roughness:.9})
-  const deck=new THREE.Mesh(new THREE.BoxGeometry(21,.7,14),conc); deck.position.set(bx,-.3,bz); deck.castShadow=true; deck.receiveShadow=true; buildingGroup.add(deck)
-  const asph=new THREE.Mesh(new THREE.PlaneGeometry(21,6.5),new THREE.MeshStandardMaterial({color:'#3b3d40',roughness:.98}))
+  const deck=new THREE.Mesh(new THREE.BoxGeometry(14,.7,26),conc); deck.position.set(bx,-.3,bz); deck.castShadow=true; deck.receiveShadow=true; buildingGroup.add(deck)
+  const asph=new THREE.Mesh(new THREE.PlaneGeometry(6.5,26),new THREE.MeshStandardMaterial({color:'#3b3d40',roughness:.98}))
   asph.rotation.x=-Math.PI/2; asph.position.set(bx,.061,bz); asph.receiveShadow=true; buildingGroup.add(asph) // Fahrbahn
   const plateTex=(()=>{ const c=cvs(128),x=c.getContext('2d'); x.fillStyle='#c8c5bc'; x.fillRect(0,0,128,128)
-    x.strokeStyle='#a5a299'; x.lineWidth=3; x.strokeRect(1,1,126,126); const t=tx(c); t.repeat.set(10,2); return t })()
-  for(const sd of [-1,1]){ const walk2=new THREE.Mesh(new THREE.PlaneGeometry(21,3.4),new THREE.MeshStandardMaterial({map:plateTex,roughness:.92}))
-    walk2.rotation.x=-Math.PI/2; walk2.position.set(bx,.062,bz+sd*5.2); walk2.receiveShadow=true; buildingGroup.add(walk2)   // Gehwege (Betonplatten)
-    const par=new THREE.Mesh(new THREE.BoxGeometry(21,.55,.35),conc); par.position.set(bx,.34,bz+sd*6.7); par.castShadow=true; buildingGroup.add(par) // Beton-Brüstung innen
+    x.strokeStyle='#a5a299'; x.lineWidth=3; x.strokeRect(1,1,126,126); const t=tx(c); t.repeat.set(2,10); return t })()
+  for(const sd of [-1,1]){ const walk2=new THREE.Mesh(new THREE.PlaneGeometry(3.4,26),new THREE.MeshStandardMaterial({map:plateTex,roughness:.92}))
+    walk2.rotation.x=-Math.PI/2; walk2.position.set(bx+sd*5.2,.062,bz); walk2.receiveShadow=true; buildingGroup.add(walk2)   // Gehwege (Betonplatten)
+    const par=new THREE.Mesh(new THREE.BoxGeometry(.35,.55,26),conc); par.position.set(bx+sd*6.7,.34,bz); par.castShadow=true; buildingGroup.add(par) // Beton-Brüstung innen
     const railM2=new THREE.MeshStandardMaterial({color:'#2e3134',roughness:.5,metalness:.5})
-    for(let x=-10;x<=10;x+=2){ const p=new THREE.Mesh(new THREE.BoxGeometry(.05,.75,.05),railM2); p.position.set(bx+x,.95,bz+sd*7.0); buildingGroup.add(p) }
-    const hr=new THREE.Mesh(new THREE.BoxGeometry(21,.06,.06),railM2); hr.position.set(bx,1.32,bz+sd*7.0); buildingGroup.add(hr) } // Metallgeländer außen
+    for(let z=-10;z<=10;z+=2){ const p=new THREE.Mesh(new THREE.BoxGeometry(.05,.75,.05),railM2); p.position.set(bx+sd*7.0,.95,bz+z); buildingGroup.add(p) }
+    const hr=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,26),railM2); hr.position.set(bx+sd*7.0,1.32,bz); buildingGroup.add(hr) } // Metallgeländer außen
   for(const sx of [-1,1]) for(const sz of [-1,1]){ const pier=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.5,1.1),new THREE.MeshStandardMaterial({color:'#9d9689',roughness:.9}))
-    pier.position.set(bx+sx*10.2,.75,bz+sz*6.9); pier.castShadow=true; buildingGroup.add(pier)
-    if(sz>0) streetLamp(bx+sx*9.4,bz+7.8) } // Natursteinpfeiler + Laternen an den Köpfen
-  ;[-1,1].forEach(sd=>{ const ab=new THREE.Mesh(new THREE.BoxGeometry(2.2,2.6,14),conc)
-    ab.position.set(bx+sd*10.4,-1.35,bz); ab.receiveShadow=true; buildingGroup.add(ab) }) // Widerlager in den Böschungen
+    pier.position.set(bx+sx*6.9,.75,bz+sz*10.2); pier.castShadow=true; buildingGroup.add(pier)
+    if(sz>0) streetLamp(bx+7.8,bz+sx*9.4) } // Natursteinpfeiler + Laternen an den Köpfen
+  ;[-1,1].forEach(sd=>{ const ab=new THREE.Mesh(new THREE.BoxGeometry(14,2.6,2.2),conc)
+    ab.position.set(bx,-1.35,bz+sd*10.4); ab.receiveShadow=true; buildingGroup.add(ab) }) // Widerlager in den Böschungen
   SITE.roadBridge={x:bx,z:bz,span:18,w:14} }
 /* ===== VORDACH-PERGOLA (B6): dünne weiße Flachdach-Platte (0,45 m) auf quadratischen Stützen
    (Raster ~6 m, lichte Höhe ~4 m), L-Band am WEST- und SÜDRAND der Audimax-Plaza;
@@ -2247,7 +2242,7 @@ function siteBoxes(){ const list=[]
   collect('bib',SITE.bib); collect('forum',SITE.forum); collect('bridge',SITE.bridgeGroup); collect('pergola',SITE.pergola)
   list.push({n:'sh',b:new THREE.Box3(new THREE.Vector3(-HX-.3,0,-HZ-.3),new THREE.Vector3(HX+.3,12,HZ+.3))}) // eng: Balkon-Girlanden liegen AUSSERHALB
   if(SITE.roadBridge){ const rb=SITE.roadBridge
-    list.push({n:'roadBridge',b:new THREE.Box3(new THREE.Vector3(rb.x-10.6,-3,rb.z-7.2),new THREE.Vector3(rb.x+10.6,1.6,rb.z+7.2))}) }
+    list.push({n:'roadBridge',b:new THREE.Box3(new THREE.Vector3(rb.x-7.6,-3,rb.z-13),new THREE.Vector3(rb.x+7.6,1.6,rb.z+13))}) }
   ;(SITE.eastHouses||[]).forEach((hs,i)=>list.push({n:'house'+i,b:new THREE.Box3(new THREE.Vector3(hs.x-hs.w/2-.6,0,hs.z-6.8),new THREE.Vector3(hs.x+hs.w/2+.6,hs.h+2,hs.z+6.8))}))
   return list }
 const bulbGeo=new THREE.SphereGeometry(.05,10,8)
@@ -4058,7 +4053,7 @@ function verifySitePlan(){
   const chk=(n,c,v)=>out.push((c?'PASS':'FAIL')+' — '+n+' ('+v+')'), near=(a,b,t)=>Math.abs(a-b)<=t
   const alt=wp(SITE.alt), tw=wp(SITE.tower), au=wp(SITE.lib)
   chk('Studierendenhaus am Ursprung', true, '(0,0) fix')
-  chk('Altgebäude ≈ (+4,−78) an der Pockelsstraße', near(alt.x,4,4)&&near(alt.z,-78,4), `(${alt.x.toFixed(0)},${alt.z.toFixed(0)})`)
+  chk('Altgebäude ≈ (+4,−96) an der Pockelsstraße (Norden)', near(alt.x,4,4)&&near(alt.z,-96,4), `(${alt.x.toFixed(0)},${alt.z.toFixed(0)})`)
   chk('Altgebäude durchgehend (Prachtfront + verbundener Nordflügel, kein loser Block)', SITE.altWings===2, `Flügel=${SITE.altWings||1}`)
   const aN=new THREE.Vector3(1,0,0).applyQuaternion(SITE.alt.quaternion)
   chk('Altgebäude Portalfront nach OSTEN', aN.x>.9, `Front-Normale x=${aN.x.toFixed(2)}`)
@@ -4071,9 +4066,9 @@ function verifySitePlan(){
   chk('Altgebäude-Ostfront an der Pockelsstraße (X+8…+16 < Straße +20)', SITE.altEastX>8&&SITE.altEastX<20, `Ostfront X=${(SITE.altEastX||0).toFixed(0)}, Straße +20`)
   chk('Forum-Komplex vorhanden (NO)', !!SITE.forum, SITE.forum?'ja':'nein')
   chk('Pockelsstraße N-S bei X≈+20', !!SITE.streets&&near(SITE.streets.pockels.x,20,2), SITE.streets?`x=${SITE.streets.pockels.x}`:'fehlt')
-  chk('Abt-Jerusalem (Z≈−21) + Schleinitz (Z≈−137)', !!SITE.streets&&near(SITE.streets.abtJ.z,-21,2)&&near(SITE.streets.schleinitz.z,-137,2), SITE.streets?`${SITE.streets.abtJ.z}/${SITE.streets.schleinitz.z}`:'fehlt')
-  chk('Oker umschließt SW (Achse westl. am SH)', okerX(0)<-30&&okerX(34)<0, `x@z0=${okerX(0).toFixed(0)}, x@z34=${okerX(34).toFixed(0)}`)
-  chk('Straßenbrücke südlich des SH (z≈+32)', !!SITE.roadBridge&&near(SITE.roadBridge.z,32,3), SITE.roadBridge?`z=${SITE.roadBridge.z}`:'fehlt')
+  chk('Abt-Jerusalem (Z≈−21) + Schleinitz (Z≈−160)', !!SITE.streets&&near(SITE.streets.abtJ.z,-21,2)&&near(SITE.streets.schleinitz.z,-160,2), SITE.streets?`${SITE.streets.abtJ.z}/${SITE.streets.schleinitz.z}`:'fehlt')
+  chk('Oker E-W quer durch die Nordwiese (z≈−195)', near(OKER.z,-195,4)&&OKER.x1>OKER.x0, `z=${OKER.z}, x ${OKER.x0}…${OKER.x1}`)
+  chk('Straßenbrücke quert die E-W-Oker (z≈−195)', !!SITE.roadBridge&&near(SITE.roadBridge.z,-195,4), SITE.roadBridge?`z=${SITE.roadBridge.z}`:'fehlt')
   chk('Skybridge kurz & angebunden (kein Schweben quer über den Rasen)', !!SITE.bridgeGroup&&SITE.bridgeGroup.visible&&SITE.bridge.span<66, SITE.bridge?`span=${SITE.bridge.span.toFixed(0)}m`:'fehlt')
   chk('C4: 0 Baum↔Gebäude-Durchdringungen', SITE.vegViolations===0, `${SITE.vegViolations} Verstöße`)
   chk('C5: Lichterketten kollisionsfrei', typeof SITE.lightViolations==='number', `${SITE.lightViolations} entfernt`)
