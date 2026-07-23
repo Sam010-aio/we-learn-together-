@@ -14,7 +14,8 @@ Filler löschen) — **keine Gebäude neu modelliert**.
 | Audimax | (+57, −53) | Glasfront WESTEN | Gruppe → (+57,−53), rot −90° |
 | Forum-Komplex | (+70, −110) | Riegel N-S | Owner-Korrektur: Riegel 90° nach rechts (im Uhrzeigersinn) gedreht, in-place um die Inhalts-Mitte |
 | Forumsplatz | X≈+60, Z −75…−90 | zwischen Audimax & Forum | uf-Ensemble nach Osten geschoben |
-| Okerhochhaus | (+21, −169) | Nordende der Achse | Gruppe → (+21,−169), rot 0 |
+| Okerhochhaus | (−30, −58) | an der Altgebäude-Rückwand | Owner: direkt hinter den Prachtflügel (rot 180°); Skybridge ~13 m zur West-Rückwand des alten Hauses |
+| gelbes Haus | (−58, −58) | neben Okerhochhaus | Owner: neben den Turm hinter den Prachtflügel |
 | Abt-Jerusalem-Str. | Z≈−21, X +20…+115 | E-W | neu gezeichnet |
 | Schleinitzstraße | Z≈−137, X −70…−10 | E-W | neu gezeichnet |
 | Oker (Punktzug) | (−95,−19)→(−74,−5)→(−44,+16)→(−20,+34)→SO | umschließt SW am SH | `okerX` = stückweise-lineare Interpolation; Boden mit Fluss-Loch |
