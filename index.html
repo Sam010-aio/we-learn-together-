@@ -1620,7 +1620,9 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
        Der fertige N-S-Straßenflügel wird GEKLONT (Geometrie/Material geteilt → 0 neue Assets) und am
        Nordende um 90° nach WESTEN gekniet; zusammen ergeben sie die NE-Ecke des Blockrands. Als Kind von
        A2 = SITE.alt läuft er automatisch durch mergeStatic (Draw-Call-Merge) und den Kollisionsvalidator. */
-    { const A2b=A2.clone(true); A2b.position.set(-44.5,0,-45); A2b.rotation.set(0,-Math.PI/2,0); A2.add(A2b); SITE.altWings=2 }
+    { const A2b=A2.clone(true); A2b.position.set(-44.5,0,-45); A2b.rotation.set(0,-Math.PI/2,0)   // Nordflügel (E-W nach Westen)
+      const A2c=A2.clone(true); A2c.position.set(-44.5,0,45);  A2c.rotation.set(0,-Math.PI/2,0)   // Owner: Südflügel → läuft ENTLANG dem Parkplatz weiter (kein abruptes Ende); U-Blockrand
+      A2.add(A2b); A2.add(A2c); SITE.altWings=3 }
   }
   /* ===== B4 Okerhochhaus — SITEPLAN/Dossier C2: (53,−72), Grundriss 26×15 m, 13 OG à 3,3 m
      über doppelgeschossig verglastem Sockel + zurückgesetzter dunkler Technikaufbau ≈ 47 m.
@@ -4022,7 +4024,7 @@ function verifySitePlan(){
   const alt=wp(SITE.alt), tw=wp(SITE.tower), au=wp(SITE.lib)
   chk('Studierendenhaus am Ursprung', true, '(0,0) fix')
   chk('Altgebäude ≈ (+4,−78) an der Pockelsstraße', near(alt.x,4,4)&&near(alt.z,-78,4), `(${alt.x.toFixed(0)},${alt.z.toFixed(0)})`)
-  chk('Altgebäude L-Form (2 Flügel, geklonter West-Arm)', SITE.altWings===2, `Flügel=${SITE.altWings||1}`)
+  chk('Altgebäude U-Blockrand (3 Flügel: Straße + Nord + Süd am Parkplatz)', SITE.altWings===3, `Flügel=${SITE.altWings||1}`)
   const aN=new THREE.Vector3(1,0,0).applyQuaternion(SITE.alt.quaternion)
   chk('Altgebäude Portalfront nach OSTEN', aN.x>.9, `Front-Normale x=${aN.x.toFixed(2)}`)
   chk('Okerhochhaus ≈ (+21,−169), Nordende', near(tw.x,21,3)&&near(tw.z,-169,3), `(${tw.x.toFixed(0)},${tw.z.toFixed(0)})`)
