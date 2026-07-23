@@ -10,7 +10,7 @@ Filler löschen) — **keine Gebäude neu modelliert**.
 |---|---|---|---|
 | Studierendenhaus | (0, 0) | fix | unverändert am Ursprung |
 | Pockelsstraße (Achse) | X≈+20, Z −170…+35 | N-S, direkt östlich am SH | Asphalt-Rückgrat + Gehwege + Platanenreihen |
-| Altgebäude | (+4, −78) L/Γ-Block | Prachtfront OSTEN an der Pockelsstraße | Owner-Korrektur (rote Linie + Satellit): N-S-Straßenflügel direkt westlich der Pockelsstraße (Ostfront X≈+12 < Straße +20), dazu ein **geklonter** Flügel um 90° nach Westen abgeknickt → L/Γ-Blockrand (NE-Ecke). Kein Neubau: Geometrie/Material des vorhandenen Flügels geteilt |
+| Altgebäude | (+4, −78) U-Block | Prachtfront OSTEN an der Pockelsstraße | Owner: N-S-Prachtflügel an der Straße + Nordflügel (0,7×) + kurzer Südflügel (0,3×) am kleinen Parkplatz → 3 unterschiedlich lange Seiten (nicht identisch). Kein Neubau: Geometrie geteilt |
 | Audimax | (+57, −53) | Glasfront WESTEN | Gruppe → (+57,−53), rot −90° |
 | Forum-Komplex | (+70, −110) | Riegel N-S | Owner-Korrektur: Riegel 90° nach rechts (im Uhrzeigersinn) gedreht, in-place um die Inhalts-Mitte |
 | Forumsplatz | X≈+60, Z −75…−90 | zwischen Audimax & Forum | uf-Ensemble nach Osten geschoben |
