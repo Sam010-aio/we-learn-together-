@@ -788,7 +788,10 @@ beams.forEach(({a,b,sx,sz})=>{ const va=new THREE.Vector3(...a), vb=new THREE.Ve
 
 /* ===== Böden / Decken / Dach / Glas ===== */
 B(W,SLAB,D,M.concrete,0,F0-SLAB/2,0,0,true,true)
-const cGF=new THREE.Mesh(new THREE.PlaneGeometry(W-.15,D-.15),M.carpetGF); cGF.rotation.x=-Math.PI/2; cGF.position.y=F0+.006; cGF.receiveShadow=true; buildingGroup.add(cGF)
+/* C9: fugenloser hellgrauer LINOLEUM-Boden mit leicht grünlichem Ton — KEIN Teppich (Dossier B2) */
+const linoT=noiseTex('#c6cac3',['#bcc1ba','#ced2ca'],2400); linoT.repeat.set(3,3)
+const linoM=new THREE.MeshStandardMaterial({map:linoT,roughness:.62,envMapIntensity:sceneConfig.materials.envMapIntensity.carpet})
+const cGF=new THREE.Mesh(new THREE.PlaneGeometry(W-.15,D-.15),linoM); cGF.rotation.x=-Math.PI/2; cGF.position.y=F0+.006; cGF.receiveShadow=true; buildingGroup.add(cGF)
 const shape=new THREE.Shape(); shape.moveTo(-HX,-HZ); shape.lineTo(HX,-HZ); shape.lineTo(HX,HZ); shape.lineTo(-HX,HZ); shape.closePath()
 const hole=new THREE.Path(); const rr=1.4
 hole.moveTo(-hw+rr,-hd); hole.lineTo(hw-rr,-hd); hole.quadraticCurveTo(hw,-hd,hw,-hd+rr)
@@ -796,11 +799,59 @@ hole.lineTo(hw,hd-rr); hole.quadraticCurveTo(hw,hd,hw-rr,hd)
 hole.lineTo(-hw+rr,hd); hole.quadraticCurveTo(-hw,hd,-hw,hd-rr)
 hole.lineTo(-hw,-hd+rr); hole.quadraticCurveTo(-hw,-hd,-hw+rr,-hd); hole.closePath()
 shape.holes.push(hole)
+/* C9: kreisrunde OCULI (Ø 1,8 m) durchstoßen die OG-Ebene — Tageslicht bis ins EG (Dossier B2) */
+const OCULI=[[-8,4.5],[8,-4.5]]
+OCULI.forEach(([ox2,oz2])=>{ const oc=new THREE.Path(); oc.absarc(ox2,oz2,.9,0,Math.PI*2,true); shape.holes.push(oc) })
 const slabG=new THREE.ExtrudeGeometry(shape,{depth:SLAB,bevelEnabled:false}); slabG.rotateX(-Math.PI/2); slabG.translate(0,F1-SLAB,0)
 const slabM=new THREE.Mesh(slabG,M.concrete); slabM.castShadow=slabM.receiveShadow=true; buildingGroup.add(slabM)
 const cOGg=new THREE.ShapeGeometry(shape); cOGg.rotateX(-Math.PI/2); cOGg.translate(0,F1+.006,0)
-const cOGm=new THREE.Mesh(cOGg,M.carpetOG); cOGm.receiveShadow=true; buildingGroup.add(cOGm)
+const cOGm=new THREE.Mesh(cOGg,linoM); cOGm.receiveShadow=true; buildingGroup.add(cOGm) // C9: auch OG Linoleum
 const ceil=new THREE.ShapeGeometry(shape); ceil.rotateX(Math.PI/2); ceil.translate(0,F1-SLAB-.012,0); buildingGroup.add(new THREE.Mesh(ceil,M.woodCeil))
+/* C9: Oculi-Einfassung im OG — umlaufendes vertikales Stabgeländer + verglastes Oberlicht darüber */
+OCULI.forEach(([ox2,oz2])=>{
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.06,.03,10,28),M.steelWhite); ring.rotation.x=Math.PI/2
+  ring.position.set(ox2,F1+1.05,oz2); buildingGroup.add(ring)
+  const oBars=[]; for(let k=0;k<14;k++){ const a=k*Math.PI*2/14; oBars.push({x:ox2+Math.cos(a)*1.06,y:F1+.52,z:oz2+Math.sin(a)*1.06}) }
+  instanced(new THREE.BoxGeometry(.03,1.0,.03),M.steelWhite,oBars,false)
+  const oSky=new THREE.Mesh(new THREE.CircleGeometry(.95,28),new THREE.MeshStandardMaterial({color:'#ffffff',emissive:0xfff6e4,emissiveIntensity:1.0,side:THREE.DoubleSide}))
+  oSky.rotation.x=Math.PI/2; oSky.position.set(ox2,CEIL1-.015,oz2); buildingGroup.add(oSky) })
+/* C9: BAUMSTÜTZEN — weiße Stahlstützen, die sich am Kopf in 4 gerundete Arme verzweigen und in
+   das Deckenraster übergehen (organische Knoten statt orthogonaler Raster; Dossier B2). */
+{ const colPos=[[-6.5,-7],[6.5,-7],[-6.5,0],[6.5,0],[-6.5,7],[6.5,7],[0,-7],[0,7]]
+  const armLen=1.7, tilt=.62 // Armneigung ~35° aus der Vertikalen
+  const mkTreeCol=(x,z,y0,y1)=>{ const shaftH=y1-y0-1.15
+    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.11,.13,shaftH,12),M.steelWhite)
+    shaft.position.set(x,y0+shaftH/2,z); shaft.castShadow=true; buildingGroup.add(shaft)
+    const knot=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),M.steelWhite); knot.position.set(x,y0+shaftH,z); buildingGroup.add(knot)
+    for(let k=0;k<4;k++){ const a=Math.PI/4+k*Math.PI/2
+      const arm=new THREE.Mesh(new THREE.CylinderGeometry(.055,.085,armLen,10),M.steelWhite)
+      const dx2=Math.cos(a)*Math.sin(tilt), dz2=Math.sin(a)*Math.sin(tilt), dy2=Math.cos(tilt)
+      arm.position.set(x+dx2*armLen/2,y0+shaftH+dy2*armLen/2,z+dz2*armLen/2)
+      arm.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(dx2,dy2,dz2))
+      arm.castShadow=true; buildingGroup.add(arm)
+      const tip=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),M.steelWhite)
+      tip.position.set(x+dx2*armLen,y0+shaftH+dy2*armLen,z+dz2*armLen); buildingGroup.add(tip) } }
+  colPos.forEach(([x,z])=>{ mkTreeCol(x,z,F0,F1-SLAB); mkTreeCol(x,z,F1,CEIL1) })
+  SITE.treeColumns=colPos.length }
+/* C9: weißes Deckenraster über dem EG — Balken fassen die Holz-FELDER (~3×3 m) mit den runden LED-Scheiben */
+{ const gb2=[]
+  for(let gx=-12.8;gx<=12.8;gx+=3.2) gb2.push({x:gx,y:F1-SLAB-.05,z:0,sz:D-2}) // Balken in z-Richtung
+  const gridBeamZ=new THREE.InstancedMesh(new THREE.BoxGeometry(.16,.1,1),M.steelWhite,gb2.length)
+  { const m4g=new THREE.Matrix4(), sg=new THREE.Vector3()
+    gb2.forEach((p,i)=>{ sg.set(1,1,p.sz); m4g.compose(new THREE.Vector3(p.x,p.y,p.z),new THREE.Quaternion(),sg); gridBeamZ.setMatrixAt(i,m4g) }) }
+  gridBeamZ.instanceMatrix.needsUpdate=true; gridBeamZ.frustumCulled=false; buildingGroup.add(gridBeamZ)
+  const gb3=[]
+  for(let gz=-11.2;gz<=11.2;gz+=3.2) gb3.push({x:0,y:F1-SLAB-.05,z:gz,sx:W-2})
+  const gridBeamX=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.1,.16),M.steelWhite,gb3.length)
+  { const m4g=new THREE.Matrix4(), sg=new THREE.Vector3()
+    gb3.forEach((p,i)=>{ sg.set(p.sx,1,1); m4g.compose(new THREE.Vector3(p.x,p.y,p.z),new THREE.Quaternion(),sg); gridBeamX.setMatrixAt(i,m4g) }) }
+  gridBeamX.instanceMatrix.needsUpdate=true; gridBeamX.frustumCulled=false; buildingGroup.add(gridBeamX) }
+/* C9: mintgrüne/hellblaue SITZSÄCKE im EG (Dossier B2: 6–8 Stück) */
+{ const bagCols=['#9fd8c4','#a8d4e2','#9fd8c4','#b6e0d0','#a8d4e2','#9fd8c4','#b6e0d0']
+  ;[[-4,-5.5,.3],[-2.9,-6.6,1.4],[5.2,5.3,2.2],[6.4,4.5,.8],[12.6,2.1,1.9],[-13,-4.2,2.6],[2.2,6.5,.5]].forEach(([bx2,bz2,ry2],i)=>{
+    const bag=new THREE.Mesh(new THREE.SphereGeometry(.55,14,10),new THREE.MeshStandardMaterial({color:bagCols[i],roughness:1}))
+    bag.scale.set(1,.5,1); bag.position.set(bx2,F0+.28,bz2); bag.rotation.y=ry2; bag.castShadow=true; bag.receiveShadow=true; buildingGroup.add(bag) })
+  SITE.beanBags=7 }
 B(W+2*BAL,SLAB,BAL,M.concrete,0,F1-SLAB/2,HZ+BAL/2,0,true,true); B(W+2*BAL,SLAB,BAL,M.concrete,0,F1-SLAB/2,-(HZ+BAL/2),0,true,true)
 B(BAL,SLAB,D,M.concrete,HX+BAL/2,F1-SLAB/2,0,0,true,true); B(BAL,SLAB,D,M.concrete,-(HX+BAL/2),F1-SLAB/2,0,0,true,true)
 B(2.3,.09,1.7,M.concrete,19.32,F1-.045,1.75,0,true,true); B(2.3,.09,1.7,M.concrete,-19.32,F1-.045,-1.75,0,true,true)
