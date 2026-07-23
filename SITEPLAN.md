@@ -62,9 +62,15 @@ App (0,0) ✓; Forumsplatz-Mitte Dossier (0,0) → App (15,−150).
 1. **SH-Straße (E1) + Parkplatz (E2)** bleiben an ihrer akzeptierten Position zwischen SH
    und Campus-Kern (real: Straßenraum Pockelsstraße/Abt-Jerusalem-Straße liegt dazwischen —
    Street-View-Frames). Bestandsschutz der interaktiven SH-Zone.
-2. **Brückenlänge**: Die Tabelle (Positionen) ist autoritativ; der 28–32-m-Wert ergibt sich
-   als Diagonale Ostflügel↔Turm-Weststirn (~33 m) — bündig verbunden, Zero-Tolerance gegen
-   freie Enden hat Vorrang vor der Streckenangabe.
+2. **Brücke**: Anker-Geometrie gewinnt. Umsetzung: Rückfassaden-Anker am Ostflügel (60,−90)
+   ↔ Turm-Weststirn (≈40.3,−69.3) → Spannweite ≈ 28,6 m (im Dossier-Soll 28–32 ✓), bündig
+   1,2 m in beide Fassaden eingebunden, exakt 2 Stützenpaare.
 3. Teil A Text nennt den Turm „nordöstlich" hinter dem Altgebäude; die Koordinaten-Tabelle
    und die B4-Sichtachse (Turm erscheint über der Dachkante VOM PLATZ aus) ergeben südöstlich
    HINTER der Portalfront. Die Tabelle gewinnt (Teil D: „implement EXACTLY" auf die Tabelle).
+4. **Dossier-interner Überlapp Turm/Kinzig/Fluss**: Mit den Tabellenwerten überschneiden sich
+   Turm (53,−72, 12°-Ausdehnung), Kinzig (70,−86, 22 m Firstlänge) und der Kanalkorridor
+   (x_d≈68) geometrisch. Auflösung nach Konfliktreihenfolge (Topologie > Einzelmaß, alles
+   innerhalb ±10–15 %): Turm bleibt EXAKT auf Tabellenposition; **Kinzig → (67,−91)**
+   (3–5 m SE); **Oker-Achse → App-x 90** (x_d 75); **Straßenbrücke → (≈90,−40)**. Die
+   Ufergasse (B7) läuft dadurch wie im Video SCHMAL zwischen Kinzig-Ostgiebel und Böschung.

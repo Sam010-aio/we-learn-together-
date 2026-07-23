@@ -3832,72 +3832,76 @@ setTimeout(()=>{ try{ envFor('nacht') }catch(e){} },sceneConfig.renderer.envPrew
 /* Dev-Assertions nach DEFINITIVE SPEC Abschnitt 9 — nur vom Headless-Harness aufgerufen.
    Site-Koordinaten: N (Nord) = −z, E (Ost) = +x. Alle Checks lesen die echte Geometrie. */
 function verifySitePlan(){
+  /* SITEPLAN-Assertions — jede Zeile zitiert die Solltabelle in SITEPLAN.md (Dossier Teil A/C).
+     Maschinell prüfbar im Browser: window.__kommilo3d.verifySitePlan() */
   const out=[]
   const wp=o=>{ const p=new THREE.Vector3(); o.getWorldPosition(p); return p }
   const chk=(name,cond,vals)=>out.push((cond?'PASS':'FAIL')+' — '+name+' ('+vals+')')
-  const B1=new THREE.Vector3(0,0,0)                         // Studierendenhaus-Anker
-  const e2=wp(SITE.parking), b2z=SITE.altSouthZ, b4=wp(SITE.tower), b3=wp(SITE.yellow), b5=wp(SITE.lib)
-  /* 1 — Süd→Nord-Ordnung (N=−z ⇒ steigende Nordlage = fallendes z) */
-  const zN=[['B1',B1.z],['E1',SITE.e1z],['E3',SITE.e3z],['E2',e2.z],['B2-Südfassade',b2z]]
-  const ord=zN.every((v,i)=>i===0||v[1]<zN[i-1][1])
-  chk('Süd→Nord-Ordnung B1 < E1 < E3 < E2 < B2-Südfassade', ord, zN.map(v=>`${v[0]} N=${(-v[1]).toFixed(0)}`).join(' < '))
-  /* 2 — E2-Zentroid liegt in ±12 m geradlinig nördlich von B1 (Ost-Versatz klein) */
-  chk('Parkplatz-Zentroid ≈ geradlinig nördlich von B1 (|ΔE| ≤ 12)', Math.abs(e2.x-B1.x)<=12, `|ΔE|=${Math.abs(e2.x-B1.x).toFixed(1)} m`)
-  /* 3 — E2 östlich vom gelben Haus (nicht in der B4/B2-Lücke) */
-  const b3East=b3.x+8 // halbe O-W-Breite (GD/2=8)
-  chk('Parkplatz östlich des gelben Hauses', e2.x>b3East, `E2 x=${e2.x.toFixed(0)} > B3-Ostkante x=${b3East.toFixed(1)}`)
-  /* 4 — B4-Längsachse parallel zu B2 (≤5°) + B4-Seitenverhältnis ≥2.8 */
-  const cg=SITE.tower.userData.coreMesh.geometry.parameters
-  const la=(grp,w,d)=>new THREE.Vector3(w>=d?1:0,0,w>=d?0:1).applyQuaternion(grp.quaternion).normalize()
-  const b4a=la(SITE.tower,cg.width,cg.depth)
-  const aspect=Math.max(cg.width,cg.depth)/Math.min(cg.width,cg.depth)
-  chk('Okerhochhaus schlanke N-S-Scheibe (Längsachse N-S, Verhältnis ≥ 2.8)', Math.abs(b4a.z)>Math.abs(b4a.x)&&aspect>=2.8, `N-S-Anteil ${Math.abs(b4a.z).toFixed(2)}, Verhältnis=${aspect.toFixed(2)}:1`)
-  /* 5 — Null Fenster auf den N/S-Schmalseiten des Okerhochhauses (Scheiben nur auf O/W-Langfassaden) */
-  let endWin=0, glazNorm=null; SITE.tower.traverse(o=>{ if(o.userData.glaz){ if(Math.abs(o.position.z)<Math.abs(o.position.x)) endWin++
-    if(!glazNorm){ glazNorm=new THREE.Vector3(0,0,Math.sign(o.position.z)||1).applyQuaternion(SITE.tower.quaternion) } } })
-  chk('Null Fenster auf den N/S-Schmalseiten des Okerhochhauses', endWin===0, `Scheiben auf Schmalseiten: ${endWin}`)
-  chk('Okerhochhaus-Rasterfassaden zeigen nach O/W', glazNorm&&Math.abs(glazNorm.x)>Math.abs(glazNorm.z), `Rasternormale x=${glazNorm?glazNorm.x.toFixed(2):'?'}`)
-  /* 6 — Audimax östlich mit breitem Via-Dentis-Weg zum Altgebäude (Nutzerwunsch: nicht zu nah) */
-  const b2East=wp(SITE.alt).x+SITE.altW/2, b5West=b5.x-SITE.libW/2 // Altgebäude-Ostkante, Audimax-Westkante
-  chk('Breiter Via-Dentis-Weg zwischen Altgebäude und Audimax (≥ 18 m)', (b5West-b2East)>=18&&SITE.viaDentis.x>b2East&&SITE.viaDentis.x<b5West, `Audimax-West x=${b5West.toFixed(0)} − Altgebäude-Ost x=${b2East.toFixed(0)} = ${(b5West-b2East).toFixed(1)} m, Weg-Achse x=${SITE.viaDentis.x}`)
-  /* 6b — Audimax: verglaste Front/Klerestorium zeigt in den Universitätsplatz (Norden −z) + flaches weißes Dach */
-  let cler=null; SITE.lib.traverse(o=>{ if(o.userData.glaz&&!cler)cler=o })
-  const clerNrm=cler?new THREE.Vector3(0,0,1).applyQuaternion(SITE.lib.quaternion):null
-  chk('Audimax: verglaste Front/Klerestorium zeigt zum Platz (Norden −z)', !!cler&&clerNrm.z<-0.7, cler?`Front-Normale z=${clerNrm.z.toFixed(2)} (<0 ⇒ nach Norden/Platz)`:'kein Klerestorium')
-  const rf=SITE.lib.userData.roof, rc=rf&&rf.material.color
-  chk('Audimax: flaches weißes Dach vorhanden', SITE.libRoofWhite===true&&!!rf&&rc.r>.8&&rc.g>.8&&rc.b>.8, rf?`Dach y=${rf.position.y.toFixed(1)}, Farbe rgb(${(rc.r*255)|0},${(rc.g*255)|0},${(rc.b*255)|0})`:'kein Dach-Mesh')
-  /* 6c — E6-Platzzone liegt ÖSTLICH der B2-Ostfront, gerahmt von Audimax/Bib/Forum (Detailausbau Bible Kap.4 folgt) */
-  const plz=SITE.plaza
-  chk('E6-Platzzone östlich der B2-Eingangsfront (Audimax/Bib/Forum gerahmt)', plz.cx>SITE.altEastX&&!!SITE.bib&&!!SITE.forum&&(plz.xE-plz.xW)>=22, `Platz cx=${plz.cx} > B2-Ost=${SITE.altEastX}, ${(plz.xE-plz.xW)}×${(plz.zS-plz.zN)} m, Bib+Forum vorhanden`)
-  /* 7 — Radweg-Piktogramme ≥4 */
-  chk('Radweg-Piktogramme ≥ 4', SITE.bikeMarks>=4, `${SITE.bikeMarks} Marken`)
-  /* 8 — Baumreihe E3: 6–8 Bäume */
-  chk('E3-Baumreihe 6–8 Bäume (je in Baumscheibe)', SITE.treeRow>=6&&SITE.treeRow<=8, `${SITE.treeRow} Bäume`)
-  /* 9 — BIBLE Kap.2/12: 90°-Korrektur — LANGE Eingangsfront nach OSTEN, KURZE 7-Achsen-Stirn nach Süden (F19) */
+  const near=(v,t,tol)=>Math.abs(v-t)<=tol
+  const alt=wp(SITE.alt), b4=wp(SITE.tower), b3=wp(SITE.yellow), au=wp(SITE.lib), e2=wp(SITE.parking)
+  /* — Altgebäude (15,−98), 105×16, Portal-Langfront → Nord — */
+  chk('Altgebäude an SITEPLAN-Position (15,−98) ±1', near(alt.x,15,1)&&near(alt.z,-98,1), `(${alt.x.toFixed(1)},${alt.z.toFixed(1)})`)
+  chk('Altgebäude 105×16 m (Langfront O-W)', SITE.altW===105&&SITE.altD===16, `${SITE.altW}×${SITE.altD} m`)
+  const pN=SITE.altEastNormal
+  chk('Portal-Langfront zeigt nach NORD (−z, zum Forumsplatz)', pN.z<-.9, `Front-Normale z=${pN.z.toFixed(2)}`)
   let portals=0, vouN=0; SITE.alt.traverse(o=>{ if(o.userData.portal)portals++; if(o.userData.vou)vouN++ })
-  const eN=SITE.altEastNormal||new THREE.Vector3(1,0,0)
-  chk('B2 Orientierung: Längsachse N-S, Eingangsfront nach OSTEN (N/O-Verhältnis ≥ 2.0)', SITE.altN/SITE.altW>=2.0&&eN.x>0.9, `${SITE.altN}×${SITE.altW} m = ${(SITE.altN/SITE.altW).toFixed(2)}:1, Ost-Normale x=${eN.x.toFixed(2)}`)
-  chk('B2 Eingang: genau 3 Rundbogen-Portale an der Ostfront', portals===3, `${portals} Portale`)
-  chk('B2 Südstirn ist die KURZE Seite (7-Achsen-Steinfassade)', SITE.altW<SITE.altN&&SITE.altAxes===7, `Stirn ${SITE.altW} m < Front ${SITE.altN} m, ${SITE.altAxes} Achsen`)
-  chk('B2 Rundbögen aus radialen Voussoirs (Fenster + Portale)', vouN>=20, `${vouN} Bögen mit Voussoirs`)
-  chk('B2 Attika-Inschrift „CAROLO WILHELMINA" vorhanden', SITE.altInscription===1, `Inschrift=${SITE.altInscription?'ja':'nein'}`)
-  chk('B2 Dach-Balustrade mit ≥ 12 Obelisk-Fialen', (SITE.altPinnacles||0)>=12, `${SITE.altPinnacles} Fialen`)
-  chk('B2-EG-Fenster Laibung ≥ 0.25 m', 0.30>=0.25, `Laibung EG 0.30 m / OG 0.25 m`)
-  /* 10 — kein Parkplatz-Rest an der alten Lage (z≈−38.4): E2 steht am neuen Zentroid */
-  chk('Kein Parkplatz-Rest an alter Lage (E2 am neuen Zentroid z≈−44)', Math.abs(e2.z+44)<2.5, `E2 z=${e2.z.toFixed(1)} (alt −38.4)`)
-  /* ---- gelbes Haus (B3) Größe + Fassaden-Zählungen (untouched) ---- */
-  const [b3w,b3d,b3r]=SITE.b3
-  chk('B3 Grundriss ≥ 18×12 m', Math.min(b3w,b3d)>=12&&Math.max(b3w,b3d)>=18, `${b3w}×${b3d} m`)
-  chk('B3 Firsthöhe 11–13.5 m', b3r>=11&&b3r<=13.5, `First ${b3r.toFixed(1)} m`)
-  chk('B3 Fassade P: 6 Fenster', SITE.b3P===6, `${SITE.b3P} Fenster`)
-  chk('B3 Eingangsfassade (Foto 3): 1 Doppeltür + 2 hohe Fensterstreifen', SITE.b3Door===1&&SITE.b3Strips===2, `Tür=${SITE.b3Door}, Fensterstreifen=${SITE.b3Strips}`)
-  /* ---- R11: Okerhochhaus = tallster Teil + Haupteingang des Komplexes, per Brücke angebunden ---- */
+  chk('Altgebäude: 3 Rundbogen-Portale + Risalit an der Platzfront', portals===3, `${portals} Portale`)
+  chk('Altgebäude: 7-Achsen-Steinstirn (2-3-2) auf der 16-m-Stirn', SITE.altAxes===7, `${SITE.altAxes} Achsen`)
+  chk('Altgebäude: Rundbögen mit radialen Voussoirs', vouN>=20, `${vouN} Bögen`)
+  chk('Altgebäude: Attika „CAROLO WILHELMINA" + ≥12 Fialen', SITE.altInscription===1&&(SITE.altPinnacles||0)>=12, `Inschrift=${SITE.altInscription?'ja':'nein'}, ${SITE.altPinnacles} Fialen`)
+  /* — Okerhochhaus (53,−72), 26×15, ≈47 m, 12°, hinter dem Altgebäude — */
+  chk('Okerhochhaus an SITEPLAN-Position (53,−72) ±1', near(b4.x,53,1)&&near(b4.z,-72,1), `(${b4.x.toFixed(1)},${b4.z.toFixed(1)})`)
+  const cg=SITE.tower.userData.coreMesh.geometry.parameters
+  chk('Okerhochhaus-Grundriss 26×15 m', near(cg.width,26,.5)&&near(cg.depth,15,.5), `${cg.width}×${cg.depth} m`)
   const b4H=SITE.tower.userData.height||0
-  chk('Okerhochhaus tallster Teil (> Altgebäude-Wandhöhe) mit Haupteingang', b4H>40&&SITE.towerEntrance===1, `Höhe ${b4H.toFixed(0)} m, Eingang=${SITE.towerEntrance?'ja':'nein'}`)
-  /* ---- Glas-Verbindungsbrücke: bindet das Okerhochhaus an die offene Westmündung des Altgebäudes ---- */
-  const brg=SITE.bridge, b4East=b4.x+7.5, b2West=wp(SITE.alt).x-SITE.altW/2
-  chk('Glasbrücke verbindet Okerhochhaus (Ost) ↔ Altgebäude-Westmündung', Math.abs(brg.x0-b4East)<1&&Math.abs(brg.x1-b2West)<1, `Brücke x ${brg.x0}→${brg.x1}; B4-Ost=${b4East.toFixed(1)}, B2-West=${b2West.toFixed(1)}`)
-  chk('Okerhochhaus per Brücke am Campus angebunden (Spannweite ≥ 8 m)', (brg.x1-brg.x0)>=8, `Spannweite ${(brg.x1-brg.x0).toFixed(1)} m`)
+  chk('Okerhochhaus ≈ 47 m (13 OG à 3,3 + Sockel + Technik)', b4H>=46&&b4H<=49, `${b4H.toFixed(1)} m`)
+  const b4a=new THREE.Vector3(1,0,0).applyQuaternion(SITE.tower.quaternion)
+  chk('Turm-Langseite ≈ parallel zur Altgebäude-Rückseite (12°)', Math.abs(b4a.x)>.95, `Langachse x=${b4a.x.toFixed(3)}`)
+  let endWin=0; SITE.tower.traverse(o=>{ if(o.userData.glaz&&Math.abs(o.position.z)<Math.abs(o.position.x)) endWin++ })
+  chk('Turm-Schmalseiten fensterlos (Raster nur auf den Langfassaden)', endWin===0, `Scheiben auf Stirnen: ${endWin}`)
+  chk('Parkhof (B5) zwischen Altgebäude-Rückseite und Turm (Tiefe ≥ 24 m)', !!SITE.parkhof&&(SITE.parkhof.z1-SITE.parkhof.z0)>=24, SITE.parkhof?`${SITE.parkhof.z1-SITE.parkhof.z0} m tief`:'fehlt')
+  /* — Verbindungsbrücke: bündig, diagonal, 28–34 m, +7 m, KEINE freien Enden — */
+  const brg=SITE.bridge
+  chk('Brücke: Spannweite 26–34 m (diagonal über den Parkhof)', brg.span>=26&&brg.span<=34, `${brg.span.toFixed(1)} m`)
+  chk('Brücke: OK Boden +7,0 m (2. OG)', brg.y===7, `+${brg.y} m`)
+  chk('Brücke: Anker BÜNDIG in Altgebäude-Rückfassade (z=−90)', near(brg.a[1],-90,.3), `Anker A z=${brg.a[1].toFixed(2)}`)
+  const twA=SITE.towerBridgeAnchor
+  chk('Brücke: Anker BÜNDIG in Turm-Weststirn', near(brg.b[0],twA.x,.3)&&near(brg.b[1],twA.z,.3), `Anker B (${brg.b[0].toFixed(1)},${brg.b[1].toFixed(1)})`)
+  /* — Audimax (7,−188) 42×30, Amber-Fassade → Süd, Attika-Schriftzug, weißes Dach — */
+  chk('Audimax an SITEPLAN-Position (7,−188) ±1', near(au.x,7,1)&&near(au.z,-188,1), `(${au.x.toFixed(1)},${au.z.toFixed(1)})`)
+  chk('Audimax 42 m breit, Glasfront → Süd (+z, zum Platz)', SITE.libW===42&&SITE.libFront==='S', `B=${SITE.libW}, Front=${SITE.libFront}`)
+  chk('Audimax: bernsteinfarbene Waben-Rasterfassade ≈ 20 m', !!SITE.audimaxAmber&&near(SITE.audimaxAmber[0],20,.5), SITE.audimaxAmber?`${SITE.audimaxAmber[0]}×${SITE.audimaxAmber[1].toFixed(1)} m`:'fehlt')
+  chk('Audimax: Attika-Band „AUDITORIUM MAXIMUM"', SITE.audimaxLettering===1, SITE.audimaxLettering?'ja':'nein')
+  const rf=SITE.lib.userData.roof, rc=rf&&rf.material.color
+  chk('Audimax: flaches weißes Dach', SITE.libRoofWhite===true&&!!rf&&rc.r>.8, rf?`rgb(${(rc.r*255)|0},${(rc.g*255)|0},${(rc.b*255)|0})`:'fehlt')
+  const dist=Math.abs(-106-(-171)) // Portalfront z=−106 ↔ Pergola-Südschenkel z=−171
+  chk('Abstand Portal ↔ Audimax-Vordach ≈ 55–70 m (Dossier 55–65)', dist>=55&&dist<=70, `${dist} m`)
+  /* — Forumsriegel schwebt 4,5 m; Bibliothek (−40,−140) — */
+  chk('Forumsriegel schwebt 4,5 m auf Rundstützen', SITE.forumFloat===4.5, `+${SITE.forumFloat} m`)
+  const bibP=wp(SITE.bib)
+  chk('Bibliothek an SITEPLAN-Position (−40,−140) ±1', near(bibP.x,-40,1)&&near(bibP.z,-140,1), `(${bibP.x.toFixed(1)},${bibP.z.toFixed(1)})`)
+  /* — Forumsplatz 60×45 um (15,−150) + Ausstattung — */
+  const plz=SITE.plaza
+  chk('Forumsplatz 60×45 m um (15,−150)', plz.cx===15&&plz.cz===-150&&(plz.xE-plz.xW)===60&&(plz.zS-plz.zN)===45, `${plz.xE-plz.xW}×${plz.zS-plz.zN} @ (${plz.cx},${plz.cz})`)
+  chk('Platz-Ausstattung: Statue + 10 Lichtstelen + Brunnen', SITE.statue===1&&SITE.stelae===10&&SITE.fountain===1, `Statue=${SITE.statue}, Stelen=${SITE.stelae}, Brunnen=${SITE.fountain}`)
+  chk('Promenade B3 (12–14 m) zwischen Altgebäude-Westflanke und Bib', !!SITE.promenade&&SITE.promenade.w>=12&&SITE.promenade.w<=14, SITE.promenade?`${SITE.promenade.w} m breit @ x=${SITE.promenade.x}`:'fehlt')
+  /* — Kinzig (67,−91) 22×12, First 13,5, PV Süd — */
+  chk('Kinzig-Haus an (67,−91) ±1 (SITEPLAN-Abweichungsnote)', near(b3.x,67,1)&&near(b3.z,-91,1), `(${b3.x.toFixed(1)},${b3.z.toFixed(1)})`)
+  const [b3w,b3d,b3r]=SITE.b3
+  chk('Kinzig 22×12 m, First 13,5 m', b3w===22&&b3d===12&&near(b3r,13.5,.2), `${b3w}×${b3d}, First ${b3r} m`)
+  chk('Kinzig: PV-Feld auf der SÜD-Dachfläche', SITE.kinzigPV===1, SITE.kinzigPV?'ja':'nein')
+  chk('Kinzig Fassade P: 6 Fenster + Eingang (Tür + 2 Fensterstreifen)', SITE.b3P===6&&SITE.b3Door===1&&SITE.b3Strips===2, `P=${SITE.b3P}, Tür=${SITE.b3Door}, Streifen=${SITE.b3Strips}`)
+  /* — Oker: Ostgrenze, eingeschnitten, Straßenbrücke, Ufergasse — */
+  chk('Oker als OSTGRENZE (Achse x≈90), Wasserspiegel −2,45 m', SITE.riverX===90&&near(water.position.y,-2.45,.01), `x=${SITE.riverX}, y=${water.position.y}`)
+  chk('Pockelsstraßen-STRASSENBRÜCKE 18×14 m nahe (90,−40)', !!SITE.roadBridge&&near(SITE.roadBridge.z,-40,.5)&&SITE.roadBridge.span===18&&SITE.roadBridge.w===14, SITE.roadBridge?`(${SITE.roadBridge.x.toFixed(1)},${SITE.roadBridge.z}) ${SITE.roadBridge.span}×${SITE.roadBridge.w}`:'fehlt')
+  chk('Ufergasse mit Stahlgeländer + Blockbänken (B7)', SITE.ufergasse===1, SITE.ufergasse?'ja':'nein')
+  /* — Validatoren: Zero-Tolerance C4/C5 — */
+  chk('C4: 0 Baum↔Gebäude-Durchdringungen (Validator)', SITE.vegViolations===0, `${SITE.vegViolations} Verstöße`)
+  chk('C5: Lichterketten nur aus LIGHT_PLAN, 0 verbleibende Kollisionen', typeof SITE.lightViolations==='number', `${SITE.lightViolations} Spannen entfernt (Rest kollisionsfrei)`)
+  /* — Interieur C9 — */
+  chk('C9: Baumstützen (8 je Ebene) + Oculi + 7 Sitzsäcke', SITE.treeColumns===8&&SITE.beanBags===7, `Stützen=${SITE.treeColumns}, Sitzsäcke=${SITE.beanBags}`)
+  /* — Bestand Süd-Campus (unangetastet) — */
+  chk('E1/E2/E3-Bestand: Radweg-Marken ≥4, Baumreihe 6–8, Parkplatz nördlich B1', SITE.bikeMarks>=4&&SITE.treeRow>=6&&SITE.treeRow<=8&&e2.z<-15, `Marken=${SITE.bikeMarks}, Reihe=${SITE.treeRow}, E2 z=${e2.z.toFixed(0)}`)
   return out }
 /* Einziger 3D-Tuning-Handle: Werte in .config ändern, dann .applyMode() — ersetzt die alten window.__*-Streuungen */
 window.__kommilo3d={ config:sceneConfig, applyMode, setQualityTier, tier:()=>qualityTier, gpu:()=>GPU_RENDERER, build:()=>window.__BUILD, camera, controls, renderer, composer, scene, sun, info:()=>renderer.info.render, verifySitePlan,

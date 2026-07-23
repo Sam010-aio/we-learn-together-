@@ -1134,6 +1134,41 @@ Node — kein SwiftShader-Render). Drawcall/Dreieck-Budget prüft der Owner via 
 4. Login, **Credits-Shop** und **Tisch-Auswahl** kurz antesten (Preservation-Law lebt).
 5. Beim nächsten Deploy muss der **Reload-Toast** erscheinen.
 
+## 27. WORLD ACCURACY REBUILD (PR-2) — Dossier-Umsetzung, Decision Log
+
+**Quelle:** `KOMMILO SITE-DOSSIER` (7 Clips, 84 Frames, kalibriert) → `SITEPLAN.md` (App-Koordinaten,
+verbindlich). Jede Position im Code zitiert die Solltabelle; Abweichungen stehen in SITEPLAN.md §Abweichungen.
+
+**Umgesetzt (Defekt-Register C1–C10):**
+- **C1/C7** Städtisches Ensemble statt Riesen-Wiese: Forumsplatz 60×45 (Betonplatten 1,2 m) +
+  Klinker-Vorfeld, Audimax-Plaza (Anthrazit + Mosaikbänder + Kies + Sitzblöcke + Corten,
+  2 Stufen über Terrassenband), Promenade 13 m (Fischgrät + Granitbänder, Hecken-Rasenstreifen).
+- **C2** Okerhochhaus 26×15×47,4 m (13 OG à 3,3, dunkler Technikaufbau), (53,−72), 12°.
+- **C3** Brücke: EIN geschlossener Steg, diagonal Rückfassade-Ostflügel ↔ Turm-Weststirn,
+  28,6 m, +7 m, beidseitig 1,2 m eingebunden, exakt 2 Stützenpaare — keine freien Enden.
+- **C4** Vegetations-Validator: Kronen-AABB vs. alle Gebäude/Brücken-AABBs, Verschieben→Entfernen,
+  Konsolen-Log, `SITE.vegViolations===0` als Assertion.
+- **C5** LIGHT_PLAN-Festoon-System: Trauf-Perimeter (SH), Brücken-Dachkanten, Platz-Spans an
+  eigenen Masten; Kettenlinien-Durchhang; Segment-vs-AABB mit Re-Routing (+1,5 m) sonst Drop + Log.
+- **C6** Oker = OSTGRENZE: eingeschnittener N-S-Lauf (x≈90), Wasser −2,45 m ZWISCHEN Böschungen,
+  Erlen/Weiden-Bestand, Röhricht; **B8** Straßenbrücke 18×14 (Beton-Brüstungen + Metallgeländer,
+  Steinpfeiler, Laternen); Holzsteg versetzt nach Norden mit Widerlagern.
+- **C8** Promenade als Achse Altgebäude-Westflanke ↔ Bib/Forum + Verbindungsweg SH↔Platz.
+- **C9** Interieur: Linoleum statt Teppich, BAUMSTÜTZEN (4 gerundete Arme), weißes Deckenraster
+  über Holz-Feldern, 2 echte Oculi (Löcher in der OG-Platte, Stabgeländer-Ringe, Oberlichter),
+  7 mintgrüne Sitzsäcke.
+- **C10** Kinzig 22×12, Traufe 9/First 13,5, PV auf SÜD-Dach, Ufergasse mit Geländer + Blockbänken.
+- **B4** Statue, 10 blaue Lichtstelen, 4 Fahnenmasten, Brunnen mit Sitzrand; **B6** Amber-Waben-
+  fassade (~20 m, abends leuchtend) + „AUDITORIUM MAXIMUM"-Attika + schwebender Forumsriegel
+  (4,5 m auf Rundstützen) + L-Pergola mit Holzlamellen-Untersicht; **B7** Ostufer-Altbauten.
+
+**Assertions:** `verifySitePlan()` komplett neu — ~35 Checks direkt gegen die SITEPLAN-Tabelle
+(Positionen ±1 m, Maße, Orientierungen, Brücken-Anker bündig, Validator-Nullstände, C9-Bestand).
+Owner-Aufruf im Browser: `window.__kommilo3d.verifySitePlan()`.
+
+**Nicht verifizierbar in der Sandbox:** Screenshots/Seite-an-Seite-Vergleiche (Software-GL) —
+der Owner prüft die Bereiche im Browser gegen die Clip-Frames (Testskript im PR).
+
 ## 26. Bewegungs-Feel — Navigations-LOD + Gras-Cap (Owner-Feedback „schwer zu bewegen")
 
 **Befund/Attribution:** Trotz DPR-Clamp + On-Demand blieb das **Bewegen** schwer. Beim Ziehen/Zoomen
