@@ -14,11 +14,11 @@
 /* ===== Delivery / Build-Sichtbarkeit (LIGHTNESS RESCUE Ph0) =====
    EINE Quelle der Build-Kennung — geteilt mit sw.js (Cache-Name = kommilo-v${id}). Sichtbar als
    dezenter Fuß-Stempel und im ?debug=perf-Overlay; so ist am Bildschirm ablesbar, welcher Build läuft. */
-window.__BUILD = { id: '2026.07.23-e761846', date: '2026-07-23', hash: 'e761846' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
+window.__BUILD = { id: '2026.07.23-0847aec', date: '2026-07-23', hash: '0847aec' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
 (function(){
   // Fuß-Stempel setzen, sobald der Body existiert (robust — auch wenn die 3D-App nicht bootet)
   function stamp(){ var el=document.getElementById('buildstamp'); if(!el) return
-    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-e761846 (Format laut Spezifikation)
+    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-0847aec (Format laut Spezifikation)
   if(document.readyState!=='loading') stamp(); else addEventListener('DOMContentLoaded', stamp)
   if(!('serviceWorker' in navigator)) return
   // Selbst-enthaltener Reload-Hinweis — unabhängig vom App-Toast, wirkt auch bei kaputter/veralteter App
@@ -1822,7 +1822,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
      zurückgesetzten, verglasten Lesesaal-EG (warm beleuchtet) auf Pilotis. REIN ADDITIV — nichts
      verschoben/gelöscht. Front (lokal +z, rot −90°) → WESTEN zum Platz/zur Straße. ===== */
   { const ulib=new THREE.Group(); ulib.position.set(35,0,-152); ulib.rotation.y=-Math.PI/2; buildingGroup.add(ulib); SITE.uniLib=ulib // Owner (Satellit-X): nach NORDEN, nicht in die Mitte
-    const LW=34, LD=18, gH=4.4, boxH=11, LF=LD/2
+    const LW=58, LD=18, gH=4.4, boxH=11, LF=LD/2   // Owner: deutlich BREITER (Doppelpfeil-Spanne)
     const concM=new THREE.MeshStandardMaterial({color:'#b3a992',roughness:.92})                                   // warmer Sichtbeton
     const glassLM=new THREE.MeshStandardMaterial({color:'#242a2e',roughness:.15,metalness:.45})
     const warmM=new THREE.MeshStandardMaterial({color:'#f0d49a',emissive:0xe0b060,emissiveIntensity:.5,roughness:.6}) // Lesesaal-Innenlicht (warm)
@@ -1832,15 +1832,19 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     const inner=new THREE.Mesh(new THREE.BoxGeometry(LW-3.2,gH-.2,LD-3.2),warmM); inner.position.set(0,gH/2,-.3); ulib.add(inner)
     const glassFr=new THREE.Mesh(new THREE.BoxGeometry(LW-1.6,gH-.3,.12),glassLM); glassFr.position.set(0,gH/2,LF-1.0); glassFr.userData.glaz=true; ulib.add(glassFr)
     for(const sx of [-1,1]){ const gs=new THREE.Mesh(new THREE.BoxGeometry(.12,gH-.3,LD-2.0),glassLM); gs.position.set(sx*(LW/2-1.0),gH/2,-.3); gs.userData.glaz=true; ulib.add(gs) }
-    for(let k=0;k<9;k++){ const c=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,gH,12),concM); c.position.set(-LW/2+2+k*((LW-4)/8),gH/2,LF-.4); c.castShadow=true; ulib.add(c) }
+    for(let k=0;k<15;k++){ const c=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,gH,12),concM); c.position.set(-LW/2+2+k*((LW-4)/14),gH/2,LF-.4); c.castShadow=true; ulib.add(c) }
     for(let x=-LW/2+2;x<=LW/2-2;x+=2.4){ const m=new THREE.Mesh(new THREE.BoxGeometry(.08,gH-.3,.16),panelM); m.position.set(x,gH/2,LF-.94); ulib.add(m) } // Glassprossen
     /* 2) Auskragende Kragplatte über dem EG (Brutalismus-Signatur) */
     const canopy=new THREE.Mesh(new THREE.BoxGeometry(LW+1.6,.6,LD+1.6),slabM); canopy.position.set(0,gH+.3,0); canopy.castShadow=true; ulib.add(canopy)
-    /* 3) Massiver fensterloser Betonkasten darüber */
+    /* 3) Betonkasten darüber + Owner: umlaufendes FENSTERBAND (dort wo das X war) */
     const box=new THREE.Mesh(new THREE.BoxGeometry(LW,boxH,LD),concM); box.position.set(0,gH+.6+boxH/2,0); box.castShadow=true; box.receiveShadow=true; ulib.add(box)
+    { const by=gH+.6+boxH*.42, bh=2.6                                   // Fensterband auf ~42 % Kastenhöhe
+      const wf=new THREE.Mesh(new THREE.BoxGeometry(LW-2,bh,.14),glassLM); wf.position.set(0,by,LF-.04); wf.userData.glaz=true; ulib.add(wf)      // Front
+      for(const sx of [-1,1]){ const we=new THREE.Mesh(new THREE.BoxGeometry(.14,bh,LD-2),glassLM); we.position.set(sx*(LW/2-.04),by,0); we.userData.glaz=true; ulib.add(we) } // Seiten
+      for(let x=-LW/2+2.4;x<=LW/2-2.4;x+=2.6){ const m=new THREE.Mesh(new THREE.BoxGeometry(.1,bh,.2),panelM); m.position.set(x,by,LF-.01); ulib.add(m) } } // Fenster-Sprossen
     /* 4) SIGNATURE: Reihe ANGEWINKELTER Oberlicht-Paneele an der oberen Front (wie Fotos) */
-    for(let i=0;i<9;i++){ const pnl=new THREE.Mesh(new THREE.BoxGeometry(3.0,3.0,.5),panelM)
-      pnl.position.set(-LW/2+3.2+i*((LW-6.4)/8), gH+.6+boxH*.62, LF+.05); pnl.rotation.x=-.5; pnl.castShadow=true; ulib.add(pnl) }
+    for(let i=0;i<11;i++){ const pnl=new THREE.Mesh(new THREE.BoxGeometry(3.0,3.0,.5),panelM)
+      pnl.position.set(-LW/2+3.4+i*((LW-6.8)/10), gH+.6+boxH*.7, LF+.05); pnl.rotation.x=-.5; pnl.castShadow=true; ulib.add(pnl) }
     /* 5) Flaches Dach */
     const lroof=new THREE.Mesh(new THREE.BoxGeometry(LW+.6,.5,LD+.6),slabM); lroof.position.y=gH+.6+boxH+.25; lroof.castShadow=true; ulib.add(lroof)
     SITE.uniLibBuilt=1 }
