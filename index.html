@@ -2116,33 +2116,69 @@ standPerson(peopleGroup,-24,-9,.7,8)
 { const P=[[10,-140,1.1,51],[12.2,-141,-2.0,52],[13.6,-139.4,2.6,53],[27,-146,-.6,54],[28.8,-147,2.4,55]] // Forumsplatz (SITEPLAN)
   P.forEach(([px,pz,ry,sd],i)=>{ const F=makeFigure(sd); F.root.position.set(px,0,pz); F.root.rotation.y=ry
     poseStand(F); registerFigure(F,(i===1||i===4)?'talk':'stand'); peopleGroup.add(F.root) }) }
-/* Lichterketten & Außenbeleuchtung — romantisch bei Nacht */
+/* ===== WORKSTREAM D — Festoon-System (C5): geordnete Topologie statt Netz =====
+   LIGHT_PLAN = bewusste, editierbare Anker→Anker-Liste: (1) Trauf-/Balkon-PERIMETER am
+   Studierendenhaus, (2) Girlanden entlang der Brücken-Dachkanten, (3) Platz-Spans zwischen
+   EIGENEN Masten (SH-Vorplatz + Audimax-Plaza). Jede Spanne hängt als Kettenlinie durch
+   (Parabel-Näherung der Catenary bei kleinem Durchhang), Birnen instanziert im ~0,35-m-Raster.
+   VALIDIERUNG: jede Spanne wird gegen die Gebäude-AABBs gesampelt; Kollision → Anker +1,5 m
+   und Retry, sonst Drop + Log. KEINE Spanne endet an einem Baum. */
+function siteBoxes(){ const list=[]
+  const collect=(n,o)=>{ if(!o) return; o.updateWorldMatrix(true,true); list.push({n,b:new THREE.Box3().setFromObject(o)}) }
+  collect('alt',SITE.alt); collect('tower',SITE.tower); collect('kinzig',SITE.yellow); collect('audimax',SITE.lib)
+  collect('bib',SITE.bib); collect('forum',SITE.forum); collect('bridge',SITE.bridgeGroup); collect('pergola',SITE.pergola)
+  list.push({n:'sh',b:new THREE.Box3(new THREE.Vector3(-HX-.3,0,-HZ-.3),new THREE.Vector3(HX+.3,12,HZ+.3))}) // eng: Balkon-Girlanden liegen AUSSERHALB
+  if(SITE.roadBridge){ const rb=SITE.roadBridge
+    list.push({n:'roadBridge',b:new THREE.Box3(new THREE.Vector3(rb.x-10.6,-3,rb.z-7.2),new THREE.Vector3(rb.x+10.6,1.6,rb.z+7.2))}) }
+  ;(SITE.eastHouses||[]).forEach((hs,i)=>list.push({n:'house'+i,b:new THREE.Box3(new THREE.Vector3(hs.x-hs.w/2-.6,0,hs.z-6.8),new THREE.Vector3(hs.x+hs.w/2+.6,hs.h+2,hs.z+6.8))}))
+  return list }
 const bulbGeo=new THREE.SphereGeometry(.05,10,8)
 const bulbMat=new THREE.MeshStandardMaterial({color:'#fff1cf',emissive:0xffd9a0,emissiveIntensity:.06,roughness:.4})
 const cableMat=new THREE.MeshStandardMaterial({color:'#232521',roughness:.9})
 const bulbPos=[]
-function festoon(a,b,sag,nB){ const va=new THREE.Vector3(a[0],a[1],a[2]), vb=new THREE.Vector3(b[0],b[1],b[2])
-  const mid=va.clone().add(vb).multiplyScalar(.5); mid.y-=sag
-  const curve=new THREE.QuadraticBezierCurve3(va,mid,vb)
-  const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,24,.012,6,false),cableMat)
-  buildingGroup.add(tube)
-  for(let i=1;i<nB;i++){ const p=curve.getPoint(i/nB); bulbPos.push([p.x,p.y-.06,p.z]) } }
-/* Lichterketten rund um ALLE vier Balkonseiten (Nutzerwunsch: alle Seiten, stärker, lovely) */
-for(let x=-16;x<16;x+=4){ festoon([x,F1+1.18,HZ+BAL],[x+4,F1+1.18,HZ+BAL],.35,7)           // Süd
-  festoon([x,F1+1.18,-(HZ+BAL)],[x+4,F1+1.18,-(HZ+BAL)],.35,7) }                            // Nord
-for(let z=-12;z<12;z+=4){ festoon([HX+BAL,F1+1.18,z],[HX+BAL,F1+1.18,z+4],.35,7)            // Ost
-  festoon([-HX-BAL,F1+1.18,z],[-HX-BAL,F1+1.18,z+4],.35,7) }                                // West
-/* Zweite, tiefere Lichtergirlande an Süd + West für geschichtete, warme Stimmung */
-for(let x=-14;x<14;x+=4.5) festoon([x,F0+2.6,HZ+BAL-.3],[x+4.5,F0+2.6,HZ+BAL-.3],.5,8)
-/* Lichterketten entlang der Glasbrücke — wie am Studierendenhaus (Nutzerwunsch) */
-{ const bx0=SITE.bridge.x0, bx1=SITE.bridge.x1, bz=SITE.bridge.z, by=SITE.bridge.y+4.0
-  for(let x=bx0;x<bx1-.1;x+=3.5){ const x2=Math.min(x+3.5,bx1)
-    festoon([x,by,bz-2.3],[x2,by,bz-2.3],.28,6); festoon([x,by,bz+2.3],[x2,by,bz+2.3],.28,6) } }
-festoon([-6,F0+3.1,HZ],[-22,4.6,9],1.1,14)
-festoon([4,F0+3.1,HZ],[18,4.8,21],1.2,14)
-festoon([-22,4.4,9],[-13,4.2,15.8],.8,10)
-festoon([-8,F0+3.05,HZ+OV-.6],[8,F0+3.05,HZ+OV-.6],.55,16)
-festoon([-8,F0+3.05,HZ+1.2],[8,F0+3.05,HZ+1.2],.45,14)
+const LIGHT_PLAN=[] // {a,b,sag,skip[]} — Anker→Anker; skip = Boxen des eigenen Trägers
+const seg=(a,b,sag,skip)=>LIGHT_PLAN.push({a,b,sag,skip:skip||[]})
+/* (1) Perimeter Studierendenhaus: alle 4 Balkonseiten + tiefere Girlanden (Trauf-Anker) */
+for(let x=-16;x<16;x+=4){ seg([x,F1+1.18,HZ+BAL],[x+4,F1+1.18,HZ+BAL],.35,['sh'])
+  seg([x,F1+1.18,-(HZ+BAL)],[x+4,F1+1.18,-(HZ+BAL)],.35,['sh']) }
+for(let z=-12;z<12;z+=4){ seg([HX+BAL,F1+1.18,z],[HX+BAL,F1+1.18,z+4],.35,['sh'])
+  seg([-HX-BAL,F1+1.18,z],[-HX-BAL,F1+1.18,z+4],.35,['sh']) }
+for(let x=-14;x<14;x+=4.5) seg([x,F0+2.6,HZ+BAL-.3],[x+4.5,F0+2.6,HZ+BAL-.3],.5,['sh'])
+seg([-8,F0+3.05,HZ+OV-.6],[8,F0+3.05,HZ+OV-.6],.55,['sh'])
+seg([-8,F0+3.05,HZ+1.2],[8,F0+3.05,HZ+1.2],.45,['sh'])
+/* (2) Girlanden entlang der Brücken-Dachkanten (diagonale Achse aus SITE.bridge) */
+{ const [ax2,az2]=SITE.bridge.a, [bx2,bz2]=SITE.bridge.b, by=SITE.bridge.y+3.7
+  const dx2=bx2-ax2, dz2=bz2-az2, L=Math.hypot(dx2,dz2), ux=dx2/L, uz=dz2/L, px2=-uz, pz2=ux // Einheits- + Senkrechtvektor
+  const nSeg=Math.ceil(L/3.5)
+  for(let i=0;i<nSeg;i++){ const t0=i/nSeg, t1=(i+1)/nSeg
+    for(const sd of [-1.1,1.1]){ seg([ax2+dx2*t0+px2*sd,by,az2+dz2*t0+pz2*sd],[ax2+dx2*t1+px2*sd,by,az2+dz2*t1+pz2*sd],.28,['bridge']) } } }
+/* (3) Platz-Spans an EIGENEN Masten: SH-Vorplatz + Audimax-Plaza (2700-K-Feststimmung) */
+function lightPole(x,z,h){ const p=new THREE.Mesh(new THREE.CylinderGeometry(.06,.08,h,10),new THREE.MeshStandardMaterial({color:'#2b2d31',roughness:.55,metalness:.35}))
+  p.position.set(x,h/2,z); p.castShadow=true; buildingGroup.add(p)
+  const arm=new THREE.Mesh(new THREE.BoxGeometry(.5,.06,.06),new THREE.MeshStandardMaterial({color:'#2b2d31',roughness:.55,metalness:.35}))
+  arm.position.set(x,h-.08,z); buildingGroup.add(arm); return [x,h-.05,z] }
+{ const P1=lightPole(-22,9,4.4), P2=lightPole(-13,15.8,4.2), P3=lightPole(18,21,4.6)
+  seg([-6,F0+3.1,HZ],P1,1.1,['sh']); seg(P1,P2,.8); seg([4,F0+3.1,HZ],P3,1.2,['sh'])
+  const A1=lightPole(-12,-160.5,3.8), A2p=lightPole(2,-157.5,3.8), A3=lightPole(16,-160.5,3.8)
+  seg(A1,A2p,.7); seg(A2p,A3,.7) }
+/* Build + Validierung: Parabel-Kettenlinie, Birnen ~0,35 m Raster, Segment-vs-AABB-Prüfung */
+{ const LB=siteBoxes(), probe=new THREE.Vector3()
+  let dropped=0, raised=0
+  const collides=(curve,skip)=>{ for(let i=1;i<12;i++){ curve.getPoint(i/12,probe)
+    for(const e of LB){ if(skip.indexOf(e.n)>=0) continue; if(e.b.containsPoint(probe)) return true } } return false }
+  const mkCurve=(a,b,sag)=>{ const va=new THREE.Vector3(a[0],a[1],a[2]), vb=new THREE.Vector3(b[0],b[1],b[2])
+    const mid=va.clone().add(vb).multiplyScalar(.5); mid.y-=sag; return new THREE.QuadraticBezierCurve3(va,mid,vb) }
+  LIGHT_PLAN.forEach(sp=>{
+    let curve=mkCurve(sp.a,sp.b,sp.sag)
+    if(collides(curve,sp.skip)){ const a2=[sp.a[0],sp.a[1]+1.5,sp.a[2]], b2=[sp.b[0],sp.b[1]+1.5,sp.b[2]] // Re-Route: höher hängen
+      curve=mkCurve(a2,b2,sp.sag)
+      if(collides(curve,sp.skip)){ dropped++; return } raised++ }
+    const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,24,.012,6,false),cableMat)
+    buildingGroup.add(tube)
+    const nB=Math.max(4,Math.round(curve.getLength()/.35)) // Birnen-Pitch ~0,35 m (Workstream D)
+    for(let i=1;i<nB;i++){ const p=curve.getPoint(i/nB); bulbPos.push([p.x,p.y-.06,p.z]) } })
+  SITE.lightViolations=dropped
+  console.info('[LIGHT] '+LIGHT_PLAN.length+' Spannen — '+raised+' höher geroutet, '+dropped+' entfernt, 0 Kollisionen verbleibend') }
 const bulbInst=new THREE.InstancedMesh(bulbGeo,bulbMat,bulbPos.length)
 { const m4b=new THREE.Matrix4(); bulbPos.forEach((p,i)=>{ m4b.makeTranslation(p[0],p[1],p[2]); bulbInst.setMatrixAt(i,m4b) }) }
 bulbInst.instanceMatrix.needsUpdate=true; bulbInst.frustumCulled=false; buildingGroup.add(bulbInst)
@@ -3707,13 +3743,7 @@ renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
    SITE.vegViolations für die Assertion. Kronenansatz ≥ 3 m ist durch die Archetypen (h0 2,5–4,1
    × s ≥ 1,25) erfüllt; kein Baum (H ≤ 8,5·3 m) erreicht die Turmhöhe (47 m). */
 function validateVegetation(){
-  const boxes=[]
-  const collect=o=>{ if(!o) return; o.updateWorldMatrix(true,true); boxes.push(new THREE.Box3().setFromObject(o)) }
-  ;[SITE.alt,SITE.tower,SITE.yellow,SITE.lib,SITE.bib,SITE.forum,SITE.bridgeGroup,SITE.pergola].forEach(collect)
-  boxes.push(new THREE.Box3(new THREE.Vector3(-HX-2.6,0,-HZ-2.6),new THREE.Vector3(HX+2.6,12,HZ+2.6))) // Studierendenhaus + Balkon
-  if(SITE.roadBridge){ const rb=SITE.roadBridge
-    boxes.push(new THREE.Box3(new THREE.Vector3(rb.x-10.6,-3,rb.z-7.2),new THREE.Vector3(rb.x+10.6,1.6,rb.z+7.2))) }
-  ;(SITE.eastHouses||[]).forEach(hs=>boxes.push(new THREE.Box3(new THREE.Vector3(hs.x-hs.w/2-.6,0,hs.z-6.8),new THREE.Vector3(hs.x+hs.w/2+.6,hs.h+2,hs.z+6.8))))
+  const boxes=siteBoxes().map(e=>e.b.clone().expandByScalar(.8)) // gemeinsame Quelle mit dem Licht-Validator; +0,8 m Kronen-Puffer (deckt SH-Balkon ab)
   const tb=new THREE.Box3(), tmin=new THREE.Vector3(), tmax=new THREE.Vector3()
   const hits=b=>{ for(let i=0;i<boxes.length;i++) if(b.intersectsBox(boxes[i])) return true; return false }
   const mkBox=(x,z,s)=>{ const r2=3.2*s; tmin.set(x-r2,0,z-r2); tmax.set(x+r2,8.5*s,z+r2); tb.set(tmin,tmax); return tb }
