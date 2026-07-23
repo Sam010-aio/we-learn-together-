@@ -14,11 +14,11 @@
 /* ===== Delivery / Build-Sichtbarkeit (LIGHTNESS RESCUE Ph0) =====
    EINE Quelle der Build-Kennung — geteilt mit sw.js (Cache-Name = kommilo-v${id}). Sichtbar als
    dezenter Fuß-Stempel und im ?debug=perf-Overlay; so ist am Bildschirm ablesbar, welcher Build läuft. */
-window.__BUILD = { id: '2026.07.23-11845d3', date: '2026-07-23', hash: '11845d3' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
+window.__BUILD = { id: '2026.07.23-d53dbc5', date: '2026-07-23', hash: 'd53dbc5' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
 (function(){
   // Fuß-Stempel setzen, sobald der Body existiert (robust — auch wenn die 3D-App nicht bootet)
   function stamp(){ var el=document.getElementById('buildstamp'); if(!el) return
-    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-11845d3 (Format laut Spezifikation)
+    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-d53dbc5 (Format laut Spezifikation)
   if(document.readyState!=='loading') stamp(); else addEventListener('DOMContentLoaded', stamp)
   if(!('serviceWorker' in navigator)) return
   // Selbst-enthaltener Reload-Hinweis — unabhängig vom App-Toast, wirkt auch bei kaputter/veralteter App
@@ -1822,7 +1822,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
      zurückgesetzten, verglasten Lesesaal-EG (warm beleuchtet) auf Pilotis. REIN ADDITIV — nichts
      verschoben/gelöscht. Front (lokal +z, rot −90°) → WESTEN zum Platz/zur Straße. ===== */
   { const ulib=new THREE.Group(); ulib.position.set(43,0,-152); ulib.rotation.y=-Math.PI/2; buildingGroup.add(ulib); SITE.uniLib=ulib // Owner: Norden; nach Osten verbreitert (Westkante bleibt an der Straße)
-    const LW=76, LD=34, gH=4.4, boxH=11, LF=LD/2   // Owner: LÄNGER (76) + BREITER/tiefer (34, Rechteck Bild 2)
+    const LW=58, LD=34, gH=4.4, boxH=11, LF=LD/2   // Owner: kürzer (nur bis Forum-Kante, Bild 2) + tiefer (34)
     const concM=new THREE.MeshStandardMaterial({color:'#b3a992',roughness:.92})                                   // warmer Sichtbeton
     const glassLM=new THREE.MeshStandardMaterial({color:'#242a2e',roughness:.15,metalness:.45})
     const warmM=new THREE.MeshStandardMaterial({color:'#f0d49a',emissive:0xe0b060,emissiveIntensity:.5,roughness:.6}) // Lesesaal-Innenlicht (warm)
@@ -1840,16 +1840,16 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     const box=new THREE.Mesh(new THREE.BoxGeometry(LW,boxH,LD),concM); box.position.set(0,gH+.6+boxH/2,0); box.castShadow=true; box.receiveShadow=true; ulib.add(box)
     /* 4) SIGNATURE (Owner-Foto): projizierende, GEKIPPTE FENSTERKÄSTEN an BEIDEN Langseiten —
        weißer Betonrahmen ragt ~1,35 m aus der Wand, dunkle Scheibe innen; Reihe entlang der oberen Fassade. */
-    { const NW=Math.round(LW/6.2), wy=gH+.6+boxH*.52, prj=1.35
-      for(const side of [1,-1]) for(let i=0;i<NW;i++){ const x=-LW/2+(LW/NW)*(i+.5)
+    { const wy=gH+.6+boxH*.52, prj=1.35, ww=3.0
+      const whiteWin=new THREE.MeshStandardMaterial({color:'#f4f3ef',roughness:.55})   // Owner: völlig WEISS, keine dunkle Mitte
+      // Langseiten: 5 Fensterkästen DIREKT NEBENEINANDER, links beginnend (Owner Bild 1)
+      for(const side of [1,-1]) for(let i=0;i<5;i++){ const x=-LW/2+2.6+ww*(i+.5)
         const fr=new THREE.Group(); fr.position.set(x,wy,side*LF); fr.rotation.x=-side*.42; ulib.add(fr)
-        const frame=new THREE.Mesh(new THREE.BoxGeometry(2.8,2.8,prj),panelM); frame.position.z=side*prj/2; frame.castShadow=true; fr.add(frame)
-        const pane=new THREE.Mesh(new THREE.BoxGeometry(2.1,2.1,.08),glassLM); pane.position.z=side*(prj+.05); pane.userData.glaz=true; fr.add(pane) }
-      /* Owner: auch an den STIRNSEITEN je 5 projizierende Fensterkästen */
-      for(const side of [1,-1]) for(let i=0;i<5;i++){ const z=-LD/2+(LD/5)*(i+.5)
+        const frame=new THREE.Mesh(new THREE.BoxGeometry(ww-.12,2.9,prj),whiteWin); frame.position.z=side*prj/2; frame.castShadow=true; fr.add(frame) }
+      // Stirnseiten: je 5 weiße Kästen direkt nebeneinander
+      for(const side of [1,-1]) for(let i=0;i<5;i++){ const z=-LD/2+2.6+ww*(i+.5)
         const fr=new THREE.Group(); fr.position.set(side*LW/2,wy,z); fr.rotation.z=side*.42; ulib.add(fr)
-        const frame=new THREE.Mesh(new THREE.BoxGeometry(prj,2.8,2.8),panelM); frame.position.x=side*prj/2; frame.castShadow=true; fr.add(frame)
-        const pane=new THREE.Mesh(new THREE.BoxGeometry(.08,2.1,2.1),glassLM); pane.position.x=side*(prj+.05); pane.userData.glaz=true; fr.add(pane) } }
+        const frame=new THREE.Mesh(new THREE.BoxGeometry(prj,2.9,ww-.12),whiteWin); frame.position.x=side*prj/2; frame.castShadow=true; fr.add(frame) } }
     /* Sheddach-Zahnung (Dreiecksprismen quer über die Tiefe) entlang der Dachkante — wie Foto */
     { const NS=Math.round(LW/5.2), sy=gH+.6+boxH+.55, prism=new THREE.CylinderGeometry(1.0,1.0,LD-1.5,3)
       for(let i=0;i<NS;i++){ const s=new THREE.Mesh(prism,slabM); s.rotation.x=Math.PI/2; s.position.set(-LW/2+(LW/NS)*(i+.5),sy,0); s.castShadow=true; ulib.add(s) } }
@@ -2124,14 +2124,14 @@ SITE.ufergasse=0
     const t=tx(c); return t }
   const roofM2=new THREE.MeshStandardMaterial({color:'#54504a',roughness:.95})
   SITE.eastHouses=[]
-  ;[['#d9c47a',106,-56,16,13],['#cfc6b4',110,-34,18,10],['#d9c47a',108,-14,15,12.5],['#c9b998',111,6,20,10.5],['#d3c8b2',109,24,16,12],['#cbbd9d',98,-146,18,14]].forEach(([col,hx,hz,hw,hh2])=>{
+  ;[].forEach(([col,hx,hz,hw,hh2])=>{ /* Owner (Bild 4): Kulissen-Wohnzeilen alle entfernt */
     const m=new THREE.MeshStandardMaterial({map:facTex(col),roughness:.85})
     const b=new THREE.Mesh(new THREE.BoxGeometry(hw,hh2,12),m); b.position.set(hx,hh2/2,hz); b.castShadow=true; b.receiveShadow=true; buildingGroup.add(b)
     const r=new THREE.Mesh(new THREE.BoxGeometry(hw+.8,1.6,13),roofM2); r.position.set(hx,hh2+.8,hz); r.castShadow=true; buildingGroup.add(r)
     SITE.eastHouses.push({x:hx,z:hz,w:hw,h:hh2}) }) }
 { /* Holzsteg (Gestaltungselement, Dossier B8: „weiter nördlich, mit Widerlagern in den Böschungen"):
      Gruppe quert den Fluss O-W bei z=−140; lokale Spannachse z → Welt-x via 90°-Drehung. */
-  const wb=new THREE.Group(); wb.position.set(okerX(50),0,50); wb.rotation.y=Math.PI/2; buildingGroup.add(wb) // V2: Holzsteg an den SW-Bogen
+  const wb=new THREE.Group(); wb.position.set(okerX(50),0,50); wb.rotation.y=Math.PI/2; buildingGroup.add(wb); wb.visible=false // Owner (Bild 3, X): kleine Brücke/Holzsteg entfernt — nur die breite Straßenbrücke bleibt
   const bx2=0
   const span=17.4, z0=-span/2, wpl=2.3
   const wood=new THREE.MeshStandardMaterial({color:'#84725a',roughness:.85})
