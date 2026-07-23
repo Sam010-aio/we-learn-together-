@@ -5,8 +5,8 @@
      deterministisch; `activate` löscht alle Fremd-Caches.
    - skipWaiting + clients.claim → der neue Worker übernimmt sofort; die Seite zeigt den Reload-Hinweis.
    - Vendored three.js (/vendor/) + CORE + CDN-Fallback (Fonts/Foto-Texturen): CACHE-FIRST (immutabel). */
-const BUILD = '2026.07.23-14d4a99';         // GLEICHE Zeichenkette wie window.__BUILD.id in index.html (Delivery-Stempel)
-const CACHE = 'kommilo-v' + BUILD;          // Cache-Name direkt aus dem Build-Stempel abgeleitet → kommilo-v2026.07.23-14d4a99
+const BUILD = '2026.07.23-b2572a0';         // GLEICHE Zeichenkette wie window.__BUILD.id in index.html (Delivery-Stempel)
+const CACHE = 'kommilo-v' + BUILD;          // Cache-Name direkt aus dem Build-Stempel abgeleitet → kommilo-v2026.07.23-b2572a0
 const CORE  = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png',
                './vendor/three/three.module.js']; // App-kritische Boot-Bytes vorab
 self.addEventListener('install', e => {

@@ -14,11 +14,11 @@
 /* ===== Delivery / Build-Sichtbarkeit (LIGHTNESS RESCUE Ph0) =====
    EINE Quelle der Build-Kennung — geteilt mit sw.js (Cache-Name = kommilo-v${id}). Sichtbar als
    dezenter Fuß-Stempel und im ?debug=perf-Overlay; so ist am Bildschirm ablesbar, welcher Build läuft. */
-window.__BUILD = { id: '2026.07.23-14d4a99', date: '2026-07-23', hash: '14d4a99' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
+window.__BUILD = { id: '2026.07.23-b2572a0', date: '2026-07-23', hash: 'b2572a0' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
 (function(){
   // Fuß-Stempel setzen, sobald der Body existiert (robust — auch wenn die 3D-App nicht bootet)
   function stamp(){ var el=document.getElementById('buildstamp'); if(!el) return
-    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-14d4a99 (Format laut Spezifikation)
+    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-b2572a0 (Format laut Spezifikation)
   if(document.readyState!=='loading') stamp(); else addEventListener('DOMContentLoaded', stamp)
   if(!('serviceWorker' in navigator)) return
   // Selbst-enthaltener Reload-Hinweis — unabhängig vom App-Toast, wirkt auch bei kaputter/veralteter App
@@ -1620,16 +1620,15 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
        Der fertige N-S-Straßenflügel wird GEKLONT (Geometrie/Material geteilt → 0 neue Assets) und am
        Nordende um 90° nach WESTEN gekniet; zusammen ergeben sie die NE-Ecke des Blockrands. Als Kind von
        A2 = SITE.alt läuft er automatisch durch mergeStatic (Draw-Call-Merge) und den Kollisionsvalidator. */
-    { const A2b=A2.clone(true); A2b.position.set(-44.5,0,-45); A2b.rotation.set(0,-Math.PI/2,0); A2b.scale.z=.7   // Nordflügel — mittellang (NICHT identisch zur Prachtfront)
-      const A2c=A2.clone(true); A2c.position.set(-44.5,0,45);  A2c.rotation.set(0,-Math.PI/2,0); A2c.scale.z=.3   // Owner: Südflügel NUR KURZ entlang dem kleinen Parkplatz → 3 Seiten unterschiedlich lang
-      A2.add(A2b); A2.add(A2c); SITE.altWings=3 }
+    { const A2b=A2.clone(true); A2b.position.set(-44.5,0,-45); A2b.rotation.set(0,-Math.PI/2,0); A2b.scale.z=.7   // Nordflügel — mit dem Prachtflügel VERBUNDEN (Ostende X−4 = Rückwand)
+      A2.add(A2b); SITE.altWings=2 } // Owner: getrennter Südflügel entfernt → Altgebäude läuft durchgehend (Prachtfront + Nordflügel), kein loser Block
   }
   /* ===== B4 Okerhochhaus — SITEPLAN/Dossier C2: (53,−72), Grundriss 26×15 m, 13 OG à 3,3 m
      über doppelgeschossig verglastem Sockel + zurückgesetzter dunkler Technikaufbau ≈ 47 m.
      Langseite (lokal x) mit ry=12° ≈ parallel zur Altgebäude-Rückseite; Waffelraster-Langfassaden
      nach Nord/Süd, fensterlose Plattenraster-Schmalseiten nach Ost/West (B5). */
-  const hh=new THREE.Group(); hh.position.set(-30,0,-58); hh.rotation.y=Math.PI; buildingGroup.add(hh); SITE.tower=hh // Owner: DIREKT hinter die Rückwand des Altgebäude-Prachtflügels, Brücken-Stirn (lokal −x) nach OSTEN zum alten Haus
-  const T_LONG=26, T_SHORT=15, T_BASEH=4.5, T_FLOORS=13, T_FLH=3.3, T_AXES=10 // lange Achse lokal x ≈ Welt O-W
+  const hh=new THREE.Group(); hh.position.set(-30,0,-58); hh.rotation.y=Math.PI/2; buildingGroup.add(hh); SITE.tower=hh // Owner: 90° gedreht (breite Slab-Front N-S, parallel zur Altgebäude-Rückwand)
+  const T_LONG=36, T_SHORT=11, T_BASEH=4.5, T_FLOORS=13, T_FLH=3.3, T_AXES=12 // Owner: breiter (36) aber dünner (11) — flache Scheibe
   const T_GRIDH=T_FLOORS*T_FLH, T_TOP=T_BASEH+T_GRIDH                          // 42.9 / 47.4 (Dossier ≈ 47 m)
   const concGrid=new THREE.MeshStandardMaterial({color:'#c4c3bc',roughness:.72,metalness:.04}) // warmer heller Betonrahmen
   const glazM=new THREE.MeshStandardMaterial({color:'#2b333b',roughness:.2,metalness:.5})       // dunkle, spiegelnde Scheibe
@@ -1681,7 +1680,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     /* Brücken-Landeöffnung in der WESTstirn (lokal −x), OK Boden +7 m — bündiger Anschluss (C3) */
     const bOp=new THREE.Mesh(new THREE.BoxGeometry(.3,3.2,3.4),glassE); bOp.position.set(ex-.1,8.6,0); hh.add(bOp)
     const bSur=new THREE.Mesh(new THREE.BoxGeometry(.2,3.7,3.9),aluE); bSur.position.set(ex-.16,8.6,0); hh.add(bSur)
-    SITE.towerBridgeAnchor=new THREE.Vector3(ex,8.6,0).applyEuler(hh.rotation).add(hh.position) // Welt ≈ (40.3, 8.6, −69.3)
+    SITE.towerBridgeAnchor=new THREE.Vector3(hh.position.x+T_SHORT/2,8.6,hh.position.z) // Owner: Ost-Langseite des gedrehten Turms → kurze Brücke zur Rückwand des alten Hauses
     SITE.towerEntrance=1 }
   /* ===== B3 „gelbes Haus" — NEUBAU nach Fotos (docs §16): reales MODERNES Plattenbau-Gebäude
      (Keramik-Vorhangfassade), kein Giebelhäuschen. 20×14 m, 2 Geschosse, Traufe 7.5 m,
@@ -1691,7 +1690,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
   { /* SITEPLAN/Dossier B7+C10: Kinzig-Giebelhaus (70,−86), 22×12 m, Traufe 9 / First 13,5 m,
        −8°; First O-W (Dachflächen → Nord/Süd), PV-Feld auf der SÜD-Fläche; Eingangs-Giebel
        (lokal +x) → Osten zur Ufergasse (B7), Fassade P (lokal −x) → Westen zum Parkplatz. */
-    const gb=new THREE.Group(); gb.position.set(-58,0,-58); gb.rotation.y=0; buildingGroup.add(gb); SITE.yellow=gb // Owner: neben den Okerhochhaus hinter dem Prachtflügel
+    const gb=new THREE.Group(); gb.position.set(-48,0,-25); gb.rotation.y=0; buildingGroup.add(gb); SITE.yellow=gb // Owner: GETRENNT vom Turm, eigenständig vorn-links positioniert (Bild 2)
     const GW=22, GD=12, GBODY=9, GPEAK=4.5, RIDGE=GBODY+GPEAK // 22×12, Traufe 9, First 13,5 (Dossier)
     SITE.b3=[GW,GD,RIDGE] // für Assertion (Grundriss + Firsthöhe)
     /* Keramik-Paneele: horizontale Läuferverband-Platten (120×30 cm), dünne dunkle Fugen, leichter Glanz */
@@ -4024,7 +4023,7 @@ function verifySitePlan(){
   const alt=wp(SITE.alt), tw=wp(SITE.tower), au=wp(SITE.lib)
   chk('Studierendenhaus am Ursprung', true, '(0,0) fix')
   chk('Altgebäude ≈ (+4,−78) an der Pockelsstraße', near(alt.x,4,4)&&near(alt.z,-78,4), `(${alt.x.toFixed(0)},${alt.z.toFixed(0)})`)
-  chk('Altgebäude U-Blockrand (3 Flügel: Straße + Nord + Süd am Parkplatz)', SITE.altWings===3, `Flügel=${SITE.altWings||1}`)
+  chk('Altgebäude durchgehend (Prachtfront + verbundener Nordflügel, kein loser Block)', SITE.altWings===2, `Flügel=${SITE.altWings||1}`)
   const aN=new THREE.Vector3(1,0,0).applyQuaternion(SITE.alt.quaternion)
   chk('Altgebäude Portalfront nach OSTEN', aN.x>.9, `Front-Normale x=${aN.x.toFixed(2)}`)
   chk('Okerhochhaus an der Altgebäude-Rückwand ≈ (−30,−58)', near(tw.x,-30,4)&&near(tw.z,-58,4), `(${tw.x.toFixed(0)},${tw.z.toFixed(0)})`)
