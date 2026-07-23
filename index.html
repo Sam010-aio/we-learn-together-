@@ -14,11 +14,11 @@
 /* ===== Delivery / Build-Sichtbarkeit (LIGHTNESS RESCUE Ph0) =====
    EINE Quelle der Build-Kennung — geteilt mit sw.js (Cache-Name = kommilo-v${id}). Sichtbar als
    dezenter Fuß-Stempel und im ?debug=perf-Overlay; so ist am Bildschirm ablesbar, welcher Build läuft. */
-window.__BUILD = { id: '2026.07.23-3a4f222', date: '2026-07-23', hash: '3a4f222' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
+window.__BUILD = { id: '2026.07.23-0b8ab57', date: '2026-07-23', hash: '0b8ab57' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
 (function(){
   // Fuß-Stempel setzen, sobald der Body existiert (robust — auch wenn die 3D-App nicht bootet)
   function stamp(){ var el=document.getElementById('buildstamp'); if(!el) return
-    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-3a4f222 (Format laut Spezifikation)
+    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-0b8ab57 (Format laut Spezifikation)
   if(document.readyState!=='loading') stamp(); else addEventListener('DOMContentLoaded', stamp)
   if(!('serviceWorker' in navigator)) return
   // Selbst-enthaltener Reload-Hinweis — unabhängig vom App-Toast, wirkt auch bei kaputter/veralteter App
