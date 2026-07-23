@@ -14,11 +14,11 @@
 /* ===== Delivery / Build-Sichtbarkeit (LIGHTNESS RESCUE Ph0) =====
    EINE Quelle der Build-Kennung — geteilt mit sw.js (Cache-Name = kommilo-v${id}). Sichtbar als
    dezenter Fuß-Stempel und im ?debug=perf-Overlay; so ist am Bildschirm ablesbar, welcher Build läuft. */
-window.__BUILD = { id: '2026.07.23-522297f', date: '2026-07-23', hash: '522297f' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
+window.__BUILD = { id: '2026.07.23-e761846', date: '2026-07-23', hash: 'e761846' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
 (function(){
   // Fuß-Stempel setzen, sobald der Body existiert (robust — auch wenn die 3D-App nicht bootet)
   function stamp(){ var el=document.getElementById('buildstamp'); if(!el) return
-    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-522297f (Format laut Spezifikation)
+    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-e761846 (Format laut Spezifikation)
   if(document.readyState!=='loading') stamp(); else addEventListener('DOMContentLoaded', stamp)
   if(!('serviceWorker' in navigator)) return
   // Selbst-enthaltener Reload-Hinweis — unabhängig vom App-Toast, wirkt auch bei kaputter/veralteter App
@@ -1821,7 +1821,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
      brutalistischer Betonriegel mit Reihe ANGEWINKELTER Oberlicht-Paneele oben, über einem
      zurückgesetzten, verglasten Lesesaal-EG (warm beleuchtet) auf Pilotis. REIN ADDITIV — nichts
      verschoben/gelöscht. Front (lokal +z, rot −90°) → WESTEN zum Platz/zur Straße. ===== */
-  { const ulib=new THREE.Group(); ulib.position.set(38,0,-98); ulib.rotation.y=-Math.PI/2; buildingGroup.add(ulib); SITE.uniLib=ulib
+  { const ulib=new THREE.Group(); ulib.position.set(35,0,-152); ulib.rotation.y=-Math.PI/2; buildingGroup.add(ulib); SITE.uniLib=ulib // Owner (Satellit-X): nach NORDEN, nicht in die Mitte
     const LW=34, LD=18, gH=4.4, boxH=11, LF=LD/2
     const concM=new THREE.MeshStandardMaterial({color:'#b3a992',roughness:.92})                                   // warmer Sichtbeton
     const glassLM=new THREE.MeshStandardMaterial({color:'#242a2e',roughness:.15,metalness:.45})
