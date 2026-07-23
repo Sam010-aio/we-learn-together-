@@ -14,11 +14,11 @@
 /* ===== Delivery / Build-Sichtbarkeit (LIGHTNESS RESCUE Ph0) =====
    EINE Quelle der Build-Kennung — geteilt mit sw.js (Cache-Name = kommilo-v${id}). Sichtbar als
    dezenter Fuß-Stempel und im ?debug=perf-Overlay; so ist am Bildschirm ablesbar, welcher Build läuft. */
-window.__BUILD = { id: '2026.07.23-0b8ab57', date: '2026-07-23', hash: '0b8ab57' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
+window.__BUILD = { id: '2026.07.23-9b38e93', date: '2026-07-23', hash: '9b38e93' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
 (function(){
   // Fuß-Stempel setzen, sobald der Body existiert (robust — auch wenn die 3D-App nicht bootet)
   function stamp(){ var el=document.getElementById('buildstamp'); if(!el) return
-    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-0b8ab57 (Format laut Spezifikation)
+    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-9b38e93 (Format laut Spezifikation)
   if(document.readyState!=='loading') stamp(); else addEventListener('DOMContentLoaded', stamp)
   if(!('serviceWorker' in navigator)) return
   // Selbst-enthaltener Reload-Hinweis — unabhängig vom App-Toast, wirkt auch bei kaputter/veralteter App
@@ -275,8 +275,8 @@ const sceneConfig = {
     damping: .06,              // orbit inertia — "wind": instant response, ~0.6–0.9 s glide-out after release
     breatheAmp: .05,           // metres of idle vertical "breathing" drift (very subtle life)
     breatheSpeed: .22,         // Hz-ish speed of the breathing sine — slow enough to not read as a loop
-    boostScale: .75,           // Ph3 Interaction-Boost: DPR × 0.75 während aktivem Ziehen/Zoomen …
-    boostFloor: 1.0,           // … aber nie unter 1.0 (Aliasing-Boden); auf Stufen ohne DPR-Spielraum unwirksam
+    boostScale: .62,           // Ph3 Interaction-Boost: DPR × 0.62 NUR während aktivem Ziehen/Zoomen → spürbar leichtere Bewegung, jetzt auch auf DPR-1-Geräten (Handy/iGPU) wirksam …
+    boostFloor: .8,            // … aber nie unter 0.8 (milder Aliasing-Boden); volle Schärfe kehrt 250 ms nach dem Loslassen zurück → Standbild/Qualität unverändert
     boostRestoreMs: 250,       // nach dem Loslassen 250 ms entprellen, dann volle DPR/AO wiederherstellen (kein Puffer-Thrash pro Frame)
   },
   quality: {                   // LIGHTNESS RESCUE Ph2: 4 gerätebewusste Stufen (Anzeigenamen ↔ interne Keys)
@@ -1450,7 +1450,7 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
   { /* SITEPLAN: Altgebäude (15,−98), 105 (O-W) × 16 (N-S) m, Portal-LANGFRONT → Nord (−z, zum
        Forumsplatz). Gruppe um +90° gedreht: lokale +x-Front (Risalit/Portale/CAROLO) → Welt −z,
        lokale z-Längsachse → Welt x. Dossier Teil A + B4. */
-    const A2=new THREE.Group(); A2.position.set(-51,0,-82); A2.rotation.y=0; buildingGroup.add(A2); SITE.alt=A2 // V2-Satellit: Blockrand-Westseite, Portalfront OSTEN zur Pockelsstraße
+    const A2=new THREE.Group(); A2.position.set(-51,0,-60); A2.rotation.y=0; buildingGroup.add(A2); SITE.alt=A2 // Owner-Korrektur: nach Süden gezogen → Nordende räumt die Schleinitzstraße (Gebäude überquert die Straße nicht mehr), Mitte jetzt gegenüber dem Audimax
     const AX0=A2.position.x, AZ0=A2.position.z
     const WE=16, NL=105, hE=WE/2, hN=NL/2              // lokale Tiefe (→Welt-z) / lokale Länge (→Welt-x)
     const H1=2.4, H2=7.5, HB=.6, H4=6.5, wallTop=H1+H2+HB+H4
@@ -1891,17 +1891,20 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     /* ===== Forumsgebäude-Riegel — SITEPLAN: (7,−202), 52×16, H 24; 6-geschossiger grauer Riegel mit
        horizontalen Fensterbändern, SCHWEBT 4,5 m auf Rundstützen über dem Sockelflügel (B6) ===== */
     { const fg=new THREE.Group(); fg.position.set(18,0,24); uf.add(fg); SITE.forum=fg // V2: Forum-Komplex → (70,−110)
+      /* Owner: Riegel 90° NACH RECHTS (im Uhrzeigersinn) — Drehung IN PLACE um die Inhalts-Mitte (fg-lokal 7,·,−202); fg_ hebt den Versatz auf, damit die Kind-Koordinaten unverändert bleiben (mergeStatic backt die Weltmatrix) */
+      const fgPivot=new THREE.Group(); fgPivot.position.set(7,0,-202); fgPivot.rotation.y=-Math.PI/2; fg.add(fgPivot)
+      const fg_=new THREE.Group(); fg_.position.set(-7,0,202); fgPivot.add(fg_)
       const bandTex=(()=>{ const c=cvs(256),x=c.getContext('2d'); x.fillStyle='#9aa0a5'; x.fillRect(0,0,256,256)
         for(let r=0;r<6;r++){ x.fillStyle='#22282e'; x.fillRect(0,r*42+10,256,20) } // 6 horizontale Fensterbänder
         const t=tx(c); t.repeat.set(9,1); return t })()
       const slabM=new THREE.MeshStandardMaterial({map:bandTex,roughness:.55,metalness:.1})
       const greyM=new THREE.MeshStandardMaterial({color:'#9aa0a5',roughness:.6})
       const slab=new THREE.Mesh(new THREE.BoxGeometry(52,19.5,16),[greyM,greyM,greyM,greyM,slabM,slabM])
-      slab.position.set(7,4.5+9.75,-202); slab.castShadow=true; slab.receiveShadow=true; fg.add(slab)
+      slab.position.set(7,4.5+9.75,-202); slab.castShadow=true; slab.receiveShadow=true; fg_.add(slab)
       const sock=new THREE.Mesh(new THREE.BoxGeometry(30,4.5,10),new THREE.MeshStandardMaterial({color:'#31373c',roughness:.35,metalness:.3}))
-      sock.position.set(2,2.25,-202); sock.receiveShadow=true; fg.add(sock) // verglaster Sockel-/Foyerflügel
+      sock.position.set(2,2.25,-202); sock.receiveShadow=true; fg_.add(sock) // verglaster Sockel-/Foyerflügel
       for(const sz of [-194.7,-209.3]) for(let i=0;i<8;i++){ const col=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,4.5,14),greyM)
-        col.position.set(-16+i*6.6,2.25,sz); col.castShadow=true; fg.add(col) } // Rundstützen unter dem schwebenden Riegel
+        col.position.set(-16+i*6.6,2.25,sz); col.castShadow=true; fg_.add(col) } // Rundstützen unter dem schwebenden Riegel
       SITE.forumFloat=4.5 }
     /* Platzmöblierung: Bänke + Bäume in Baumscheiben am Platzrand */
     bench(-6,-133,0); bench(30,-133,0); bench(-10,-160,Math.PI/2); bench(42,-152,-Math.PI/2)
@@ -4013,7 +4016,7 @@ function verifySitePlan(){
   const chk=(n,c,v)=>out.push((c?'PASS':'FAIL')+' — '+n+' ('+v+')'), near=(a,b,t)=>Math.abs(a-b)<=t
   const alt=wp(SITE.alt), tw=wp(SITE.tower), au=wp(SITE.lib)
   chk('Studierendenhaus am Ursprung', true, '(0,0) fix')
-  chk('Altgebäude ≈ (−51,−82)', near(alt.x,-51,3)&&near(alt.z,-82,3), `(${alt.x.toFixed(0)},${alt.z.toFixed(0)})`)
+  chk('Altgebäude ≈ (−51,−60)', near(alt.x,-51,3)&&near(alt.z,-60,3), `(${alt.x.toFixed(0)},${alt.z.toFixed(0)})`)
   const aN=new THREE.Vector3(1,0,0).applyQuaternion(SITE.alt.quaternion)
   chk('Altgebäude Portalfront nach OSTEN', aN.x>.9, `Front-Normale x=${aN.x.toFixed(2)}`)
   chk('Okerhochhaus ≈ (+21,−169), Nordende', near(tw.x,21,3)&&near(tw.z,-169,3), `(${tw.x.toFixed(0)},${tw.z.toFixed(0)})`)

@@ -10,9 +10,9 @@ Filler löschen) — **keine Gebäude neu modelliert**.
 |---|---|---|---|
 | Studierendenhaus | (0, 0) | fix | unverändert am Ursprung |
 | Pockelsstraße (Achse) | X≈+20, Z −170…+35 | N-S, direkt östlich am SH | Asphalt-Rückgrat + Gehwege + Platanenreihen |
-| Altgebäude | (−51, −82) | Portalfront OSTEN | Gruppe → (−51,−82), rot 0 (Zahnschnitt neu gemappt) |
+| Altgebäude | (−51, −60) | Portalfront OSTEN | Owner-Korrektur: nach Süden gezogen (−82→−60) → Nordende räumt die Schleinitzstraße, Mitte gegenüber dem Audimax; rot 0 |
 | Audimax | (+57, −53) | Glasfront WESTEN | Gruppe → (+57,−53), rot −90° |
-| Forum-Komplex | (+70, −110) | — | Ensemble-Gruppe verschoben (Platz dazwischen) |
+| Forum-Komplex | (+70, −110) | Riegel N-S | Owner-Korrektur: Riegel 90° nach rechts (im Uhrzeigersinn) gedreht, in-place um die Inhalts-Mitte |
 | Forumsplatz | X≈+60, Z −75…−90 | zwischen Audimax & Forum | uf-Ensemble nach Osten geschoben |
 | Okerhochhaus | (+21, −169) | Nordende der Achse | Gruppe → (+21,−169), rot 0 |
 | Abt-Jerusalem-Str. | Z≈−21, X +20…+115 | E-W | neu gezeichnet |
