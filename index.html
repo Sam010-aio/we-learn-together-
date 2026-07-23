@@ -14,11 +14,11 @@
 /* ===== Delivery / Build-Sichtbarkeit (LIGHTNESS RESCUE Ph0) =====
    EINE Quelle der Build-Kennung — geteilt mit sw.js (Cache-Name = kommilo-v${id}). Sichtbar als
    dezenter Fuß-Stempel und im ?debug=perf-Overlay; so ist am Bildschirm ablesbar, welcher Build läuft. */
-window.__BUILD = { id: '2026.07.23-380fde8', date: '2026-07-23', hash: '380fde8' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
+window.__BUILD = { id: '2026.07.23-dbc5d93', date: '2026-07-23', hash: 'dbc5d93' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
 (function(){
   // Fuß-Stempel setzen, sobald der Body existiert (robust — auch wenn die 3D-App nicht bootet)
   function stamp(){ var el=document.getElementById('buildstamp'); if(!el) return
-    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-380fde8 (Format laut Spezifikation)
+    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-dbc5d93 (Format laut Spezifikation)
   if(document.readyState!=='loading') stamp(); else addEventListener('DOMContentLoaded', stamp)
   if(!('serviceWorker' in navigator)) return
   // Selbst-enthaltener Reload-Hinweis — unabhängig vom App-Toast, wirkt auch bei kaputter/veralteter App
@@ -1793,17 +1793,18 @@ bike(4.5,15.6,1.2); bike(-13.5,15.8,-1.4)
     const foyer=new THREE.Mesh(new THREE.BoxGeometry(AW-2.4,baseH,AD-2.2),darkGl); foyer.position.set(0,baseH/2,-.6); au.add(foyer)
     for(let k=0;k<9;k++){ const c=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,baseH+.3,12),whiteM); c.position.set(-AW/2+1.7+k*((AW-3.4)/8),(baseH+.3)/2,front-.3); c.castShadow=true; au.add(c) } // Kolonnade
     const canopy=new THREE.Mesh(new THREE.BoxGeometry(AW+.6,.4,AD+.4),whiteM); canopy.position.set(0,baseH+.2,0); canopy.castShadow=true; au.add(canopy) // Vordach über EG
-    /* SIGNATURE-Fassade (Dossier B6): bernsteinfarbene Glas-Waben-Rasterverglasung ≈ 20 m breit,
-       fast volle Höhe, abends warm leuchtend (Emissive; Bloom auf High verstärkt). */
-    { const ambTex=(()=>{ const c=cvs(256),x=c.getContext('2d'); x.fillStyle='#7a5217'; x.fillRect(0,0,256,256)
-        for(let gy=0;gy<256;gy+=32)for(let gx=0;gx<256;gx+=32){ x.fillStyle='#c98f2e'; x.fillRect(gx+3,gy+3,26,26)
-          x.fillStyle='rgba(255,220,150,.35)'; x.fillRect(gx+5,gy+5,10,8) } // goldene Zellen mit Glanzlicht
-        const t=tx(c); t.repeat.set(10,5); return t })()
-      const amberM=new THREE.MeshStandardMaterial({map:ambTex,roughness:.22,metalness:.35,emissive:0xd18f2f,emissiveIntensity:.28,emissiveMap:ambTex})
-      const amber=new THREE.Mesh(new THREE.BoxGeometry(20,totalH-1.7,.2),amberM)
-      amber.position.set(0,(totalH-1.7)/2+.6,front-.18); amber.userData.glaz=true; amber.userData.amber=true; au.add(amber)
-      SITE.audimaxAmber=[20,totalH-1.7]
-      for(let x=-9;x<=9;x+=2){ const m=new THREE.Mesh(new THREE.BoxGeometry(.12,totalH-1.7,.26),mulM); m.position.set(x,(totalH-1.7)/2+.6,front-.14); au.add(m) } } // Waben-Pfosten
+    /* Owner-Fassade wie reales Foto: KÜHLE GRAUE GLAS-VORHANGWAND (Rasterfassade, 2 Reihen × 14 Felder)
+       auf einem massiven hellen Sturzband über dem zurückgesetzten Stützen-EG. Kein Bernstein/Leuchten. */
+    { const GW=32, gBot=baseH+.9, gTop=totalH-.4, GH=gTop-gBot, gy=(gBot+gTop)/2
+      const glassCW=new THREE.MeshStandardMaterial({color:'#8ea6b4',roughness:.1,metalness:.6,envMapIntensity:1.15}) // grau-blaues Reflexglas
+      const glass=new THREE.Mesh(new THREE.BoxGeometry(GW,GH,.16),glassCW); glass.position.set(0,gy,front-.16); glass.userData.glaz=true; au.add(glass)
+      SITE.audimaxGlass=[GW,GH]
+      const sill=new THREE.Mesh(new THREE.BoxGeometry(GW+1.4,.9,.5),whiteM); sill.position.set(0,baseH+.45,front-.02); sill.castShadow=true; au.add(sill) // helles Sturzband unter dem Glas
+      const NB=14
+      for(let i=0;i<=NB;i++){ const m=new THREE.Mesh(new THREE.BoxGeometry(.1,GH,.24),mulM); m.position.set(-GW/2+i*GW/NB,gy,front-.08); au.add(m) } // vertikale Sprossen → Rasterfelder
+      const midR=new THREE.Mesh(new THREE.BoxGeometry(GW,.12,.24),mulM); midR.position.set(0,gy,front-.08); au.add(midR) // horizontaler Riegel → 2 Reihen
+      const topF=new THREE.Mesh(new THREE.BoxGeometry(GW+.4,.2,.26),mulM); topF.position.set(0,gTop,front-.07); au.add(topF)
+      const botF=new THREE.Mesh(new THREE.BoxGeometry(GW+.4,.2,.26),mulM); botF.position.set(0,gBot,front-.07); au.add(botF) }
     /* Weißes Attika-Band mit Aufschrift „AUDITORIUM MAXIMUM" (schwarze Versalien) über dem Foyer-Sockel */
     { const c=document.createElement('canvas'); c.width=1024; c.height=128; const x=c.getContext('2d')
       x.fillStyle='#f2f4f5'; x.fillRect(0,0,1024,128)
