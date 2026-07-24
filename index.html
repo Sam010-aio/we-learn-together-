@@ -14,11 +14,11 @@
 /* ===== Delivery / Build-Sichtbarkeit (LIGHTNESS RESCUE Ph0) =====
    EINE Quelle der Build-Kennung — geteilt mit sw.js (Cache-Name = kommilo-v${id}). Sichtbar als
    dezenter Fuß-Stempel und im ?debug=perf-Overlay; so ist am Bildschirm ablesbar, welcher Build läuft. */
-window.__BUILD = { id: '2026.07.23-767b75f', date: '2026-07-23', hash: '767b75f' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
+window.__BUILD = { id: '2026.07.23-7dda55a', date: '2026-07-23', hash: '7dda55a' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
 (function(){
   // Fuß-Stempel setzen, sobald der Body existiert (robust — auch wenn die 3D-App nicht bootet)
   function stamp(){ var el=document.getElementById('buildstamp'); if(!el) return
-    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-767b75f (Format laut Spezifikation)
+    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-7dda55a (Format laut Spezifikation)
   if(document.readyState!=='loading') stamp(); else addEventListener('DOMContentLoaded', stamp)
   if(!('serviceWorker' in navigator)) return
   // Selbst-enthaltener Reload-Hinweis — unabhängig vom App-Toast, wirkt auch bei kaputter/veralteter App
@@ -188,15 +188,70 @@ input:focus,select:focus{border-color:#4F46E5;box-shadow:0 0 0 3px rgba(79,70,22
 @keyframes splFade{to{opacity:0}}
 @keyframes splUp{to{transform:translateY(-12px)}}
 @keyframes splPulse{from{transform:translateY(-12px)}to{transform:translateY(-17px)}}
-/* G — Reels: swipebarer Vollbild-Player (vertikales Scroll-Snap, ein Video pro Bildschirm) */
-#reels{position:fixed;inset:0;z-index:60;background:#000}
-#reels .reels-scroll{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none}
-#reels .reels-scroll::-webkit-scrollbar{display:none}
-#reels .reel{position:relative;height:100%;scroll-snap-align:start;scroll-snap-stop:always;display:grid;place-items:center}
-#reels .reel video{width:100%;height:100%;object-fit:contain;background:#000;cursor:pointer}
-#reels .reel-meta{position:absolute;left:16px;right:16px;bottom:calc(24px + env(safe-area-inset-bottom));color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:2px;pointer-events:none}
-#reels .reel-meta b{font-size:15px}#reels .reel-meta span{font-size:13px;opacity:.92}#reels .reel-meta em{font-size:11px;opacity:.7;font-style:normal}
-#reels .reels-x{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:2;width:40px;height:40px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:20px;cursor:pointer}
+/* ===== CAMPUS PULS — Mini-Fenster, Theater, Nudge (Owner-Brief; Indigo/Teal-Glas, rounded-16) ===== */
+#pulsWin{position:fixed;right:16px;bottom:76px;width:220px;height:360px;z-index:30;border-radius:16px;overflow:hidden;
+ background:rgba(255,255,255,.62);backdrop-filter:blur(18px);border:1px solid rgba(79,70,229,.18);
+ box-shadow:0 18px 44px rgba(34,28,53,.28);display:flex;flex-direction:column;animation:pwFloat 3.4s ease-in-out infinite alternate;cursor:pointer}
+#pulsWin.night{background:rgba(16,18,36,.58);border-color:rgba(45,212,191,.28);color:#e8ecff}
+@keyframes pwFloat{from{transform:translateY(0)}to{transform:translateY(-2px)}}
+.pw-top{display:flex;align-items:center;gap:6px;padding:8px 10px 6px}
+.pw-brand{font-size:11px;font-weight:800;letter-spacing:.4px;color:#4F46E5}
+#pulsWin.night .pw-brand{color:#2DD4BF}
+.pw-ringw{width:16px;height:16px;margin-left:auto;flex:none}
+.pw-ring{fill:none;stroke:#2DD4BF;stroke-width:2.6;stroke-linecap:round;stroke-dasharray:50.3;stroke-dashoffset:50.3;transform:rotate(-90deg);transform-origin:center}
+#pulsWin.paused .pw-ring{animation-play-state:paused!important}
+@keyframes pwring{from{stroke-dashoffset:50.3}to{stroke-dashoffset:0}}
+.pw-min{border:none;background:none;font-size:16px;font-weight:800;color:#999;cursor:pointer;line-height:1;padding:0 2px}
+.pw-media{flex:1;position:relative;overflow:hidden;background:#171930;transition:transform .25s ease}
+.pw-media img,.pw-media video{width:100%;height:100%;object-fit:cover;display:block}
+.pw-seed{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:14px;text-align:center;color:#fff}
+.pw-seed p{font-size:12px;font-weight:600;line-height:1.45}
+.pw-ic{font-size:34px}
+.pw-optim{position:absolute;top:8px;left:8px;z-index:2;background:rgba(79,70,229,.92);color:#fff;font-size:10.5px;font-weight:700;padding:4px 8px;border-radius:99px}
+.pw-meta{display:flex;align-items:center;gap:6px;padding:8px 10px;font-size:10.5px;min-height:31px}
+.pw-author{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pw-tag{color:#4F46E5;background:rgba(79,70,229,.1);border-radius:99px;padding:2px 7px;font-weight:700;white-space:nowrap;margin-left:auto}
+#pulsWin.night .pw-tag{color:#2DD4BF;background:rgba(45,212,191,.14)}
+.pw-acts{position:absolute;right:8px;top:40px;display:flex;flex-direction:column;gap:6px;opacity:0;transition:opacity .2s;z-index:3}
+#pulsWin:hover .pw-acts{opacity:1}
+.pw-acts button{width:30px;height:30px;border-radius:99px;border:none;background:rgba(255,255,255,.88);font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.pw-plus{position:absolute;left:8px;bottom:40px;width:32px;height:32px;border-radius:99px;border:none;cursor:pointer;z-index:3;
+ background:linear-gradient(135deg,#4F46E5,#2DD4BF);color:#fff;font-size:17px;font-weight:800;box-shadow:0 4px 12px rgba(79,70,229,.4)}
+#pulsDot{position:fixed;right:20px;bottom:80px;width:18px;height:18px;border-radius:99px;z-index:30;border:none;cursor:pointer;
+ background:radial-gradient(circle at 35% 35%,#7c76f0,#4F46E5);animation:pwPulse 1.8s ease-in-out infinite}
+@keyframes pwPulse{0%,100%{box-shadow:0 0 0 0 rgba(79,70,229,.45)}55%{box-shadow:0 0 0 9px rgba(79,70,229,0)}}
+@media (max-width:700px){ #pulsWin{width:172px;height:284px;bottom:86px;right:12px} #pulsDot{bottom:90px} }
+#pulsTheater{position:fixed;inset:0;z-index:55;opacity:0;transition:opacity .22s ease}
+#pulsTheater.in{opacity:1}
+#pulsTheater.out{opacity:0;transform:translate(32vw,32vh) scale(.14);transform-origin:100% 100%;transition:all .22s ease-in}
+.pt-bg{position:absolute;inset:0;backdrop-filter:blur(14px) brightness(.52);background:radial-gradient(120% 100% at 50% 0%,rgba(49,46,129,.28),rgba(8,9,18,.4))}
+.pt-x{position:absolute;top:calc(14px + env(safe-area-inset-top));right:16px;z-index:4;width:40px;height:40px;border-radius:99px;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:18px;cursor:pointer}
+.pt-chips{position:absolute;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:4;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:82vw}
+.pt-chip{border:none;border-radius:99px;padding:6px 12px;font-size:11.5px;font-weight:700;background:rgba(255,255,255,.14);color:#eee;cursor:pointer;transition:background .2s}
+.pt-chip.on{background:linear-gradient(135deg,#4F46E5,#2DD4BF);color:#fff}
+.pt-scroll{position:absolute;inset:0;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;z-index:2}
+.pt-scroll::-webkit-scrollbar{display:none}
+.pt-item{height:100%;scroll-snap-align:start;scroll-snap-stop:always;display:grid;place-items:center;padding:64px 0 20px}
+.pt-frame{position:relative;width:min(400px,92vw);height:min(76vh,700px);border-radius:16px;overflow:hidden;background:#0e1022;
+ box-shadow:0 0 0 1px rgba(79,70,229,.5),0 0 42px rgba(79,70,229,.32),0 24px 60px rgba(0,0,0,.5)}
+.pt-frame img,.pt-frame video{width:100%;height:100%;object-fit:contain;background:#0b0c18;cursor:pointer}
+.pt-frame .pw-seed{position:absolute;inset:0}
+.pt-frame .pw-seed p{font-size:14px}
+.pt-rail{position:absolute;right:10px;bottom:92px;display:flex;flex-direction:column;gap:10px;z-index:3}
+.pt-rail button{width:42px;height:42px;border-radius:99px;border:none;background:rgba(255,255,255,.14);backdrop-filter:blur(6px);color:#fff;font-size:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;transition:background .2s}
+.pt-rail button i{font-style:normal;font-size:9.5px;font-weight:700;margin-top:1px}
+.pt-rail button.on{background:linear-gradient(135deg,#EF4444,#F59E0B)}
+.pt-cap{position:absolute;left:12px;right:64px;bottom:12px;z-index:3;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.65)}
+.pt-author{border:none;background:rgba(255,255,255,.16);color:#fff;border-radius:99px;padding:4px 10px;font-size:11.5px;font-weight:800;cursor:pointer}
+.pt-cap p{font-size:13px;font-weight:600;margin:6px 0 4px;line-height:1.4}
+.pt-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pt-tags button{border:none;border-radius:99px;padding:3px 9px;font-size:10.5px;font-weight:700;background:rgba(45,212,191,.22);color:#a7f3e9;cursor:pointer}
+.pt-tags .pt-place{font-size:10.5px;font-weight:700;color:#c9d2ff}
+.pt-burst{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:74px;color:#fff;text-shadow:0 0 24px rgba(239,68,68,.8);animation:ptBurst .7s ease-out forwards;pointer-events:none;z-index:5}
+@keyframes ptBurst{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-96%) scale(1)}}
+.pt-nudge{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:6;background:rgba(255,255,255,.95);border-radius:16px;padding:14px 18px;box-shadow:0 18px 44px rgba(0,0,0,.4);text-align:center;animation:ptNudge .25s ease-out}
+.pt-nudge b{font-size:13.5px}
+@keyframes ptNudge{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
 </style>
 </head>
 <body>
@@ -391,6 +446,18 @@ const sceneConfig = {
       water: { color: '#0d151c', sunColor: '#2a3c58', distortion: 2.6 }, // dunkles Nachtwasser, Mond-/Lampenspiegelung stärker verwirbelt
       groundBounce: '#1a2026', // night ground plate inside the generated IBL
     },
+  },
+
+  /* ===== CAMPUS PULS (Feed als lebendige Oberfläche) — alle Puls-Tunables an einem Ort ===== */
+  puls: {
+    cycleSec: 6,            // Mini-Fenster: Anzeigedauer pro Beitrag (dünner Fortschrittsring)
+    nudgeAfterSec: 300,     // Theater: freundlicher Anti-Doomscroll-Hinweis nach ~5 min Dauerschauen
+    maxBubbles: 5,          // In-World: maximal sichtbare Ort-Bubbles (älteste blassen aus)
+    sauleSpeed: .1,         // Litfaßsäule: Drehung rad/s — nur auf ohnehin gerenderten Frames
+    sauleNightGlow: .85,    // Litfaßsäule: Emissive nachts (tags .06) — „glüht sanft"
+    boardSwapSec: 8,        // Puls-Board: Sekunden pro Top-Post auf dem Innen-Screen
+    saule: { x: 13, z: 19 },      // Litfaßsäule auf dem Studierendenhaus-VORPLATZ (Südseite, am Gehweg)
+    board: { x: -4, y: 2.3, z: 13 }, // Puls-Board im SH-Innenraum nahe dem Süd-Eingang (Landscape)
   },
 }
 
@@ -2540,8 +2607,8 @@ const state={section:'campus',uniId:'tubs',selected:null,mode:'tag',myTable:null
  docs:[{t:'Klausur-Zusammenfassung Mathe 2',ty:'PDF',c:'Mathe 2',s:'2,4 MB'},{t:'Übungsblatt 5 — Lösungen',ty:'PDF',c:'Algorithmen',s:'820 KB'},{t:'Formelsammlung Thermodynamik',ty:'DOCX',c:'Thermodynamik',s:'1,1 MB'},{t:'Laborprotokoll Vorlage',ty:'XLSX',c:'Elektrotechnik',s:'340 KB'},{t:'Altklausuren 2019–2024',ty:'ZIP',c:'Technische Mechanik',s:'18 MB'}],
  invitations:[{id:'i1',from:'Lena Vogt',group:'Spezi Team',subject:'Mathe 2',gid:'g1'},{id:'i2',from:'Circuit Lab',group:'Circuit Lab',subject:'Elektrotechnik',gid:'g3'}],
  settings:{email:true,push:false,pub:true,times:true,semester:4,effects:true,glb:''}}
-const SECTIONS=[['campus','Campus'],['partner','Lernpartner finden'],['matches','Matches'],['gruppen','Lerngruppen'],['aktivitaeten','Aktivitäten'],['feed','Campus Feed'],['unterlagen','Club Unterlagen'],['international','International'],['einladungen','Einladungen'],['profil','Profil'],['einstellungen','Einstellungen']]
-const ICONS={campus:'M3 21V9l9-6 9 6v12h-6v-7H9v7H3z',partner:'M16 11a4 4 0 1 0-8 0M2 21c1.5-4 6-5 10-5s8.5 1 10 5',matches:'M12 21C6 16 3 12 3 8.5A4.5 4.5 0 0 1 12 6a4.5 4.5 0 0 1 9 2.5C21 12 18 16 12 21z',gruppen:'M4 10h16M6 10V6h12v4M8 10v10M16 10v10M4 20h16',aktivitaeten:'M12 3c2.2 2.8 5 4.6 5 8.2a5 5 0 1 1-10 0c0-2 .9-3.6 2-5.2.5 1.6 1.4 2.3 2.9 2.5-.9-1.9-.9-3.6.1-5.5z',feed:'M4 4h16v13H8l-4 4zM8 9h8M8 12.5h5',cprojekte:'M3 8h18v11H3zM8 8V5h8v3M3 13h18',unterlagen:'M3 7h6l2 2h10v11H3z',international:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3.5 3 14.5 0 18-3-3.5-3-14.5 0-18z',einladungen:'M3 6h18v12H3zM3 7l9 6 9-6',profil:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1-4.5 5-6 8-6s7 1.5 8 6',einstellungen:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-1-3-2.2.3-1.4-1.4L17 4.5l-3-1-1 2h-2l-1-2-3 1 .6 2.4L6.2 8.3 4 8l-1 3 2 1-2 1 1 3 2.2-.3 1.4 1.4L7 19.5l3 1 1-2h2l1 2 3-1-.6-2.4 1.4-1.4 2.2.3 1-3-2-1z'}
+const SECTIONS=[['campus','Campus'],['partner','Lernpartner finden'],['matches','Matches'],['gruppen','Lerngruppen'],['aktivitaeten','Aktivitäten'],['unterlagen','Club Unterlagen'],['international','International'],['einladungen','Einladungen'],['profil','Profil'],['einstellungen','Einstellungen']] // Campus Puls ist bewusst KEIN Menüpunkt — er lebt als Fenster/Theater/In-World (Owner-Brief)
+const ICONS={campus:'M3 21V9l9-6 9 6v12h-6v-7H9v7H3z',partner:'M16 11a4 4 0 1 0-8 0M2 21c1.5-4 6-5 10-5s8.5 1 10 5',matches:'M12 21C6 16 3 12 3 8.5A4.5 4.5 0 0 1 12 6a4.5 4.5 0 0 1 9 2.5C21 12 18 16 12 21z',gruppen:'M4 10h16M6 10V6h12v4M8 10v10M16 10v10M4 20h16',aktivitaeten:'M12 3c2.2 2.8 5 4.6 5 8.2a5 5 0 1 1-10 0c0-2 .9-3.6 2-5.2.5 1.6 1.4 2.3 2.9 2.5-.9-1.9-.9-3.6.1-5.5z',cprojekte:'M3 8h18v11H3zM8 8V5h8v3M3 13h18',unterlagen:'M3 7h6l2 2h10v11H3z',international:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3.5 3 14.5 0 18-3-3.5-3-14.5 0-18z',einladungen:'M3 6h18v12H3zM3 7l9 6 9-6',profil:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1-4.5 5-6 8-6s7 1.5 8 6',einstellungen:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-1-3-2.2.3-1.4-1.4L17 4.5l-3-1-1 2h-2l-1-2-3 1 .6 2.4L6.2 8.3 4 8l-1 3 2 1-2 1 1 3 2.2-.3 1.4 1.4L7 19.5l3 1 1-2h2l1 2 3-1-.6-2.4 1.4-1.4 2.2.3 1-3-2-1z'}
 function uni(){ return UNIS.find(u=>u.id===state.uniId) }
 function groups(){ return state.groupsByUni[state.uniId]||[] }
 function fires(){ const list=state.firesByUni[state.uniId]||[]; const t=Date.now()
@@ -2572,7 +2639,7 @@ try{ import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm')
   .then(m=>{ window.__sb=m.createClient(SUPA.url,SUPA.key); sbBoot() }).catch(()=>{}) }catch(e){}
 /* ===== Workstreams G/H — Flags, Session, Netz-Layer (defensiv: ohne Netz/Login zeigen die
    Sektionen Gates statt Fehlern; RLS ist serverseitig die Wahrheit, siehe FEATURES.md) ===== */
-const FLAGS={feed:true,projects:true,companies:true} // Kill-Switches; Server-Override aus app_flags beim Boot
+const FLAGS={feed:true,projects:true,companies:true,puls:true} // Kill-Switches; Server-Override aus app_flags beim Boot
 let SB_USER=null, SB_ROLE='student', SB_COMPANY=null
 const SECTIONS_COMPANY=[['cprojekte','Projekte entdecken'],['einstellungen','Einstellungen']] // I: Company-Minimal-UI (kein Feed/Chat/Gruppen/Feuer/Credits)
 /* ---- I Company-Modus: Projekt-Discovery (RLS liefert NUR companies_too) ---- */
@@ -2600,24 +2667,183 @@ function feedLoad(force){ if(!window.__sb||!SB_USER||FEED.loading||(FEED.loaded&
     FEED.mine={}; ml.forEach(l=>FEED.mine[l.post_id]=true)
     for(const it of items){ if(it.storage_path){ // kurzlebige signed URLs (privater Bucket)
       const su=await window.__sb.storage.from('media').createSignedUrl(it.storage_path,3600).catch(()=>null)
-      it._url=su&&su.data?su.data.signedUrl:null } }
-    FEED.items=items; FEED.loaded=true; FEED.loading=false; render() }).catch(()=>{ FEED.err='Feed nicht erreichbar'; FEED.loading=false; render() }) }
-/* Swipebarer Vollbild-Reels-Player: vertikales Scroll-Snap über alle Feed-Videos, stumm-Autoplay
-   des sichtbaren Clips (IntersectionObserver), Tap = Ton, ✕ schließt. Kein Ton-Autoplay (Browser). */
-function openReels(){ const vids=FEED.items.filter(p2=>p2.type==='video'&&p2._url)
-  if(!vids.length){ toast('Noch keine Reels','Sobald Videos im Feed sind, laufen sie hier im Vollbild.','info'); return }
-  const ov=document.createElement('div'); ov.id='reels'
-  ov.innerHTML='<button class="reels-x" aria-label="Schließen">✕</button><div class="reels-scroll">'+
-    vids.map(p2=>'<div class="reel"><video src="'+p2._url+'" loop muted playsinline preload="metadata"></video>'+
-      '<div class="reel-meta"><b>'+esc('Studi-'+String(p2.author||'').slice(0,4))+'</b>'+
-      (p2.caption?'<span>'+esc(p2.caption)+'</span>':'')+'<em>Tippen für Ton · wischen für nächstes</em></div></div>').join('')+'</div>'
-  document.body.appendChild(ov)
-  const vEls=[...ov.querySelectorAll('video')]
-  const close=()=>{ vEls.forEach(v=>{ try{v.pause()}catch(e){} }); io.disconnect(); ov.remove() }
-  ov.querySelector('.reels-x').onclick=close
-  vEls.forEach(v=>v.addEventListener('click',()=>{ v.muted=!v.muted; if(!v.muted) v.play().catch(()=>{}) }))
-  const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting&&e.intersectionRatio>.6) e.target.play().catch(()=>{}); else e.target.pause() }),{threshold:[0,.6,1]})
-  vEls.forEach(v=>io.observe(v)); if(vEls[0]) vEls[0].play().catch(()=>{}) }
+      it._url=su&&su.data?su.data.signedUrl:null }
+      if(it.thumb_path){ const st=await window.__sb.storage.from('media').createSignedUrl(it.thumb_path,3600).catch(()=>null)
+        it._thumb=st&&st.data?st.data.signedUrl:null } }
+    const cc=await window.__sb.from('post_comment_counts').select('*').then(x=>x.data||[]).catch(()=>[])
+    PULS.counts={}; cc.forEach(c=>PULS.counts[c.post_id]=c.comments)
+    FEED.items=items; FEED.loaded=true; FEED.loading=false; PULS.optimistic=null; render()
+    PULS.idx=0; pulsRender(); pulsTheaterRebuild()
+    if(typeof pulsWorldRefresh==='function') pulsWorldRefresh() }).catch(()=>{ FEED.err='Feed nicht erreichbar'; FEED.loading=false; render() }) }
+/* ===== CAMPUS PULS — der Feed als lebendige Oberfläche (Owner-Brief, siehe FEATURES.md).
+   Drei Flächen: Puls-Fenster (Mini-Karte), Puls-Theater (immersiver Player über der 3D-Welt),
+   In-World-Puls (Litfaßsäule/Board/Bubbles — Aufbau vor dem Render-Loop weiter unten).
+   Ehrlichkeits-Gesetz: NIE Fake-Aktivität — leerer Feed zeigt klar gelabelte Redaktions-Starter. ===== */
+const pulsTargets=[] // 3D-Klickziele (Litfaßsäule, Bubbles) — Raycast im pointerup-Handler
+const PULS_PLACES={ 'Studierendenhaus':{x:0,y:11.6,z:4}, 'Terrasse':{x:8,y:3.4,z:17}, 'Lagerfeuer':{x:-27,y:3.8,z:-6} } // Ort-Tag → Bubble-Anker (Welt-Koordinaten über dem Ort)
+const SEED_POSTS=[ // Kommilo-Redaktion — als Starter gelabelt, ohne erfundene Zahlen (Like/Melden ausgeblendet)
+ {seed:true,author:'Kommilo-Redaktion',caption:'Willkommen beim Campus Puls! Hier landen Fotos & Reels aus dem Studi-Leben — ehrlich, chronologisch, ohne Algorithmus.',tag:'#Start',grad:['#4F46E5','#2DD4BF'],ic:'🎬'},
+ {seed:true,author:'Kommilo-Redaktion',caption:'Tipp: Lerngruppen mit 3–5 Leuten halten am längsten durch. Deine wartet im Reiter „Lerngruppen".',tag:'#Lernen',grad:['#312e81','#4F46E5'],ic:'📚'},
+ {seed:true,author:'Kommilo-Redaktion',caption:'Abends flackern die Lagerfeuer — schau bei „Aktivitäten" vorbei und setz dich dazu.',tag:'#Aktivitäten',grad:['#0f766e','#2DD4BF'],ic:'🔥'},
+ {seed:true,author:'Kommilo-Redaktion',caption:'Zeig den Campus deinen Leuten — poste das erste Reel 🎬',cta:true,tag:'#DuBistDran',grad:['#4F46E5','#8B5CF6'],ic:'＋'}]
+const PULS={mounted:false,idx:0,collapsed:false,theater:null,tIdx:0,drag:false,filter:'alle',watch:0,nudgeNext:0,watchT:null,optimistic:null,counts:{},_key:null,_init:false}
+try{ PULS.collapsed=JSON.parse(localStorage.getItem('puls_ui_v1')||'{}').collapsed===true }catch(e){}
+function pulsFlagOn(){ return FLAGS.puls!==false&&SB_ROLE!=='company' }
+function pulsWorldSection(){ return state.section==='campus'||state.section==='partner'||state.section==='gruppen'||state.section==='aktivitaeten' }
+function pulsItems(){ let it=FEED.items
+  if(PULS.filter==='studiengang'){ const my=(DB.user.modules||[]).map(m=>String((m&&m.name)||m).toLowerCase()); it=it.filter(p2=>p2.module_tag&&my.includes(String(p2.module_tag).toLowerCase())) }
+  else if(PULS.filter==='aktivitaeten') it=it.filter(p2=>p2.activity_tag)
+  else if(PULS.filter==='lernen') it=it.filter(p2=>p2.module_tag)
+  return it.length?it:SEED_POSTS }
+function pulsSeedHTML(p2){ return '<div class="pw-seed" style="background:linear-gradient(135deg,'+p2.grad[0]+','+p2.grad[1]+')"><span class="pw-ic">'+p2.ic+'</span><p>'+esc(p2.caption||'')+'</p>'+(p2.cta?'<button class="btn grad sm" data-act="cta">Jetzt posten</button>':'')+'</div>' }
+function pulsMediaHTML(p2,mini){ if(p2.seed) return pulsSeedHTML(p2)
+  if(p2.type==='video'){ if(mini&&p2._thumb) return '<img src="'+p2._thumb+'" loading="lazy" alt="">' // Fenster braucht dank Thumb KEIN Video-Decode
+    return '<video src="'+(p2._url||'')+'"'+(p2._thumb?' poster="'+p2._thumb+'"':'')+' muted loop playsinline preload="metadata"'+(mini?' autoplay':'')+'></video>' }
+  const src=(mini&&p2._thumb)?p2._thumb:(p2._url||p2._thumb||'')
+  if(src) return '<img src="'+src+'" loading="lazy" alt="">'
+  return pulsSeedHTML({grad:['#312e81','#4F46E5'],ic:'💬',caption:p2.caption||''}) } // Text-Post → Farbkarte
+function pulsPausedNow(){ const m=document.getElementById('modal')
+  return document.hidden||PULS.drag||!!PULS.theater||(m&&m.style.display==='grid') }
+function pulsPauseSync(){ const w=document.getElementById('pulsWin'); if(!w) return
+  const p2=pulsPausedNow(); w.classList.toggle('paused',p2)
+  const v=w.querySelector('.pw-media video'); if(v){ if(p2){ try{v.pause()}catch(e){} } else v.play().catch(()=>{}) } }
+function pulsCollapse(v){ PULS.collapsed=v; try{ localStorage.setItem('puls_ui_v1',JSON.stringify({collapsed:v})) }catch(e){}; pulsSync() }
+function pulsRender(){ const w=document.getElementById('pulsWin'); if(!w||w.style.display==='none') return
+  const items=pulsItems(); if(PULS.idx>=items.length) PULS.idx=0
+  const p2=items[PULS.idx]
+  w.querySelector('.pw-media').innerHTML=(PULS.optimistic?'<div class="pw-optim">⏳ Wird veröffentlicht …</div>':'')+pulsMediaHTML(p2,true)
+  const tag=p2.seed?p2.tag:(p2.activity_tag?'#'+p2.activity_tag:(p2.module_tag?'#'+p2.module_tag:(p2.place_tag?'📍 '+p2.place_tag:'')))
+  w.querySelector('.pw-meta').innerHTML='<span class="pw-author">'+esc(p2.seed?p2.author+' · Starter':'Studi-'+String(p2.author||'').slice(0,4))+'</span>'+(tag?'<span class="pw-tag">'+esc(tag)+'</span>':'')
+  const lk=w.querySelector('.pw-like'); lk.style.display=p2.seed?'none':''; lk.textContent=FEED.mine[p2.id]?'♥':'♡'
+  const ring=w.querySelector('.pw-ring') // Ring-Animation neu starten — animationend triggert den nächsten Beitrag
+  ring.style.animation='none'; void ring.getBoundingClientRect(); ring.style.animation='pwring '+sceneConfig.puls.cycleSec+'s linear'
+  pulsPauseSync() }
+function pulsNext(){ PULS.idx=(PULS.idx+1)%pulsItems().length; pulsRender() }
+function pulsMount(){ if(PULS.mounted||!document.body) return; PULS.mounted=true
+  const w=document.createElement('div'); w.id='pulsWin'; w.style.display='none'
+  w.innerHTML='<div class="pw-top"><span class="pw-brand">◉ Campus Puls</span>'+
+   '<svg class="pw-ringw" viewBox="0 0 20 20"><circle class="pw-ring" cx="10" cy="10" r="8"/></svg>'+
+   '<button class="pw-min" title="Minimieren">–</button></div>'+
+   '<div class="pw-media"></div><div class="pw-meta"></div>'+
+   '<div class="pw-acts"><button class="pw-like" title="Gefällt mir">♡</button><button class="pw-openb" title="Im Theater öffnen">↗</button></div>'+
+   '<button class="pw-plus" title="Beitrag posten">＋</button>'
+  document.body.appendChild(w)
+  const d=document.createElement('button'); d.id='pulsDot'; d.title='Campus Puls öffnen'; d.style.display='none'; document.body.appendChild(d)
+  w.addEventListener('click',e=>{ if(e.target.closest('button')) return; pulsOpenTheater(PULS.idx) })
+  w.querySelector('.pw-min').addEventListener('click',()=>pulsCollapse(true))
+  d.addEventListener('click',()=>pulsCollapse(false))
+  w.querySelector('.pw-like').addEventListener('click',()=>{ const p2=pulsItems()[PULS.idx]
+    if(p2&&!p2.seed){ actions.feedLike(p2.id); w.querySelector('.pw-like').textContent=FEED.mine[p2.id]?'♥':'♡' } })
+  w.querySelector('.pw-openb').addEventListener('click',()=>pulsOpenTheater(PULS.idx))
+  w.querySelector('.pw-plus').addEventListener('click',()=>actions.feedUploadModal())
+  w.querySelector('.pw-ring').addEventListener('animationend',()=>{ if(!pulsPausedNow()) pulsNext() })
+  const med=w.querySelector('.pw-media') // sanfter Parallax-Tilt nur aufs Medium (Fenster-Transform gehört der Atem-Animation)
+  w.addEventListener('mousemove',e=>{ const r=w.getBoundingClientRect()
+    med.style.transform='perspective(600px) rotateY('+(((e.clientX-r.left)/r.width-.5)*6).toFixed(2)+'deg) rotateX('+((-((e.clientY-r.top)/r.height-.5))*6).toFixed(2)+'deg) scale(1.03)' })
+  w.addEventListener('mouseleave',()=>{ med.style.transform='' })
+  controls.addEventListener('start',()=>{ PULS.drag=true; pulsPauseSync() })   // Kamera-Drag: nie GPU vom Ziehen stehlen
+  controls.addEventListener('end',()=>{ PULS.drag=false; pulsPauseSync() })
+  document.addEventListener('visibilitychange',pulsPauseSync)
+  const mo=new MutationObserver(pulsPauseSync); mo.observe(document.getElementById('modal'),{attributes:true,attributeFilter:['style']}) }
+function pulsSync(){ if(!PULS.mounted&&pulsFlagOn()) pulsMount()
+  if(!PULS.mounted) return
+  const w=document.getElementById('pulsWin'), d=document.getElementById('pulsDot')
+  const show=pulsFlagOn()&&pulsWorldSection()&&!currentGuard()   // Gate offen (Onboarding) → Fenster weg, nicht nur pausiert
+  w.classList.toggle('night',state.mode==='nacht'); ;(typeof pulsGroup!=='undefined')&&(pulsGroup.visible=pulsFlagOn())
+  w.style.display=(show&&!PULS.collapsed)?'':'none'
+  d.style.display=(show&&PULS.collapsed)?'':'none'
+  if(show){ feedLoad(); if(!PULS._init){ PULS._init=true; pulsRender() } }
+  if(!show&&PULS.theater) pulsCloseTheater()
+  pulsPauseSync() }
+/* ---- Theater: immersiver Player ÜBER der lebenden 3D-Welt (geblurrt, nicht schwarz) ---- */
+function pulsItemHTML(p2,i){ const own=SB_USER&&p2.author===SB_USER.id
+  const rail=p2.seed?'':'<div class="pt-rail">'+
+   '<button data-act="like" data-id="'+p2.id+'"'+(FEED.mine[p2.id]?' class="on"':'')+'>'+(FEED.mine[p2.id]?'♥':'♡')+'<i>'+(FEED.likes[p2.id]||0)+'</i></button>'+
+   '<button data-act="comments" data-id="'+p2.id+'">💬<i>'+(PULS.counts[p2.id]||0)+'</i></button>'+
+   '<button data-act="share" data-id="'+p2.id+'">↗</button>'+
+   (own?'<button data-act="del" data-id="'+p2.id+'" data-path="'+esc(p2.storage_path||'')+'" data-thumb="'+esc(p2.thumb_path||'')+'" title="Löschen">🗑</button>'
+       :'<button data-act="report" data-id="'+p2.id+'" title="Melden">⚑</button>')+'</div>'
+  const tags=p2.seed?'':[p2.module_tag?'<button data-act="tagM">#'+esc(p2.module_tag)+'</button>':'',
+   p2.activity_tag?'<button data-act="tagA">#'+esc(p2.activity_tag)+'</button>':'',
+   p2.place_tag?'<span class="pt-place">📍 '+esc(p2.place_tag)+'</span>':''].join('')
+  const author=p2.seed?'<span class="pt-author">'+esc(p2.author)+' · Starter</span>'
+   :'<button class="pt-author" data-act="author" data-id="'+esc(p2.author)+'">Studi-'+esc(String(p2.author||'').slice(0,4))+(own?' · Du':'')+'</button>'
+  return '<div class="pt-item" data-i="'+i+'"><div class="pt-frame">'+pulsMediaHTML(p2,false)+rail+
+   '<div class="pt-cap">'+author+(p2.caption&&!p2.seed?'<p>'+esc(p2.caption)+'</p>':'')+(tags?'<div class="pt-tags">'+tags+'</div>':'')+'</div></div></div>' }
+function pulsTheaterRebuild(){ const t=PULS.theater; if(!t) return
+  const items=pulsItems(); if(PULS.tIdx>=items.length) PULS.tIdx=Math.max(0,items.length-1)
+  t.querySelectorAll('.pt-chip').forEach(c=>c.classList.toggle('on',c.dataset.f===PULS.filter))
+  const sc=t.querySelector('.pt-scroll'); if(t._io) t._io.disconnect()
+  sc.innerHTML=items.map((p2,i)=>pulsItemHTML(p2,i)).join('')
+  const io=new IntersectionObserver(es=>es.forEach(en=>{ const v=en.target.querySelector('video')
+    if(en.isIntersecting){ PULS.tIdx=+en.target.dataset.i; if(v) v.play().catch(()=>{}) } else if(v) v.pause() }),{threshold:[.6]})
+  ;[...sc.children].forEach(el=>io.observe(el)); t._io=io
+  const tgt=sc.children[PULS.tIdx]; if(tgt) tgt.scrollIntoView() }
+function pulsSetFilter(k){ PULS.filter=k; PULS.idx=0; pulsTheaterRebuild(); if(!PULS.theater) pulsRender() }
+function pulsTheaterClick(e){ const b=e.target.closest('[data-act]')
+  if(b){ const id=b.dataset.id, act=b.dataset.act
+    if(act==='like'){ actions.feedLike(id); b.classList.toggle('on',!!FEED.mine[id]); b.innerHTML=(FEED.mine[id]?'♥':'♡')+'<i>'+(FEED.likes[id]||0)+'</i>' }
+    else if(act==='comments') actions.pulsComments(id)
+    else if(act==='share') actions.pulsShare(id)
+    else if(act==='report'){ actions.feedReport(id); pulsTheaterRebuild() }
+    else if(act==='del'){ actions.feedDelete(id,b.dataset.path||'',b.dataset.thumb||''); pulsCloseTheater() }
+    else if(act==='author') actions.pulsAuthor(id)
+    else if(act==='tagA') pulsSetFilter('aktivitaeten')
+    else if(act==='tagM') pulsSetFilter('lernen')
+    else if(act==='cta') actions.feedUploadModal()
+    return }
+  if(e.target.classList.contains('pt-chip')){ pulsSetFilter(e.target.dataset.f); return }
+  if(e.target.classList.contains('pt-x')){ pulsCloseTheater(); return }
+  const vid=e.target.closest('video'); if(vid){ vid.muted=!vid.muted; if(!vid.muted) vid.play().catch(()=>{}) } } // Tap = Ton
+function pulsTheaterDbl(e){ const it=e.target.closest('.pt-item'); if(!it) return
+  const p2=pulsItems()[+it.dataset.i]; if(!p2||p2.seed) return
+  if(!FEED.mine[p2.id]) actions.feedLike(p2.id)   // Doppel-Tap liked (nimmt nie zurück)
+  const h=document.createElement('div'); h.className='pt-burst'; h.textContent='♥'
+  it.querySelector('.pt-frame').appendChild(h); setTimeout(()=>h.remove(),700)
+  const lb=it.querySelector('[data-act="like"]'); if(lb){ lb.classList.add('on'); lb.innerHTML='♥<i>'+(FEED.likes[p2.id]||0)+'</i>' } }
+function pulsNudge(){ const t=PULS.theater; if(!t) return   // Anti-Doomscroll: charmant, nie blockierend, nichts wird geloggt
+  const n=document.createElement('div'); n.className='pt-nudge'
+  n.innerHTML='<b>Genug gescrollt — dein Lerntisch wartet 😉</b><div class="mrow" style="justify-content:center;margin-top:8px">'+
+   '<button class="btn grad sm" data-n="go">Zur Lerngruppe</button><button class="btn ghost sm" data-n="more">5 min weiter</button></div>'
+  n.addEventListener('click',e=>{ const b=e.target.closest('[data-n]'); if(!b) return
+    if(b.dataset.n==='go'){ pulsCloseTheater(); actions.nav('gruppen') } else { PULS.nudgeNext=PULS.watch+300; n.remove() } })
+  t.appendChild(n) }
+function pulsOpenTheater(startIdx){ if(PULS.theater||!pulsFlagOn()) return
+  const t=document.createElement('div'); t.id='pulsTheater'
+  t.innerHTML='<div class="pt-bg"></div><button class="pt-x" title="Schließen">✕</button>'+
+   '<div class="pt-chips">'+[['alle','Alles'],['studiengang','Mein Studiengang'],['aktivitaeten','Aktivitäten'],['lernen','Lernen']].map(([k,l])=>'<button class="pt-chip" data-f="'+k+'">'+l+'</button>').join('')+'</div>'+
+   '<div class="pt-scroll"></div>'
+  document.body.appendChild(t); PULS.theater=t; PULS.tIdx=startIdx||0
+  pulsTheaterRebuild()
+  requestAnimationFrame(()=>t.classList.add('in'))
+  t.addEventListener('click',pulsTheaterClick); t.addEventListener('dblclick',pulsTheaterDbl)
+  PULS._key=e=>{ if(e.key==='Escape') pulsCloseTheater()
+    else if(e.key==='ArrowDown'||e.key==='ArrowUp'){ const sc=t.querySelector('.pt-scroll')
+      sc.scrollBy({top:(e.key==='ArrowDown'?1:-1)*sc.clientHeight,behavior:'smooth'}); e.preventDefault() } }
+  addEventListener('keydown',PULS._key)
+  PULS.watch=0; PULS.nudgeNext=sceneConfig.puls.nudgeAfterSec
+  PULS.watchT=setInterval(()=>{ if(document.hidden||!PULS.theater) return
+    PULS.watch++; if(PULS.watch>=PULS.nudgeNext&&!PULS.theater.querySelector('.pt-nudge')) pulsNudge() },1000)
+  pulsPauseSync() }
+function pulsCloseTheater(){ const t=PULS.theater; if(!t) return
+  PULS.theater=null; clearInterval(PULS.watchT); PULS.watchT=null
+  if(t._io) t._io.disconnect(); if(PULS._key){ removeEventListener('keydown',PULS._key); PULS._key=null }
+  t.querySelectorAll('video').forEach(v=>{ try{v.pause()}catch(e){} })
+  t.classList.remove('in'); t.classList.add('out')   // weiches Schrumpfen zurück Richtung Mini-Fenster
+  setTimeout(()=>t.remove(),240)
+  pulsPauseSync(); pulsRender() }
+/* Client-Thumbnail beim Upload (Canvas-Frame-Grab) — das Fenster braucht damit nie Video-Decode */
+function pulsThumb(file,isVid,cb){ try{
+  if(!isVid){ const im=new Image(); im.onload=()=>{ const s=Math.min(1,480/im.width)
+      const c=document.createElement('canvas'); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s)
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(im.src); c.toBlob(b=>cb(b),'image/jpeg',.82) }
+    im.onerror=()=>cb(null); im.src=URL.createObjectURL(file); return }
+  const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.preload='auto'
+  v.onloadeddata=()=>{ try{ v.currentTime=Math.min(.5,(v.duration||1)/2) }catch(e){ cb(null) } }
+  v.onseeked=()=>{ const w2=v.videoWidth||480, h2=v.videoHeight||270, s=Math.min(1,480/w2)
+    const c=document.createElement('canvas'); c.width=Math.round(w2*s); c.height=Math.round(h2*s)
+    c.getContext('2d').drawImage(v,0,0,c.width,c.height); URL.revokeObjectURL(v.src); c.toBlob(b=>cb(b),'image/jpeg',.8) }
+  v.onerror=()=>cb(null); v.src=URL.createObjectURL(file) }catch(e){ cb(null) } }
 /* ---- H Projekte: eigener Bestand + Company-Views-Audit (Tabelle company_views kommt aus 03;
    ohne sie liefert die Query nichts → .catch, Audit-Zahl bleibt 0) ---- */
 const PROJ={mine:[],views:{},loaded:false,loading:false}
@@ -3012,37 +3238,83 @@ const actions={
    notify('Mitgliedschaft aktiviert','Willkommen bei „'+g.name+'“.'+(freeJ?' Dein erster Gruppenbeitritt ist kostenlos.':' 1 Credit eingelöst — Guthaben: '+credits()+' Credits.'),'group')
    toast('Du bist „'+g.name+'“ beigetreten',freeJ?'Erster Beitritt kostenlos.':'1 Credit eingelöst · Guthaben: '+credits()+' Credits')
    render() },
- feedUploadModal(){ if(!SB_USER){ toast('Bitte einloggen','','info'); return }
-   openModal('<div class="eyebrow">Campus Feed</div><h3>Beitrag posten</h3>'+
+ feedUploadModal(){ if(!SB_USER){ toast('Bitte einloggen','Poste mit deiner Uni-Mail — Login im Profil.','info'); return }
+   if(!FLAGS.feed){ toast('Feed pausiert','Posten ist gerade deaktiviert (Wartung/Moderation).','info'); return }
+   const mods=(DB.user.modules||[]).map(m=>String((m&&m.name)||m)).filter(Boolean)
+   const secPlace=state.section==='aktivitaeten'?'Lagerfeuer':'Studierendenhaus' // aktueller 3D-Ort als vorgewählter Chip
+   openModal('<div class="eyebrow">Campus Puls</div><h3>Was läuft gerade?</h3>'+
     '<label>Foto (JPG/PNG ≤ 10 MB) oder Video (MP4/WebM ≤ 60 s, ≤ 50 MB) — optional</label><input type="file" id="fd-file" accept="image/jpeg,image/png,video/mp4,video/webm">'+
-    '<label>Caption (≤ 500 Zeichen)</label><textarea id="fd-cap" maxlength="500" rows="3" placeholder="Was passiert auf dem Campus?"></textarea>'+
+    '<label>Caption (≤ 300 Zeichen)</label><textarea id="fd-cap" maxlength="300" rows="3" placeholder="Zeig deinen Campus …"></textarea>'+
+    '<label>Modul-Tag (optional)</label><input id="fd-mod" maxlength="60" list="fd-modl" placeholder="z. B. Mathe 2"><datalist id="fd-modl">'+mods.map(m=>'<option value="'+esc(m)+'">').join('')+'</datalist>'+
+    '<label>Aktivitäts-Tag (optional)</label><input id="fd-act" maxlength="60" list="fd-actl" placeholder="z. B. Bouldern"><datalist id="fd-actl">'+ACTIVITIES.map(a=>'<option value="'+esc(a.n)+'">').join('')+'</datalist>'+
+    '<label>Ort (zeigt deinen Beitrag als Bubble in der 3D-Welt)</label><select id="fd-place"><option value="">— kein Ort —</option>'+Object.keys(PULS_PLACES).map(p2=>'<option'+(p2===secPlace?' selected':'')+'>📍 '+p2+'</option>').join('')+'</select>'+
     '<div class="mrow"><button class="btn ghost" onclick="closeModal()">Abbrechen</button>'+
     '<button class="btn grad" id="fd-go" onclick="actions.feedUpload()">Posten</button></div>'+
-    '<p class="hint">Tipp: große Videos vorher kürzen/komprimieren (≤ 60 s). Captions werden moderiert; ab 3 Meldungen wird ein Beitrag ausgeblendet. Löschen entfernt auch die Datei (DSGVO).</p>') },
+    '<p class="hint">Tipp: Videos vorher kürzen (≤ 60 s). Captions & Tags werden moderiert; ab 3 Meldungen wird ausgeblendet. Löschen entfernt auch die Dateien (DSGVO).</p>') },
  feedUpload(){ const f=(document.getElementById('fd-file').files||[])[0], cap=(document.getElementById('fd-cap').value||'').trim()
+   const mod=(document.getElementById('fd-mod').value||'').trim().slice(0,60), act=(document.getElementById('fd-act').value||'').trim().slice(0,60)
+   const place=(document.getElementById('fd-place').value||'').replace('📍 ','').trim()
    if(!f&&!cap){ toast('Bitte Datei oder Text angeben','','info'); return }
-   if(cap){ const bad=modCheck(cap); if(bad){ const r=modStrike(bad,cap); if(r.banned){ closeModal(); render() } return } }
+   const bad=modCheck(cap)||modCheck(mod)||modCheck(act)
+   if(bad){ const r=modStrike(bad,cap||mod||act); if(r.banned){ closeModal(); render() } return }
    const go=document.getElementById('fd-go'); const reset=()=>{ if(go){ go.disabled=false; go.textContent='Posten' } }
-   const finish=(type,path)=>{ window.__sb.from('posts').insert({author:SB_USER.id,type,storage_path:path,caption:cap||null}).then(r=>{
-     closeModal(); if(r.error){ toast('Posten fehlgeschlagen','Bitte später erneut versuchen.','info'); return }
-     toast('Gepostet ✓','Dein Beitrag ist im Campus Feed.'); feedLoad(true) }).catch(()=>{ closeModal(); toast('Posten fehlgeschlagen','','info') }) }
-   if(!f){ if(go){ go.disabled=true; go.textContent='Postet …' } finish('text',null); return }
+   const finish=(type,path,thumb)=>{ window.__sb.from('posts').insert({author:SB_USER.id,type,storage_path:path,thumb_path:thumb||null,
+     caption:cap||null,module_tag:mod||null,activity_tag:act||null,place_tag:place||null}).then(r=>{
+     closeModal(); PULS.optimistic=null
+     if(r.error){ pulsRender(); toast('Posten fehlgeschlagen','Bitte später erneut versuchen.','info'); return }
+     toast('Gepostet ✓','Dein Beitrag pulsiert jetzt auf dem Campus.'); feedLoad(true) }).catch(()=>{ closeModal(); PULS.optimistic=null; toast('Posten fehlgeschlagen','','info') }) }
+   if(!f){ if(go){ go.disabled=true; go.textContent='Postet …' } PULS.optimistic={cap}; pulsRender(); finish('text',null,null); return }
    const okImg=['image/jpeg','image/png'], okVid=['video/mp4','video/webm'], isVid=okVid.includes(f.type)
    if(!isVid&&!okImg.includes(f.type)){ toast('Dateityp nicht erlaubt','Nur JPG, PNG, MP4 oder WebM.','info'); return }
    if(!isVid&&f.size>10*1024*1024){ toast('Bild zu groß','Max. 10 MB — bitte komprimieren.','info'); return }
    if(isVid&&f.size>50*1024*1024){ toast('Video zu groß','Max. 50 MB / 60 s.','info'); return }
    if(go){ go.disabled=true; go.textContent='Lädt hoch …' }
-   const doUpload=()=>{ const ext=(f.name.split('.').pop()||'bin').toLowerCase()
-     const path='feed/'+SB_USER.id+'/'+uid()+'.'+ext
+   PULS.optimistic={cap}; pulsRender()   // optimistische Karte sofort im Puls-Fenster
+   const doUpload=()=>{ const ext=(f.name.split('.').pop()||'bin').toLowerCase(), base=uid()
+     const path='feed/'+SB_USER.id+'/'+base+'.'+ext
      window.__sb.storage.from('media').upload(path,f,{contentType:f.type}).then(r=>{
-       if(r.error){ closeModal(); toast('Upload fehlgeschlagen','','info'); return }
-       finish(isVid?'video':'image',path) }).catch(()=>{ closeModal(); toast('Upload fehlgeschlagen','','info') }) }
+       if(r.error){ closeModal(); PULS.optimistic=null; pulsRender(); toast('Upload fehlgeschlagen','','info'); return }
+       pulsThumb(f,isVid,tb=>{ if(!tb){ finish(isVid?'video':'image',path,null); return } // Thumb best-effort — Post geht auch ohne raus
+         const tpath='feed/'+SB_USER.id+'/'+base+'_t.jpg'
+         window.__sb.storage.from('media').upload(tpath,tb,{contentType:'image/jpeg'})
+           .then(rr=>finish(isVid?'video':'image',path,rr.error?null:tpath))
+           .catch(()=>finish(isVid?'video':'image',path,null)) }) }).catch(()=>{ closeModal(); PULS.optimistic=null; pulsRender(); toast('Upload fehlgeschlagen','','info') }) }
    if(isVid){ const v=document.createElement('video'); v.preload='metadata'
      v.onloadedmetadata=()=>{ URL.revokeObjectURL(v.src)
-       if(v.duration>61){ toast('Video zu lang','Max. 60 Sekunden.','info'); reset(); return } doUpload() }
+       if(v.duration>61){ toast('Video zu lang','Max. 60 Sekunden.','info'); PULS.optimistic=null; pulsRender(); reset(); return } doUpload() }
      v.onerror=()=>{ doUpload() }; v.src=URL.createObjectURL(f) }
    else doUpload() },
- feedReels(){ openReels() },
+ pulsComments(pid){ if(!window.__sb||!SB_USER){ toast('Bitte einloggen','','info'); return }
+   window.__sb.from('post_comments').select('*').eq('post_id',pid).order('created_at',{ascending:true}).limit(100).then(r=>{
+     const list=r.data||[]; PULS.counts[pid]=list.length
+     const t=PULS.theater; if(t){ const ci=t.querySelector('[data-act="comments"][data-id="'+pid+'"] i'); if(ci) ci.textContent=list.length }
+     openModal('<div class="eyebrow">Campus Puls</div><h3>Kommentare</h3>'+
+      '<div id="pcBox" style="max-height:240px;overflow:auto;margin:6px 0">'+(list.map(cm=>{ const own=SB_USER&&cm.author===SB_USER.id
+        return '<div class="row sp" style="margin:5px 0"><span style="font-size:12.5px"><b>Studi-'+esc(String(cm.author||'').slice(0,4))+'</b> '+esc(cm.text)+'</span>'+
+         (own?'<button class="btn ghost sm" onclick="actions.pulsCommentDel(\''+cm.id+'\',\''+pid+'\')">✕</button>':'')+'</div>' }).join('')||'<p class="hint">Sei die erste Stimme — bleib freundlich 💙</p>')+'</div>'+
+      '<div class="row"><input id="pcIn" maxlength="300" placeholder="Kommentar …" onkeydown="if(event.key===\'Enter\')actions.pulsCommentSend(\''+pid+'\')"><button class="btn grad sm" onclick="actions.pulsCommentSend(\''+pid+'\')">Senden</button></div>'+
+      '<p class="hint">Kurz & freundlich (≤ 300 Zeichen) — Kommentare laufen durch die Moderation.</p>')
+     const bx=document.getElementById('pcBox'); if(bx) bx.scrollTop=1e6 }).catch(()=>{ toast('Kommentare nicht erreichbar','','info') }) },
+ pulsCommentSend(pid){ const inp=document.getElementById('pcIn'); const txt=(inp&&inp.value||'').trim(); if(!txt) return
+   const bad=modCheck(txt); if(bad){ const r=modStrike(bad,txt); if(r.banned){ closeModal(); render() } return }
+   window.__sb.from('post_comments').insert({post_id:pid,author:SB_USER.id,text:txt}).then(r=>{
+     if(r.error){ toast('Senden fehlgeschlagen','','info'); return } actions.pulsComments(pid) }).catch(()=>{}) },
+ pulsCommentDel(cid,pid){ if(!window.__sb) return
+   window.__sb.from('post_comments').delete().eq('id',cid).then(()=>actions.pulsComments(pid)).catch(()=>{}) },
+ pulsShare(pid){ const chats=DB.matches.filter(m=>m.chat_enabled)   // In-App-Teilen: nur in aktive Match-Chats, keine DMs darüber hinaus
+   if(!chats.length){ toast('Noch kein aktiver Chat','Teile Beiträge mit deinen Matches, sobald ein Chat freigeschaltet ist.','info'); return }
+   openModal('<div class="eyebrow">Campus Puls</div><h3>In einen Chat teilen</h3><div class="list">'+
+    chats.map(m=>'<button class="litem" onclick="actions.pulsShareTo(\''+m.id+'\',\''+pid+'\')"><span class="li-t grow"><b>'+esc(m.partner_name)+'</b><i>'+esc(m.module_name||'')+'</i></span><em>↗</em></button>').join('')+
+    '</div><button class="btn ghost w" onclick="closeModal()">Abbrechen</button>') },
+ pulsShareTo(mid,pid){ const p2=FEED.items.find(x=>x.id===pid)
+   const arr=DB.chats[mid]||(DB.chats[mid]=[])
+   arr.push({me:true,txt:'📎 Campus Puls: „'+((p2&&p2.caption)?String(p2.caption).slice(0,80):'Beitrag')+'" — öffne das Puls-Fenster in der App.',at:now()})
+   saveDB(); closeModal(); toast('Geteilt ✓','Der Beitrag ist im Chat verlinkt.') },
+ pulsAuthor(aid){ openModal('<div class="eyebrow">Campus Puls</div><h3>Studi-'+esc(String(aid).slice(0,4))+'</h3>'+
+   '<p class="sub">Kommilo zeigt im Puls bewusst nur ein Alias — keine Follower, kein Ranking von Personen.</p>'+
+   '<div class="mrow"><button class="btn ghost sm" onclick="actions.pulsBlock(\''+esc(aid)+'\')">Blockieren</button>'+
+   '<button class="btn ghost sm" onclick="closeModal()">Schließen</button></div>') },
+ pulsBlock(aid){ actions.feedBlock(aid); closeModal(); pulsTheaterRebuild(); pulsRender() },
  cprjSearch(q){ CPRJ.q=q; render() },
  cprjOpen(pid){ if(!window.__sb||!SB_USER) return
    window.__sb.from('projects').select('*').eq('id',pid).single().then(async r=>{ const pr=r.data; if(!pr) return
@@ -3069,10 +3341,12 @@ const actions={
      FEED.items=FEED.items.filter(x=>x.id!==pid); render()
      toast('Gemeldet','Danke — ab 3 Meldungen wird der Beitrag ausgeblendet und geprüft.') }).catch(()=>{}) },
  feedBlock(author){ if(!(DB.user.blockedUsers||[]).includes(author)){ DB.user.blockedUsers.push(author); saveDB() }
-   FEED.items=FEED.items.filter(x=>x.author!==author); render(); toast('Nutzer blockiert','Du siehst keine Inhalte dieser Person mehr.') },
- feedDelete(pid,path){ if(!window.__sb||!SB_USER) return
-   const done=()=>window.__sb.from('posts').delete().eq('id',pid).then(()=>{ feedLoad(true); toast('Gelöscht','Beitrag und Datei wurden entfernt (DSGVO).') }).catch(()=>{})
-   if(path) window.__sb.storage.from('media').remove([path]).then(done).catch(done) // DSGVO: erst Objekt, dann Zeile
+   FEED.items=FEED.items.filter(x=>x.author!==author); render(); pulsTheaterRebuild(); pulsRender()
+   toast('Nutzer blockiert','Du siehst keine Inhalte dieser Person mehr.') },
+ feedDelete(pid,path,thumb){ if(!window.__sb||!SB_USER) return
+   const done=()=>window.__sb.from('posts').delete().eq('id',pid).then(()=>{ feedLoad(true); toast('Gelöscht','Beitrag und Dateien wurden entfernt (DSGVO).') }).catch(()=>{})
+   const objs=[path,thumb].filter(Boolean)
+   if(objs.length) window.__sb.storage.from('media').remove(objs).then(done).catch(done) // DSGVO: erst Objekte (Medium + Thumb), dann Zeile
    else done() },
  projContact(pid,on){ if(!window.__sb) return
    window.__sb.from('projects').update({contact_release:on===true||on==='true'}).eq('id',pid).then(()=>{ projLoad(true)
@@ -3578,12 +3852,12 @@ function current(){ const s=state.section
   if(s==='international') return globeScene
   if(s==='profil') return avScene
   if(s==='matches') return matchScene
-  if(s==='unterlagen'||s==='feed'||s==='cprojekte') return docScene
+  if(s==='unterlagen'||s==='cprojekte') return docScene
   if(s==='einladungen') return invScene
   if(s==='einstellungen') return gearScene
   if(s==='campus'||s==='gruppen'||s==='partner'||s==='aktivitaeten') return scene
   return ambScene }
-const CAMS={campus:{p:[30,2.6,15],t:[2,2,-10]},aktivitaeten:{p:[-30,7,18],t:[-14,1,4]},gruppen:{p:[26,5.2,38],t:[0,3.4,0]},partner:{p:[22,6.5,30],t:[0,2.2,0]},international:{p:[0,1.2,7],t:[0,0,0]},profil:{p:[0,1.5,3.6],t:[0,1,0]},matches:{p:[2.6,1.9,3.4],t:[0,1.1,0]},unterlagen:{p:[0,1.9,4.6],t:[0,1.2,-.6]},feed:{p:[0,1.9,4.6],t:[0,1.2,-.6]},cprojekte:{p:[0,1.9,4.6],t:[0,1.2,-.6]},einladungen:{p:[0,1.6,4.8],t:[0,1.2,0]},einstellungen:{p:[.4,1.5,4.6],t:[.3,1.4,0]},amb:{p:[0,0,10],t:[0,0,0]}}
+const CAMS={campus:{p:[30,2.6,15],t:[2,2,-10]},aktivitaeten:{p:[-30,7,18],t:[-14,1,4]},gruppen:{p:[26,5.2,38],t:[0,3.4,0]},partner:{p:[22,6.5,30],t:[0,2.2,0]},international:{p:[0,1.2,7],t:[0,0,0]},profil:{p:[0,1.5,3.6],t:[0,1,0]},matches:{p:[2.6,1.9,3.4],t:[0,1.1,0]},unterlagen:{p:[0,1.9,4.6],t:[0,1.2,-.6]},cprojekte:{p:[0,1.9,4.6],t:[0,1.2,-.6]},einladungen:{p:[0,1.6,4.8],t:[0,1.2,0]},einstellungen:{p:[.4,1.5,4.6],t:[.3,1.4,0]},amb:{p:[0,0,10],t:[0,0,0]}}
 /* Tag/Nacht: die Sonnenscheibe liefert der Himmels-Shader; Mond + Sterne nur nachts */
 const moonMesh=new THREE.Mesh(new THREE.SphereGeometry(5,20,16),new THREE.MeshBasicMaterial({color:0xe8ecf4,fog:false}))
 const mShadow=new THREE.Mesh(new THREE.SphereGeometry(4.6,20,16),new THREE.MeshBasicMaterial({color:0x10182a,fog:false}))
@@ -3813,7 +4087,7 @@ function hasActiveGroup(){ return DB.myGroups.some(g=>g.status==='active') }
 function jrFor(gid){ return DB.joinRequests.find(r=>r.group_id===gid&&['requested','approved_payment_pending','joined'].includes(r.status)) }
 function render(){ const unread=DB.notifications.some(n=>!n.read_at)
   const dot=document.getElementById('bellDot'); if(dot)dot.style.display=unread?'block':'none'
-  const NAVS = SB_ROLE==='company' ? SECTIONS_COMPANY : SECTIONS.filter(([id])=>(id!=='feed'||FLAGS.feed)) // I: Company-Minimal-UI · G: Feed-Kill-Switch
+  const NAVS = SB_ROLE==='company' ? SECTIONS_COMPANY : SECTIONS // I: Company-Minimal-UI (Puls lebt außerhalb der Nav, Kill-Switch in pulsSync)
   document.getElementById('nav').innerHTML=NAVS.map(([id,label])=>{ const badge=id==='matches'?DB.matches.length:(id==='einladungen'?(state.invitations.length+DB.joinRequests.filter(r=>r.status==='approved_payment_pending').length):0)
     return '<button class="nitem'+(state.section===id?' act':'')+'" onclick="actions.nav(\''+id+'\')">'+
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="'+ICONS[id]+'"/></svg>'+
@@ -3823,10 +4097,11 @@ function render(){ const unread=DB.notifications.some(n=>!n.read_at)
   const tcr=document.getElementById('t-credits'); if(tcr)tcr.textContent='Credits: '+credits()
   const g=SB_ROLE==='company'?null:currentGuard() // I: Companies durchlaufen kein Studi-Onboarding
   const hud=document.getElementById('hud')
-  if(g){ hud.innerHTML=gateHTML(g); document.getElementById('labels').style.display='none'; return }
-  if(state.section==='international'&&!DB.user.intlWarningAccepted){ hud.innerHTML=intlWarnHTML(); document.getElementById('labels').style.display='none'; return }
+  if(g){ hud.innerHTML=gateHTML(g); document.getElementById('labels').style.display='none'; pulsSync(); return }
+  if(state.section==='international'&&!DB.user.intlWarningAccepted){ hud.innerHTML=intlWarnHTML(); document.getElementById('labels').style.display='none'; pulsSync(); return }
   hud.innerHTML=HUD[state.section]?HUD[state.section]():''
-  document.getElementById('labels').style.display=(state.section==='gruppen'||state.section==='partner'||state.section==='aktivitaeten')?'block':'none' }
+  document.getElementById('labels').style.display=(state.section==='gruppen'||state.section==='partner'||state.section==='aktivitaeten')?'block':'none'
+  pulsSync() }
 const HUD={
  campus(){ const gg=state.groupsByUni.tubs||[]
   return '<div class="card tl" style="max-width:430px"><div class="eyebrow">Campus</div>'+
@@ -3916,28 +4191,6 @@ const HUD={
     if(cat!=='Alle') return ''
     return '<button class="litem'+(state.fireSel===sl.id?' on':'')+'" onclick="actions.fireSelect(\''+sl.id+'\')"><span style="font-size:16px">◌</span><span class="li-t grow"><b style="color:#F59E0B">Frei — Feuer eröffnen</b></span><em>+</em></button>' }).join('')+'</div>'
   return head+tools+detail+list },
- feed(){ if(!FLAGS.feed) return '<div class="card tl"><div class="eyebrow">Campus Feed</div><h2>Feed pausiert</h2><p>Der Campus Feed ist vorübergehend deaktiviert (Wartung/Moderation).</p></div>'
-  if(!window.__sb) return '<div class="card tl"><div class="eyebrow">Campus Feed</div><h2>Offline</h2><p>Der Feed braucht eine Verbindung — bitte später erneut versuchen.</p></div>'
-  if(!SB_USER) return '<div class="card tl"><div class="eyebrow">Campus Feed</div><h2>Login nötig</h2><p>Melde dich mit deiner Uni-Mail an, um Beiträge zu sehen und zu posten.</p><button class="btn grad" onclick="actions.nav(\'profil\')">Zum Login</button></div>'
-  feedLoad()
-  const head='<div class="card tl" style="max-width:420px"><div class="eyebrow">Campus Feed</div><h2>Momente vom Campus</h2>'+
-   '<p>Fotos & kurze Videos (≤ 60 s) aus dem Studi-Leben — chronologisch, ohne Algorithmus. Melden ab 3 Stimmen blendet aus; Captions laufen durch die Moderation.</p>'+
-   '<div class="mrow"><button class="btn grad" onclick="actions.feedUploadModal()">＋ Beitrag posten</button><button class="btn ghost" onclick="actions.feedReels()">▶ Reels</button></div></div>'
-  if(FEED.err) return head+'<div class="card br mut">'+esc(FEED.err)+'</div>'
-  if(!FEED.loaded) return head+'<div class="card br mut">Feed lädt …</div>'
-  const cards=FEED.items.length?FEED.items.map(p2=>{ const alias='Studi-'+String(p2.author||'').slice(0,4)
-    const mine=SB_USER&&p2.author===SB_USER.id
-    const media=p2.type==='image'&&p2._url?'<img src="'+p2._url+'" style="width:100%;border-radius:10px;max-height:340px;object-fit:cover" loading="lazy">'
-      :p2.type==='video'&&p2._url?'<video src="'+p2._url+'" style="width:100%;border-radius:10px;max-height:380px" muted autoplay loop playsinline onclick="this.muted=!this.muted"></video>':''
-    const liked=!!FEED.mine[p2.id], likes=FEED.likes[p2.id]||0
-    return '<div class="card">'+
-     '<div class="row sp"><b>'+esc(alias)+(mine?' <span class="tag" style="color:#14B8A6;background:#14B8A622">Du</span>':'')+'</b><span class="mut">'+new Date(p2.created_at).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span></div>'+
-     media+(p2.caption?'<p style="margin:8px 0 4px">'+esc(p2.caption)+'</p>':'')+
-     '<div class="row" style="gap:8px;margin-top:6px"><button class="btn ghost sm" onclick="actions.feedLike(\''+p2.id+'\')">'+(liked?'♥':'♡')+' '+likes+'</button>'+
-     (mine?'<button class="btn ghost sm" onclick="actions.feedDelete(\''+p2.id+'\',\''+(p2.storage_path||'')+'\')">Löschen</button>'
-          :'<button class="btn ghost sm" onclick="actions.feedReport(\''+p2.id+'\')">Melden</button><button class="btn ghost sm" onclick="actions.feedBlock(\''+esc(p2.author)+'\')">Blockieren</button>')+'</div></div>' }).join('')
-   :'<div class="card mut">Noch keine Beiträge — poste den ersten Campus-Moment!</div>'
-  return head+'<div class="col below" style="max-width:430px">'+cards+'</div>' },
  cprojekte(){ if(!window.__sb||!SB_USER) return '<div class="card tl"><div class="eyebrow">Unternehmen</div><h2>Login nötig</h2><p>Bitte mit Firmen-Mail einloggen (kuratierte Allowlist).</p></div>'
   cprjLoad()
   const q=(CPRJ.q||'').toLowerCase()
@@ -4034,12 +4287,110 @@ actions.accept=function(iid){ const i=state.invitations.find(x=>x.id===iid); if(
 actions.decline=function(iid){ const i=state.invitations.find(x=>x.id===iid); state.invitations=state.invitations.filter(x=>x.id!==iid)
   notify('Einladung abgelehnt',(i?'„'+i.group+'“':'')+' — Ablehnen ist kostenlos.','invite'); render() }
 
+/* ===== IN-WORLD PULS (Owner-Brief 3): Litfaßsäule, Puls-Board, Ort-Bubbles.
+   Performance-Gesetz: NUR Texturen (kein In-World-Video-Decode), Bilder laden lazy in die Canvas,
+   Rotation/Bobbing/Board-Zyklus laufen ausschließlich auf ohnehin gerenderten Frames (On-Demand). ===== */
+function pulsPosterCanvas(w,h,p2){ const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d')
+  const ga=(p2&&p2.grad)||['#4F46E5','#2DD4BF'], g=x.createLinearGradient(0,0,w,h)
+  g.addColorStop(0,ga[0]); g.addColorStop(1,ga[1]); x.fillStyle=g; x.fillRect(0,0,w,h)
+  x.textAlign='center'; x.fillStyle='rgba(255,255,255,.95)'
+  x.font='700 '+Math.round(h*.3)+'px "Plus Jakarta Sans",sans-serif'; x.fillText((p2&&p2.ic)||'🎬',w/2,h*.4)
+  x.font='600 '+Math.round(h*.062)+'px "Plus Jakarta Sans",sans-serif'
+  x.fillText(String((p2&&p2.caption)||'Campus Puls').slice(0,42),w/2,h*.58,w*.86)
+  x.fillStyle='rgba(255,255,255,.75)'; x.font='500 '+Math.round(h*.05)+'px sans-serif'
+  x.fillText(p2&&p2.seed?'Kommilo-Redaktion':(p2?'Studi-'+String(p2.author||'').slice(0,4):''),w/2,h*.68,w*.86)
+  return c }
+const pulsGroup=new THREE.Group(); pulsGroup.name='pulsWorld'; scene.add(pulsGroup)
+const pulsSauleCv=document.createElement('canvas'); pulsSauleCv.width=768; pulsSauleCv.height=384
+const pulsSauleTex=new THREE.CanvasTexture(pulsSauleCv); pulsSauleTex.colorSpace=THREE.SRGBColorSpace
+const pulsSauleMat=new THREE.MeshStandardMaterial({map:pulsSauleTex,roughness:.6,emissive:0xffffff,emissiveMap:pulsSauleTex,emissiveIntensity:.06})
+const pulsSaule=new THREE.Group(); pulsSaule.name='pulsSaule'
+{ const cfg=sceneConfig.puls; pulsSaule.position.set(cfg.saule.x,0,cfg.saule.z) // Vorplatz Süd, am Gehweg — klassische Litfaßsäule
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.72,.78,.3,24),new THREE.MeshStandardMaterial({color:'#4a4d52',roughness:.9}))
+  base.position.y=.15; base.castShadow=true; pulsSaule.add(base)
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.6,.6,2.5,24,1,true),pulsSauleMat)
+  body.position.y=1.55; body.castShadow=true; pulsSaule.add(body)
+  const cap=new THREE.Mesh(new THREE.SphereGeometry(.68,20,10,0,Math.PI*2,0,Math.PI/2),new THREE.MeshStandardMaterial({color:'#3f4246',roughness:.85}))
+  cap.position.y=2.8; cap.castShadow=true; pulsSaule.add(cap)
+  const hit=new THREE.Mesh(new THREE.CylinderGeometry(.85,.85,3.2,10),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}))
+  hit.position.y=1.6; hit.userData.pulsOpen=1; pulsSaule.add(hit)
+  pulsGroup.add(pulsSaule) }
+const pulsBoardCv=document.createElement('canvas'); pulsBoardCv.width=768; pulsBoardCv.height=256
+const pulsBoardTex=new THREE.CanvasTexture(pulsBoardCv); pulsBoardTex.colorSpace=THREE.SRGBColorSpace
+let pulsBoardList=[], pulsBoardIdx=0, pulsBoardT=0
+{ const cfg=sceneConfig.puls; const bg2=new THREE.Group(); bg2.name='pulsBoard'
+  bg2.position.set(cfg.board.x,cfg.board.y,cfg.board.z); bg2.rotation.y=Math.PI // Innen-Screen an der Süd-Eingangswand, blickt in den Raum
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(3.4,1.25,.07),new THREE.MeshStandardMaterial({color:'#26282c',roughness:.5,metalness:.3}))
+  bg2.add(frame)
+  const screenM=new THREE.MeshBasicMaterial({map:pulsBoardTex}) // Basic = selbstleuchtend wie ein echtes Info-Display (auch nachts lesbar)
+  const screen=new THREE.Mesh(new THREE.PlaneGeometry(3.2,1.07),screenM); screen.position.z=.045; bg2.add(screen)
+  const hitB=new THREE.Mesh(new THREE.PlaneGeometry(3.4,1.25),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}))
+  hitB.position.z=.05; hitB.userData.pulsOpen=1; bg2.add(hitB)
+  pulsGroup.add(bg2); pulsGroup.userData.boardHit=hitB; pulsGroup.userData.sauleHit=pulsSaule.children[3] }
+const pulsBubbles=[]
+function pulsBubbleCanvas(p2){ const c=document.createElement('canvas'); c.width=192; c.height=224; const x=c.getContext('2d')
+  x.fillStyle='rgba(255,255,255,.96)'; x.beginPath(); x.roundRect(4,4,184,196,14); x.fill()   // Polaroid-Rahmen
+  x.beginPath(); x.moveTo(84,200); x.lineTo(108,200); x.lineTo(96,220); x.fill()             // Sprechblasen-Spitze zum Ort
+  const fb=pulsPosterCanvas(164,140,p2); x.drawImage(fb,14,14,164,140)
+  x.fillStyle='#4F46E5'; x.beginPath(); x.arc(26,172,7,0,Math.PI*2); x.fill()                // Autor-Punkt (Alias-Farbe)
+  x.fillStyle='#221c35'; x.font='700 15px "Plus Jakarta Sans",sans-serif'; x.textAlign='left'
+  x.fillText(p2.seed?'Redaktion':'Studi-'+String(p2.author||'').slice(0,4),40,177,138)
+  return c }
+function pulsWorldRefresh(){ const items=(FEED.items.length?FEED.items:SEED_POSTS)
+  const x=pulsSauleCv.getContext('2d')   // Litfaßsäule: 3 Plakat-Spalten rund um den Zylinder
+  for(let i=0;i<3;i++){ const p2=items[i%items.length]
+    x.drawImage(pulsPosterCanvas(256,384,p2),i*256,0)
+    const u=p2&&(p2._thumb||(p2.type==='image'&&p2._url))
+    if(u){ const im=new Image(); im.crossOrigin='anonymous'
+      im.onload=((ii,img)=>()=>{ try{ x.drawImage(img,ii*256,0,256,384); pulsSauleTex.needsUpdate=true; invalidate() }catch(e){} })(i,im)
+      im.src=p2._thumb||p2._url } }
+  pulsSauleTex.needsUpdate=true
+  pulsBoardList=items.slice(0,5); pulsBoardIdx=0; pulsBoardDraw()
+  pulsBubbles.forEach(s=>{ pulsGroup.remove(s); s.material.map.dispose(); s.material.dispose() }); pulsBubbles.length=0
+  pulsTargets.length=0; pulsTargets.push(pulsGroup.userData.sauleHit,pulsGroup.userData.boardHit)
+  const tagged=items.filter(p2=>p2.place_tag&&PULS_PLACES[p2.place_tag]).slice(0,sceneConfig.puls.maxBubbles)
+  tagged.forEach((p2,i)=>{ const a=PULS_PLACES[p2.place_tag]                     // neueste zuerst; ältere hängen höher & blasser
+    const m=new THREE.SpriteMaterial({map:new THREE.CanvasTexture(pulsBubbleCanvas(p2)),transparent:true,opacity:Math.max(.45,1-i*.14),depthTest:true})
+    m.map.colorSpace=THREE.SRGBColorSpace
+    const sp=new THREE.Sprite(m); sp.scale.set(1.7,1.98,1)
+    sp.position.set(a.x+(i%2? .9:-.7)*Math.ceil(i/2),a.y+i*.5,a.z); sp.userData={pulsId:p2.id,y0:a.y+i*.5}
+    pulsGroup.add(sp); pulsBubbles.push(sp); pulsTargets.push(sp) })
+  invalidate() }
+function pulsBoardDraw(){ const x=pulsBoardCv.getContext('2d'), p2=pulsBoardList[pulsBoardIdx]; if(!p2) return
+  x.fillStyle='#101223'; x.fillRect(0,0,768,256)
+  x.fillStyle='#2DD4BF'; x.font='800 26px "Plus Jakarta Sans",sans-serif'; x.textAlign='left'
+  x.fillText('◉ CAMPUS PULS',24,44)
+  x.fillStyle='rgba(255,255,255,.55)'; x.font='600 17px sans-serif'; x.fillText('heute auf dem Campus',24,70)
+  x.drawImage(pulsPosterCanvas(280,150,p2),24,86)
+  const u=p2._thumb||(p2.type==='image'&&p2._url)
+  if(u){ const im=new Image(); im.crossOrigin='anonymous'
+    im.onload=()=>{ try{ x.drawImage(im,24,86,280,150); pulsBoardTex.needsUpdate=true; invalidate() }catch(e){} }; im.src=u }
+  x.fillStyle='#fff'; x.font='600 20px "Plus Jakarta Sans",sans-serif'
+  const cap=String(p2.caption||'').slice(0,60); x.fillText(cap,328,120,410)
+  x.fillStyle='rgba(255,255,255,.6)'; x.font='500 16px sans-serif'
+  x.fillText(p2.seed?'Kommilo-Redaktion · Starter':'Studi-'+String(p2.author||'').slice(0,4),328,150,410)
+  for(let i=0;i<pulsBoardList.length;i++){ x.fillStyle=i===pulsBoardIdx?'#2DD4BF':'rgba(255,255,255,.25)'
+    x.beginPath(); x.arc(340+i*20,208,5,0,Math.PI*2); x.fill() }
+  pulsBoardTex.needsUpdate=true }
+function pulsWorldTick(t,dt){ if(!pulsGroup.visible) return   // NUR auf gerenderten Frames aufgerufen (On-Demand-Gesetz)
+  pulsSaule.rotation.y+=dt*sceneConfig.puls.sauleSpeed
+  pulsSauleMat.emissiveIntensity=state.mode==='nacht'?sceneConfig.puls.sauleNightGlow:.06
+  if(t-pulsBoardT>sceneConfig.puls.boardSwapSec&&pulsBoardList.length>1){ pulsBoardT=t; pulsBoardIdx=(pulsBoardIdx+1)%pulsBoardList.length; pulsBoardDraw() }
+  for(let i=0;i<pulsBubbles.length;i++){ const s=pulsBubbles[i]; s.position.y=s.userData.y0+Math.sin(t*.9+i*1.7)*.1 } }
+pulsWorldRefresh() // Erstbefüllung mit den Redaktions-Startern — die Welt erzählt sofort „hier ist Leben"
 const rayc=new THREE.Raycaster(), mouseV=new THREE.Vector2()
 let downAt=null
 renderer.domElement.addEventListener('pointerdown',e=>{ downAt=[e.clientX,e.clientY]
   lastInteract=performance.now(); invalidate() })   // On-Demand: Tap/Klick (auch Tisch-Auswahl ohne Kamerabewegung) hält 5 s wach
 renderer.domElement.addEventListener('pointerup',e=>{
   if(!downAt||Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1])>6) return
+  if(pulsWorldSection()&&pulsFlagOn()&&pulsTargets.length){ // In-World-Puls zuerst (auch auf Campus, wo sonst kein Raycast läuft)
+    const r2=renderer.domElement.getBoundingClientRect()
+    mouseV.x=((e.clientX-r2.left)/r2.width)*2-1; mouseV.y=-((e.clientY-r2.top)/r2.height)*2+1
+    rayc.setFromCamera(mouseV,camera)
+    const hb=rayc.intersectObjects(pulsTargets,false)[0]
+    if(hb){ const id=hb.object.userData.pulsId
+      pulsOpenTheater(id?Math.max(0,pulsItems().findIndex(p2=>p2.id===id)):0); return } }
   if(state.section!=='gruppen'&&state.section!=='partner'&&state.section!=='international'&&state.section!=='aktivitaeten') return
   const r=renderer.domElement.getBoundingClientRect()
   mouseV.x=((e.clientX-r.left)/r.width)*2-1; mouseV.y=-((e.clientY-r.top)/r.height)*2+1
@@ -4209,6 +4560,7 @@ renderer.setAnimationLoop(()=>{ const t=appClock.getElapsedTime()
     windUniform.value=t*sceneConfig.wind.speed                 // Wind/Wasser bleiben (billige Shader-Uniforms)
     if(!boostOn) updateLife(t)                                 // Ph3: CPU-Figuren-Posing während des Ziehens pausieren
     if(!boostOn) flickerFires(t)                               // Feature F: Lagerfeuer-Flackern (nur gerenderte Frames, 0 Alloc)
+    pulsWorldTick(t,dt)                                        // Puls: Säulen-Drehung/Board/Bubbles — nur auf gerenderten Frames
     water.material.uniforms.time.value=t*sceneConfig.water.flowSpeed }
   perfTick(dt) // nur gerenderte Frames werten — die DPR-Stufe folgt der echten Render-Last
   const _t2 = DEBUG_PERF ? performance.now() : 0        // Sec3: Render-Phase abgrenzen
@@ -4299,6 +4651,7 @@ function verifySitePlan(){
   return out }
 /* Einziger 3D-Tuning-Handle: Werte in .config ändern, dann .applyMode() — ersetzt die alten window.__*-Streuungen */
 window.__kommilo3d={ config:sceneConfig, applyMode, setQualityTier, tier:()=>qualityTier, gpu:()=>GPU_RENDERER, build:()=>window.__BUILD, camera, controls, renderer, composer, scene, sun, info:()=>renderer.info.render, verifySitePlan,
+  puls:{ open:pulsOpenTheater, close:pulsCloseTheater, sync:pulsSync, state:PULS }, // Live-Tuning/QA-Handle für Campus Puls (wie config/applyMode)
   /* dev: echte Szenen-Drawcalls messen (Composer-info spiegelt sonst nur den letzten Fullscreen-Pass) */
   sceneDraw:()=>{ const a=renderer.info.autoReset; renderer.info.autoReset=false; renderer.info.reset(); renderer.render(scene,camera)
     const r={calls:renderer.info.render.calls,tris:renderer.info.render.triangles}; renderer.info.autoReset=a; return r },

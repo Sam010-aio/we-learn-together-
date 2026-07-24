@@ -84,6 +84,47 @@ Alle idempotent (`create … if not exists`, `on conflict … do nothing/update`
    `update app_flags set enabled=false where key='feed';` (analog `projects`, `companies`).
 3. RLS-Testnotizen stehen am Ende jeder Migrationsdatei (mit zwei Test-Usern A/B durchspielbar).
 
+## CAMPUS PULS — der Feed als lebendige Oberfläche (Owner-Brief, ersetzt die Sidebar-Sektion)
+Der Feed ist kein Menüpunkt mehr, sondern der sichtbare Herzschlag des Campus — in ≤3 s
+spürbar, ohne Klick. Migration: `kommilo-backend/04-puls.sql` (nach 01–03).
+
+**1 · Puls-Fenster** (Signature-Element): schwebende Glaskarte ~220×360 unten rechts über den
+Stat-Chips, atmet 1–2 px. Zykelt die neuesten Posts STUMM (~6 s, dünner Fortschrittsring),
+Autor-Chip + Tag, sanfter Parallax-Tilt auf dem Medium. Hover: ♥/↗; Tap sonst = Theater.
+Smart: pausiert bei offenem Modal/Gate, verstecktem Tab und während Kamera-Drag (nie GPU von
+der Interaktion stehlen — max. EIN dekodierendes Video, Vorschau bevorzugt Thumbnail).
+Einklappbar zum pulsierenden Punkt; Zustand persistiert (`puls_ui_v1`). Leerer Feed: NIE
+Fake-Aktivität — klar gelabelte „Kommilo-Redaktion · Starter"-Karten + warmer CTA
+(„Zeig den Campus deinen Leuten — poste das erste Reel 🎬"); ehrliche Zahlen, keine erfundenen.
+
+**2 · Puls-Theater**: kein schwarzer Screen — die 3D-Welt bleibt geblurrt/gedimmt sichtbar,
+zentrierter vertikaler Player (Glas, Indigo-Edge-Glow). Vertikales Snap-Scrollen (Wheel/Touch/
+Pfeiltasten), Tap = Ton, Doppel-Tap = ♥ (mit Herz-Burst). Rechte Rail: Like, Kommentar
+(≤300, modCheck), In-App-Teilen (in einen aktiven Match-Chat), Melden; Autor-Chip → Mini-Profil
+(nur Alias, Blockieren). Caption + tappbare Tags (#Modul → Filter „Lernen", #Aktivität →
+„Aktivitäten"); Filter-Chips oben: Alles · Mein Studiengang · Aktivitäten · Lernen.
+ANTI-DOOMSCROLL: nach ~5 min Karte „Genug gescrollt — dein Lerntisch wartet 😉" mit
+„Zur Lerngruppe" / „5 min weiter" — nie blockierend, nichts wird invasiv geloggt (nur ein
+flüchtiger Sekundenzähler im Speicher). Exit = weiches Schrumpfen zurück ins Mini-Fenster.
+
+**3 · In-World Puls**: (a) **Litfaßsäule** (~1,2 m Ø, 3 m) auf dem Studierendenhaus-Vorplatz:
+3 aktuelle Post-Plakate als Textur, dreht sanft, glüht nachts, Klick → Theater. (b) **Puls-Board**:
+schlanker Landscape-Screen im Studierendenhaus nahe dem Eingang, zykelt Top-Posts als Bild.
+(c) **Ort-Bubbles**: Posts mit Ort-Tag (Studierendenhaus/Terrasse/Lagerfeuer) erscheinen als
+Polaroid-Bubble über dem Ort (Billboard-Sprite, Thumb + Autor-Punkt), max. 5, ältere blasser;
+Klick → Theater. **Performance-Gesetz**: NUR Texturen (kein In-World-Video-Decode), Medien lazy,
+alle Animationen ausschließlich auf ohnehin gerenderten Frames (On-Demand-Renderer bleibt Chef).
+
+**Creation-Flow** (3 Taps): „＋" auf Fenster/Theater → Datei (Video ≤60 s/50 MB, Bild ≤10 MB)
+→ Caption ≤300 (modCheck) → optionale Tags Modul/Aktivität/Ort (aktueller 3D-Ort als Chip) →
+Posten. Client generiert beim Upload ein Thumbnail (Canvas-Frame-Grab) → `thumb_path`; optimistische
+Karte „Wird veröffentlicht …" sofort im Fenster. Fortschritt: unbestimmter Ring (supabase-js v2
+liefert keine Upload-Progress-Events — dokumentierte Annäherung).
+
+**Bewusst dokumentierte Abweichungen (v1.1-Kandidaten)**: Kommilo-Sticker-Pack (Brief: optional)
+noch nicht enthalten; In-World-Video-Decode nahe der Litfaßsäule bewusst weggelassen (Texturen
+genügen, Performance-Gesetz); echter %-Fortschritt beim Upload s. o.
+
 ## Bekannte, bewusst akzeptierte Restrisiken (v1)
 - `media_read` erlaubt jeder Rolle das Lesen von `projects/<uid>/…`-Objekten bei bekanntem Pfad
   (Pfad enthält UUID → nicht erratbar). Feed-Objekte sind für Companies gesperrt. Eine feinere
