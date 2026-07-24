@@ -157,6 +157,34 @@ alle ANDEREN Beitretenden. Das setzt Brief-Punkt 2 („NB/keine Angabe dürfen j
 anlegen“) konsistent um, ohne die Beitritts-Semantik zu schwächen; Missbrauch bleibt über den
 Report-Grund abgedeckt (Selbstauskunfts-Modell des Briefs).
 
+## CAMPUS PULS v3 — Puls-Sticker + Zwei-Tab-Feed + Read-Time-Scope
+Migration: `kommilo-backend/06-puls-v3.sql` (nach 01–05). **Kern-Architekturregel:** Autoren taggen
+NIE. Der Scope-Filter (Uni/Studiengang/Module) wird beim LESEN aus dem Autorprofil berechnet
+(`profiles.university/program/modules`) — keine manuellen Tag-Eingaben mehr. Serverseitig via
+`feed(scope,kind)`-RPC (joined profiles); der Client spiegelt seine Profil-Felder beim Login/Speichern.
+
+- **Puls-Sticker (geschlossen):** schwebende Squircle (Superellipse, 9:16), Ruhe-Neigung −4°,
+  „liquid glass“-Rand + rotierendes Rim-Light (Indigo→Teal, 20 s), Bob/Sway/Parallax, Hover
+  richtet gerade + hebt, randlos gefülltes neuestes Reel (stumm-Autoplay, 6-s-Wechsel, dünner
+  Fortschrittsbalken, „• Puls“-Pulsdot, Autor-Avatar). Einklappbar zu 44-px-Bubble (Stuhllogo,
+  Zustand persistiert). Leer: gelabelte Kommilo-Starter-Reels + „Poste das erste Reel 🎬“.
+  `prefers-reduced-motion` schaltet Bewegung ab (statische Neigung + Cross-Fade).
+- **Offenes Panel:** 3D bleibt sichtbar (blur 14px + dim), Glas-Card, Morph aus dem Sticker.
+  Zwei Segment-Tabs **Reels · Posts** (Default Reels), darunter der eingeklappte Scope-Filter.
+- **Reels-Tab:** Vollhöhen-Vertikal-Player (Snap/Swipe/Pfeile), Tap=Ton, Doppel-Tap=♥;
+  Rechte Rail ♥/💬/↗ (in Match-/Gruppen-Chat)/⚑; Autor→Mini-Profil; Caption ≤150 „mehr“.
+- **Posts-Tab:** Karten (Avatar, Name, Zeit, optionales Bild lazy, Text ≤300 https-linkify,
+  ♥/💬/⚑), Skeletons beim Laden.
+- **Creation (keine Tag-Felder):** „＋“-FAB adaptiv — Reels→„Reel posten“ (Video ≤60 s/50 MB +
+  Caption ≤150); Posts→Toggle „Bild + Text“ (Bild ≤10 MB + Text ≤300) / „Nur Text“ (≤300).
+  Live-Zeichenzähler, optimistischer Insert („Wird veröffentlicht …“), Roll-back bei Fehler.
+- **Scope-Filter (eingeklappt):** Pille „Anzeigen: Meine Uni ▾“; klappt zu Meine Uni · Mein
+  Studiengang · Meine Module · Alles auf Kommilo; filtert beide Tabs live (Server-Scope), Icon+Label.
+- **Backend:** posts +`kind(reel|post)`/`media_type`/`text`; `feed(scope,kind)`-RPC; ≥3 Reports
+  blenden aus (`post_report_count`); Kill-Switch `app_flags.puls`; Storage-Löschung entfernt Objekte.
+- **Performance:** max. EIN dekodierendes Video; Rim-Light + alle Videos pausieren bei Modal/Gate,
+  `document.hidden` und Kamera-Drag. In-World-Puls (Litfaßsäule/Board) öffnet nun das v3-Panel.
+
 ## Bekannte, bewusst akzeptierte Restrisiken (v1)
 - `media_read` erlaubt jeder Rolle das Lesen von `projects/<uid>/…`-Objekten bei bekanntem Pfad
   (Pfad enthält UUID → nicht erratbar). Feed-Objekte sind für Companies gesperrt. Eine feinere

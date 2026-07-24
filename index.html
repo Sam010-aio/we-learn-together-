@@ -2680,9 +2680,15 @@ function cprjLoad(force){ if(!window.__sb||!SB_USER||CPRJ.loading||(CPRJ.loaded&
 function sbBoot(){ if(!window.__sb) return
   try{ window.__sb.from('app_flags').select('key,enabled').then(r=>{ (r.data||[]).forEach(f=>{ FLAGS[f.key]=!!f.enabled }); render() }).catch(()=>{}) }catch(e){}
   try{ window.__sb.auth.getUser().then(r=>{ SB_USER=(r.data&&r.data.user)||null
+    if(SB_USER){ syncProfileScope() } // Puls v3: Autorprofil-Scope (Uni/Studiengang/Module) für den Read-Time-Join spiegeln
     if(SB_USER&&FLAGS.companies){ window.__sb.rpc('claim_company_role').then(rr=>{ const v=rr.data // I: Rolle nur bei approved Domain
       if(v&&v!=='waitlist'&&v!=='no-user'){ SB_ROLE='company'; SB_COMPANY=v; state.section='cprojekte' } render() }).catch(()=>render()) }
     render() }).catch(()=>{}) }catch(e){} }
+/* Puls v3: Scope wird beim Lesen aus den Autorprofilen berechnet — der Client spiegelt seine
+   eigenen Profil-Felder (Uni/Studiengang/Module) nach profiles, damit die feed()-RPC joinen kann. */
+function syncProfileScope(){ if(!window.__sb||!SB_USER) return
+  const p=DB.user.profile||{}, mods=(DB.user.modules||[]).map(m=>String((m&&m.name)||'').trim()).filter(Boolean)
+  try{ window.__sb.from('profiles').upsert({id:SB_USER.id,university:p.universityId||null,program:p.program||null,modules:mods}).then(()=>{}).catch(()=>{}) }catch(e){} }
 /* ---- G Campus Feed: Cache + Laden (feed_visible_posts = Report-Schwelle serverseitig) ---- */
 const FEED={items:[],likes:{},mine:{},loaded:false,loading:false,err:null}
 function feedLoad(force){ if(!window.__sb||!SB_USER||FEED.loading||(FEED.loaded&&!force)) return
@@ -3742,7 +3748,7 @@ const actions={
    const req=['p-name','p-age','p-prog','p-sem','p-lang','p-avail','p-goal']
    if(req.some(id=>!document.getElementById(id).value.trim())){ document.getElementById('ob-err').textContent='Bitte alle Pflichtfelder ausfüllen (Geschlecht ist optional).'; return }
    Object.assign(DB.user.profile,{complete:true,name:g('p-name'),age:g('p-age'),gender:g('p-gender'),pronouns:g('p-pron').slice(0,20),program:g('p-prog'),degree:document.getElementById('p-degree').value,semester:g('p-sem'),language:g('p-lang'),learnMode:document.getElementById('p-mode').value,availability:g('p-avail'),goal:g('p-goal')})
-   saveDB(); render() },
+   saveDB(); syncProfileScope(); render() },
  policyInfo(){ toast('Geschützte Lernräume',POLICY_LEGAL,'info') },
  genderGateSave(){ DB.user.profile.gender=document.getElementById('gg-sel').value; saveDB(); closeModal()
    const cb=state._genderGateOk; state._genderGateOk=null; if(cb) cb() },
@@ -3758,7 +3764,7 @@ const actions={
  obAddModule(){ DB.user.modules.push({name:'',total:'',lecture:'',exercise:'',tutorial:'',self:'',exam:'',attempt:'1. Versuch',status:MODULE_STATI[0]}); saveDB(); render() },
  obModField(i,k,v){ DB.user.modules[i][k]=(k==='name'||k==='attempt'||k==='status')?v:Math.max(0,Math.min(100,+v||0)); saveDB() },
  obModulesDone(){ if(!DB.user.modules.length||DB.user.modules.some(m=>!moduleComplete(m))){ document.getElementById('ob-err').textContent='Ohne vollständigen Modulfortschritt kein Zugriff auf Matching, Gruppen, Chat oder Club Unterlagen.'; return }
-   saveDB(); notify('Willkommen bei Kommilo','Bei uns zählt nicht dein Gesicht — sondern dein Lernziel.','info'); render() },
+   saveDB(); syncProfileScope(); notify('Willkommen bei Kommilo','Bei uns zählt nicht dein Gesicht — sondern dein Lernziel.','info'); render() },
  obReset(){ localStorage.removeItem('wlt_db_v1'); location.reload() }
 }
 window.actions=actions; window.closeModal=closeModal
