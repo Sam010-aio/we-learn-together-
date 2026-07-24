@@ -125,6 +125,38 @@ liefert keine Upload-Progress-Events — dokumentierte Annäherung).
 noch nicht enthalten; In-World-Video-Decode nahe der Litfaßsäule bewusst weggelassen (Texturen
 genügen, Performance-Gesetz); echter %-Fortschritt beim Upload s. o.
 
+## GESCHLECHTS-RÄUME — Nur Frauen / Nur Männer / Gemischt (Matches & Lerngruppen)
+Migration: `kommilo-backend/05-gender-policy.sql`. Bei JEDER neuen Lerngruppe UND jedem neuen
+Lernpartner-Request wählt der Nutzer eine von drei Policies (Gemischt vorausgewählt).
+
+**Taxonomie (Profil = Wahrheit):** `profiles.gender ∈ {female,male,nonbinary,prefer_not}` + optional
+`pronouns` (≤20). Labels: Frau · Mann · Nicht-binär/divers · Keine Angabe — **nie „Andere“**.
+
+**Policy → Eignung (client-erzwungen; Server-RPC `can_join_room` für künftiges Backend):**
+`mixed` = alle (inkl. nonbinary & keine Angabe); `women_only` = nur `female`; `men_only` = nur `male`.
+Eignung wird VOR jeder Credit-Buchung geprüft — **nie ein Credit bei Ausschluss** (`join`/`joinPay`/`connectSend`).
+
+**Innovation:** Sub-Flag `nonbinary_welcome` (default true) auf Mixed-Räumen; optionaler
+`reason_tag` (Komfort · Kulturell/Religiös · Fokus · Sicherheit) dezent auf dem Badge — Framing als
+persönlicher Komfort (rechtlich tragfähig, AGG-positive-Maßnahme).
+
+**UX:** 3-Kachel-Selektor (♀ / ♂ / ⚥) gleichwertig, „Gemischt“ vorgewählt; Selbstauskunfts-Hinweis +
+(i)-Tooltip mit Rechts-/Komfort-Note; Badges (farbenblind-sicher: Icon + Text) auf Gruppen-Detail,
+Tisch-Liste, 3D-Tischlabel und Match-Karte; Filter „Raumtyp“ in Lerngruppen & Lernpartner
+(ungeeignete Räume sichtbar **gesperrt** mit Tooltip, nie still versteckt); Gate: Binärraum
+anlegen/beitreten setzt Profil-Geschlecht voraus (sonst Aufforderung zur Angabe).
+
+**Moderation & Ehrlichkeit:** Geschlecht ist Selbstauskunft (Komfort/Vertrauen, **keine**
+Sicherheitsgrenze). Titel/Gründe laufen durch `modCheck`; Report-Grund „Falsche Geschlechtsangabe
+im geschützten Raum“ → bestehende 3-Strike-Pipeline. Fremdes Geschlecht wird nie über das hinaus
+gezeigt, was der Badge impliziert (Privatsphäre-Toggle respektiert).
+
+**Bewusste Entscheidung (Decision Log):** „Räume anlegen“ = der Ersteller wird sofort Admin/Mitglied.
+Der Ersteller ist damit immer in seinem eigenen Raum; die Eignungsprüfung `can_join_room` gilt für
+alle ANDEREN Beitretenden. Das setzt Brief-Punkt 2 („NB/keine Angabe dürfen jede Policy für sich
+anlegen“) konsistent um, ohne die Beitritts-Semantik zu schwächen; Missbrauch bleibt über den
+Report-Grund abgedeckt (Selbstauskunfts-Modell des Briefs).
+
 ## Bekannte, bewusst akzeptierte Restrisiken (v1)
 - `media_read` erlaubt jeder Rolle das Lesen von `projects/<uid>/…`-Objekten bei bekanntem Pfad
   (Pfad enthält UUID → nicht erratbar). Feed-Objekte sind für Companies gesperrt. Eine feinere

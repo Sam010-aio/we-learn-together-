@@ -3040,6 +3040,7 @@ function creditShop(){ const packs=PRICING.CREDIT_PACKS
    '<div class="mrow"><button class="btn ghost w" onclick="closeModal()">Schließen</button></div>') }
 function createMatchFromInvitation(inv){ const free=!DB.user.firstMatchUsed
   const m={id:uid(),partner_name:inv.receiver_name,partner_id:inv.receiver_id,module_name:inv.module_name,locked:true,
+    gender_policy:inv.gender_policy||'mixed',reason_tag:inv.reason_tag||null,
     my_unlock:'pending',their_unlock:'paid',chat_enabled:false,safety_seen:false,created_at:now()}
   if(free){ DB.user.firstMatchUsed=true; m.my_unlock='free'; m.locked=false }
   else if(creditSpend(1,'Match · '+inv.receiver_name,m.id)){ m.my_unlock='paid'; m.locked=false
@@ -3181,18 +3182,29 @@ const actions={
  save(){ toast('Einstellungen gespeichert','Alles bleibt für diese Session aktiv.'); if(state.settings.glb) loadGlb(state.settings.glb) },
  connect(pid){ if(guardBlock())return
    const p=state.partners.find(x=>x.id===pid); if(!p||p.req) return
-   useInvitation()
-   const inv={id:uid(),receiver_id:pid,receiver_name:p.name,module_name:p.subject,status:'pending',created_at:now()}
-   DB.invitationsOut.push(inv); saveDB()
-   p.req=true; if(typeof updatePartnerRings==='function')updatePartnerRings()
-   notify('Einladung gesendet','Lern-Einladung an '+p.name+' ('+p.subject+') ist unterwegs.','invite')
-   toast('Zum Lernen eingeladen',p.name+' · '+p.subject+' — Antwort kommt als Benachrichtigung.')
-   render()
-   setTimeout(()=>{ inv.status='accepted'; inv.responded_at=now()
-     const m=createMatchFromInvitation(inv)
-     notify('Match akzeptiert',p.name+' lernt mit dir '+inv.module_name+'.'+(m.my_unlock==='free'?' Dein erstes Lernmatch ist kostenlos.':' 1 Credit erforderlich.'),'match')
-     toast('Match! '+p.name+' hat angenommen',m.my_unlock==='free'?'Erstes Lernmatch kostenlos — Chat kann geöffnet werden.':'Löse 1 Credit ein, um den Chat zu öffnen.')
-     render() },4000) },
+   openModal('<div class="eyebrow">Lernpartner</div><h3>'+esc(p.name)+' einladen</h3>'+
+    '<p class="sub">'+esc(p.subject)+' · '+p.sem+'. Semester</p>'+policySelectorHTML()+
+    '<div class="mrow"><button class="btn ghost" onclick="closeModal()">Abbrechen</button><button class="btn grad" onclick="actions.connectSend(\''+pid+'\')">Einladen</button></div>') },
+ connectSend(pid){ const p=state.partners.find(x=>x.id===pid); if(!p||p.req) return
+   const pol=readPolicy()
+   const go=()=>{ // Eignung: beide Seiten müssen die Policy erfüllen (Selbstauskunft)
+     if(pol.gender_policy!=='mixed'){
+       if(!canJoinRoom(pol.gender_policy)){ toast('Passt nicht zum Raumtyp','Für „'+ROOM_POLICIES[pol.gender_policy].label+'“ musst du selbst passend sein. '+SELF_DECL_HINT,'info'); return }
+       if(!canJoinRoom(pol.gender_policy,p.gender)){ toast('Passt nicht zum Raumtyp',esc(p.name)+' erfüllt „'+ROOM_POLICIES[pol.gender_policy].label+'“ nicht. '+SELF_DECL_HINT,'info'); return } }
+     closeModal(); useInvitation()
+     const inv={id:uid(),receiver_id:pid,receiver_name:p.name,module_name:p.subject,status:'pending',created_at:now(),...pol}
+     DB.invitationsOut.push(inv); saveDB()
+     p.req=true; if(typeof updatePartnerRings==='function')updatePartnerRings()
+     notify('Einladung gesendet','Lern-Einladung an '+p.name+' ('+p.subject+') ist unterwegs.','invite')
+     toast('Zum Lernen eingeladen',p.name+' · '+p.subject+' — Antwort kommt als Benachrichtigung.')
+     render()
+     setTimeout(()=>{ inv.status='accepted'; inv.responded_at=now()
+       const m=createMatchFromInvitation(inv)
+       notify('Match akzeptiert',p.name+' lernt mit dir '+inv.module_name+'.'+(m.my_unlock==='free'?' Dein erstes Lernmatch ist kostenlos.':' 1 Credit erforderlich.'),'match')
+       toast('Match! '+p.name+' hat angenommen',m.my_unlock==='free'?'Erstes Lernmatch kostenlos — Chat kann geöffnet werden.':'Löse 1 Credit ein, um den Chat zu öffnen.')
+       render() },4000) }
+   if(pol.gender_policy!=='mixed'&&!DB.user.profile.gender){ genderGate(pol.gender_policy,go); return }
+   go() },
  openTable(id){ if(guardBlock())return
    if(state.myTable===id){ toast('Das ist schon dein Tisch','Du wartest hier auf Anfragen.','info'); return }
    state.myTable=id; rebuildPartners(); render()
@@ -4217,18 +4229,21 @@ const HUD={
   '<div class="stat"><b style="color:#8B5CF6">'+DB.matches.length+'</b><span>Matches</span></div>'+
   '<div class="stat"><b style="color:#4F46E5">'+state.invitations.length+'</b><span>Einladungen</span></div></div>'+
   '<div class="chiph bl">Ziehen = drehen · Scrollen = zoomen</div>' },
- partner(){ const left=credits()
+ partner(){ const left=credits(); const pf=state.partnerFilter||'alle'
   return '<div class="card tl" style="max-width:410px"><div class="eyebrow">Lernpartner finden</div><h2>Setz dich dazu</h2>'+
   '<p>Kommiliton:innen sitzen allein am Tisch — der Stuhl daneben ist frei. Klicke einen Tisch für eine <b>Lern-Einladung</b> (kein Dating, kein Swipe). Oder öffne selbst einen freien 2er-Tisch und warte auf Anfragen.</p>'+
-  '<div class="mrow"><span class="tag teal" style="cursor:pointer" onclick="actions.shop()">💎 '+left+' Credits · kaufen</span><span class="tag">Einladungen: unbegrenzt & kostenlos</span>'+modeBtns()+'</div></div>'+
-  '<div class="card br list">'+state.partners.map((p,i)=>'<div class="litem stat2">'+avatarB(p.name,i)+'<span class="li-t grow"><b>'+esc(p.name)+'</b><i>'+esc(p.subject)+' · '+p.sem+'. Sem · passt: gleiches Modul, ähnlicher Fortschritt</i></span>'+ring(p.match)+'</div>'+
-  '<button class="btn grad w" style="margin:0 0 10px" '+(p.req?'disabled':'')+' onclick="actions.connect(\''+p.id+'\')">'+(p.req?'Eingeladen ✓':'Zum Lernen einladen')+'</button>').join('')+'</div>'+
+  '<div class="mrow"><span class="tag teal" style="cursor:pointer" onclick="actions.shop()">💎 '+left+' Credits · kaufen</span><span class="tag">Einladungen: unbegrenzt & kostenlos</span>'+modeBtns()+'</div>'+
+  '<div class="mrow" style="margin-top:6px"><span class="gp-rlbl">Raumtyp:</span>'+roomFilterChips('partnerFilter')+'</div></div>'+
+  '<div class="card br list">'+state.partners.map((p,i)=>{ const elig=pf==='alle'||pf==='mixed'||canJoinRoom(pf,p.gender) // ineligible sichtbar, aber gesperrt (Privatsphäre: kein fremdes Geschlecht anzeigen)
+    return '<div class="litem stat2'+(elig?'':' gp-lock')+'">'+avatarB(p.name,i)+'<span class="li-t grow"><b>'+(elig?'':'🔒 ')+esc(p.name)+'</b><i>'+esc(p.subject)+' · '+p.sem+'. Sem · passt: gleiches Modul, ähnlicher Fortschritt</i></span>'+ring(p.match)+'</div>'+
+    (elig?'<button class="btn grad w" style="margin:0 0 10px" '+(p.req?'disabled':'')+' onclick="actions.connect(\''+p.id+'\')">'+(p.req?'Eingeladen ✓':'Zum Lernen einladen')+'</button>'
+         :'<button class="btn grad w gp-lock" style="margin:0 0 10px" disabled title="Für „'+esc(ROOM_POLICIES[pf].label)+'“ nicht verfügbar">Für diesen Raumtyp nicht verfügbar</button>') }).join('')+'</div>'+
   '<div class="chiph bl">Besetzter Tisch = einladen · freier Tisch = selbst öffnen</div>' },
  matches(){ const items=DB.matches.length?DB.matches.map((m,i)=>{ let btn=''
     if(m.locked&&matchNeedsDeposit(m)) btn='<button class="btn grad sm" onclick="actions.deposit(\''+m.id+'\')">1 Credit einlösen</button>'
     else if(!m.chat_enabled) btn='<button class="btn grad sm" onclick="actions.openChat(\''+m.id+'\')">Chat öffnen</button>'
     else btn='<button class="btn grad sm" onclick="actions.openChat(\''+m.id+'\')">Nachricht</button>'
-    return '<div class="card row">'+avatarB(m.partner_name,i+1)+'<span class="li-t grow"><b>'+esc(m.partner_name)+' <span class="tag viol">'+esc(m.module_name)+'</span></b><i>'+(m.locked?(matchNeedsDeposit(m)?'Wartet auf dein Credits (0,25 €)':'Wartet auf Freischaltung'):(m.chat_enabled?'Chat aktiv':'Bereit — Sicherheitshinweis noch offen'))+'</i></span>'+
+    return '<div class="card row">'+avatarB(m.partner_name,i+1)+'<span class="li-t grow"><b>'+esc(m.partner_name)+' <span class="tag viol">'+esc(m.module_name)+'</span> '+policyBadge(m.gender_policy,m.reason_tag)+'</b><i>'+(m.locked?(matchNeedsDeposit(m)?'Wartet auf dein Credits (0,25 €)':'Wartet auf Freischaltung'):(m.chat_enabled?'Chat aktiv':'Bereit — Sicherheitshinweis noch offen'))+'</i></span>'+
     '<span class="row">'+btn+'<button class="btn ghost sm" onclick="actions.unwohl(\''+esc(m.partner_name)+'\')">🚪</button></span></div>' }).join('')
    :'<div class="card mut">Noch keine Matches. Dein erstes Lernmatch ist kostenlos. Danach kostet jedes bestätigte Lernmatch 1 Credit. Kein Abo.</div>'
   return '<div class="card tl"><div class="eyebrow">Matches</div><h2>Deine Lern-Verbindungen</h2><p>Chat öffnet erst, wenn beide Seiten den Freischalt-Status abgeschlossen haben.</p></div>'+
