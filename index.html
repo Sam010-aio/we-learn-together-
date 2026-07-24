@@ -14,11 +14,11 @@
 /* ===== Delivery / Build-Sichtbarkeit (LIGHTNESS RESCUE Ph0) =====
    EINE Quelle der Build-Kennung — geteilt mit sw.js (Cache-Name = kommilo-v${id}). Sichtbar als
    dezenter Fuß-Stempel und im ?debug=perf-Overlay; so ist am Bildschirm ablesbar, welcher Build läuft. */
-window.__BUILD = { id: '2026.07.23-813e72f', date: '2026-07-23', hash: '813e72f' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
+window.__BUILD = { id: '2026.07.23-1243154', date: '2026-07-23', hash: '1243154' }; // id = Delivery-Stempel (Datum-Inhalts-Commit) — GLEICHE Zeichenkette wie BUILD in sw.js ⇒ Cache-Name = kommilo-v<id>
 (function(){
   // Fuß-Stempel setzen, sobald der Body existiert (robust — auch wenn die 3D-App nicht bootet)
   function stamp(){ var el=document.getElementById('buildstamp'); if(!el) return
-    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-813e72f (Format laut Spezifikation)
+    el.textContent='v'+window.__BUILD.id }   // → v2026.07.23-1243154 (Format laut Spezifikation)
   if(document.readyState!=='loading') stamp(); else addEventListener('DOMContentLoaded', stamp)
   if(!('serviceWorker' in navigator)) return
   // Selbst-enthaltener Reload-Hinweis — unabhängig vom App-Toast, wirkt auch bei kaputter/veralteter App
@@ -256,6 +256,28 @@ input:focus,select:focus{border-color:#4F46E5;box-shadow:0 0 0 3px rgba(79,70,22
 #fd-prev{margin:6px 0}
 #fd-prev img{width:100%;max-height:160px;object-fit:cover;border-radius:12px}
 #fd-prev .fd-vchip{display:inline-flex;align-items:center;gap:6px;background:rgba(79,70,229,.1);color:#4F46E5;border-radius:99px;padding:5px 11px;font-size:12px;font-weight:700}
+/* Geschlechts-Räume: 3-Kachel-Selektor, Grund-Chips, farbenblind-sichere Badges (Icon + Text) */
+.gp-tiles{display:flex;gap:8px;margin:4px 0 8px}
+.gp-tile{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border:1.5px solid rgba(34,28,53,.12);border-radius:14px;cursor:pointer;background:#fff;transition:border-color .15s,background .15s;text-align:center}
+.gp-tile input{position:absolute;opacity:0;width:0;height:0}
+.gp-tile .gp-ic{font-size:22px;line-height:1}
+.gp-tile b{font-size:11.5px;font-weight:700;color:#221c35}
+.gp-tile:has(input:checked){border-color:#4F46E5;background:#4F46E50f;box-shadow:0 0 0 2px #4F46E533}
+.gp-reasons{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px}
+.gp-rlbl{font-size:11px;color:#6d6787;font-weight:600}
+.gp-rchip{cursor:pointer}
+.gp-rchip input{position:absolute;opacity:0;width:0;height:0}
+.gp-rchip span{display:inline-block;padding:4px 10px;border-radius:99px;font-size:11.5px;font-weight:700;background:#f0f0f6;color:#4b4666}
+.gp-rchip:has(input:checked) span{background:#4F46E5;color:#fff}
+.gp-nb{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#221c35;margin:2px 0}
+.gp-nb input{width:auto}
+.gp-i{width:16px;height:16px;border-radius:99px;border:none;background:#e7e6f0;color:#6d6787;font-size:10px;font-weight:800;cursor:pointer;font-style:italic}
+.gp-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:99px;font-size:10.5px;font-weight:800;white-space:nowrap}
+.gp-lock{opacity:.62}
+.gp-lock .btn.grad{filter:grayscale(.7)}
+@media (prefers-color-scheme:dark){ .gp-tile{background:#20233a;border-color:rgba(255,255,255,.12)} .gp-tile b{color:#e8ecff} .gp-rchip span{background:#2a2d47;color:#c9d2ff} }
+:root[data-theme="dark"] .gp-tile{background:#20233a;border-color:rgba(255,255,255,.12)}
+:root[data-theme="dark"] .gp-tile b{color:#e8ecff}
 .pt-nudge{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:6;background:rgba(255,255,255,.95);border-radius:16px;padding:14px 18px;box-shadow:0 18px 44px rgba(0,0,0,.4);text-align:center;animation:ptNudge .25s ease-out}
 .pt-nudge b{font-size:13.5px}
 @keyframes ptNudge{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
@@ -2593,21 +2615,21 @@ const state={section:'campus',uniId:'tubs',selected:null,mode:'tag',myTable:null
    {id:'f3',activity:'musik',members:2,capacity:5,host:'Mara Schulz',slotId:'fs7',expires_at:Date.now()+5*3600*1000}],
   lmu:[],rwth:[],kit:[]},
  groupsByUni:{
-  tubs:[{id:'g1',name:'Spezi Team',subject:'Mathe 2',members:1,capacity:7,color:'#6366F1',slotId:'t1'},
-   {id:'g2',name:'Algorithms',subject:'Algorithmen',members:4,capacity:6,color:'#FB7185',slotId:'t2'},
-   {id:'g3',name:'Circuit Lab',subject:'Elektrotechnik',members:2,capacity:5,color:'#14B8A6',slotId:'t3'},
-   {id:'g4',name:'Statik',subject:'Technische Mechanik',members:3,capacity:6,color:'#F59E0B',slotId:'t4'},
-   {id:'g5',name:'Prog 1',subject:'Programmieren 1',members:5,capacity:8,color:'#38BDF8',slotId:'t5'},
-   {id:'g6',name:'Thermo',subject:'Thermodynamik',members:2,capacity:5,color:'#8B5CF6',slotId:'t6'}],
+  tubs:[{id:'g1',name:'Spezi Team',subject:'Mathe 2',members:1,capacity:7,color:'#6366F1',slotId:'t1',gender_policy:'mixed',nonbinary_welcome:true},
+   {id:'g2',name:'Algorithms',subject:'Algorithmen',members:4,capacity:6,color:'#FB7185',slotId:'t2',gender_policy:'mixed',nonbinary_welcome:true},
+   {id:'g3',name:'Circuit Lab',subject:'Elektrotechnik',members:2,capacity:5,color:'#14B8A6',slotId:'t3',gender_policy:'women_only',reason_tag:'Komfort'},
+   {id:'g4',name:'Statik',subject:'Technische Mechanik',members:3,capacity:6,color:'#F59E0B',slotId:'t4',gender_policy:'mixed',nonbinary_welcome:true},
+   {id:'g5',name:'Prog 1',subject:'Programmieren 1',members:5,capacity:8,color:'#38BDF8',slotId:'t5',gender_policy:'men_only',reason_tag:'Fokus'},
+   {id:'g6',name:'Thermo',subject:'Thermodynamik',members:2,capacity:5,color:'#8B5CF6',slotId:'t6',gender_policy:'mixed',nonbinary_welcome:true}],
   lmu:[{id:'g7',name:'Jura AG',subject:'Staatsrecht',members:3,capacity:6,color:'#8B5CF6',slotId:'t1'},{id:'g8',name:'BWL Crew',subject:'Marketing',members:2,capacity:5,color:'#FB7185',slotId:'t3'}],
   rwth:[{id:'g9',name:'MechaTeam',subject:'Maschinenelemente',members:4,capacity:6,color:'#0EA5E9',slotId:'t2'},{id:'g10',name:'InfoLab',subject:'Datenstrukturen',members:3,capacity:7,color:'#14B8A6',slotId:'t5'}],
   kit:[{id:'g11',name:'Energie',subject:'Energietechnik',members:2,capacity:6,color:'#14B8A6',slotId:'t1'},{id:'g12',name:'MatheZirkel',subject:'Analysis',members:5,capacity:8,color:'#F59E0B',slotId:'t6'}]},
- partners:[{id:'p1',name:'Lena Vogt',subject:'Mathe 2',sem:4,match:96,tags:['Analysis','Abends']},
-  {id:'p2',name:'Jonas Reincke',subject:'Algorithmen',sem:3,match:91,tags:['Python','Remote']},
-  {id:'p3',name:'Aylin Kaya',subject:'Elektrotechnik',sem:2,match:88,tags:['Labor']},
-  {id:'p4',name:'Tom Bäcker',subject:'Technische Mechanik',sem:4,match:84,tags:['Statik','Bibliothek']},
-  {id:'p5',name:'Mara Schulz',subject:'Programmieren 1',sem:1,match:82,tags:['Java']},
-  {id:'p6',name:'Ravi Menon',subject:'Thermodynamik',sem:3,match:79,tags:['Formeln','Morgens']}],
+ partners:[{id:'p1',name:'Lena Vogt',subject:'Mathe 2',sem:4,match:96,tags:['Analysis','Abends'],gender:'female'},
+  {id:'p2',name:'Jonas Reincke',subject:'Algorithmen',sem:3,match:91,tags:['Python','Remote'],gender:'male'},
+  {id:'p3',name:'Aylin Kaya',subject:'Elektrotechnik',sem:2,match:88,tags:['Labor'],gender:'female'},
+  {id:'p4',name:'Tom Bäcker',subject:'Technische Mechanik',sem:4,match:84,tags:['Statik','Bibliothek'],gender:'male'},
+  {id:'p5',name:'Mara Schulz',subject:'Programmieren 1',sem:1,match:82,tags:['Java'],gender:'nonbinary'},
+  {id:'p6',name:'Ravi Menon',subject:'Thermodynamik',sem:3,match:79,tags:['Formeln','Morgens'],gender:'male'}],
  matches:[{id:'m1',name:'Lena Vogt',subject:'Mathe 2',msg:'Sehen wir uns Donnerstag in der Bibliothek?',time:'14:02'},
   {id:'m2',name:'Jonas Reincke',subject:'Algorithmen',msg:'Übungsblatt 5 hochgeladen — schau mal rein.',time:'11:47'},
   {id:'m3',name:'Aylin Kaya',subject:'Elektrotechnik',msg:'Sagt Hallo',time:'Gestern'}],
@@ -2882,7 +2904,41 @@ const UNIVERSITIES=[
  {id:'ethz',country:'ch',name:'ETH Zürich',city:'Zürich',domains:['ethz.ch','student.ethz.ch'],status:'verified'},
  {id:'tudelft',country:'nl',name:'TU Delft',city:'Delft',domains:['tudelft.nl','student.tudelft.nl'],status:'verified'}]
 const MODULE_STATI=['ich starte gerade','Anfang','Mitte','fast fertig','wiederhole nur','brauche dringend Hilfe']
-const REPORT_REASONS=['Belästigung','Druck/Zwang','Beleidigung','unsicheres Verhalten','Spam','Fake-Profil','Dating/Flirt trotz Verbot','Betrugsversuch','externe Zahlungsforderung','verdächtiger Link','Datenschutzproblem','Admin-Missbrauch','Zahlungsthema','Sonstiges']
+const REPORT_REASONS=['Belästigung','Druck/Zwang','Beleidigung','unsicheres Verhalten','Spam','Fake-Profil','Dating/Flirt trotz Verbot','Falsche Geschlechtsangabe im geschützten Raum','Betrugsversuch','externe Zahlungsforderung','verdächtiger Link','Datenschutzproblem','Admin-Missbrauch','Zahlungsthema','Sonstiges']
+/* ===== Geschlechts-Räume (Matches & Lerngruppen): freiwillige Komfort-/Schutzräume, Selbstauskunft (AGG).
+   Server-Wahrheit siehe kommilo-backend/05-gender-policy.sql; hier client-seitige Spiegelung + Eignung. ===== */
+const GENDERS=[['female','Frau'],['male','Mann'],['nonbinary','Nicht-binär/divers'],['prefer_not','Keine Angabe']] // nie „Andere“
+const GENDER_LABEL=g=>((GENDERS.find(x=>x[0]===g)||[])[1]||'—')
+const ROOM_POLICIES={ mixed:{label:'Gemischt',ic:'⚥',color:'#6366F1'}, women_only:{label:'Nur Frauen',ic:'♀',color:'#DB2777'}, men_only:{label:'Nur Männer',ic:'♂',color:'#0EA5E9'} }
+const REASON_TAGS=['Komfort','Kulturell/Religiös','Fokus','Sicherheit']
+const SELF_DECL_HINT='Angaben beruhen auf Selbstauskunft.'
+const POLICY_LEGAL='Geschlechtsspezifische Lernräume sind freiwillige Komfort-/Schutzräume (zulässig als positive Maßnahme, AGG). Niemand wird aus der App ausgeschlossen — es gibt immer gemischte Räume.'
+function canJoinRoom(policy,gender){ const g=gender||DB.user.profile.gender||'' // mixed: alle (inkl. nonbinary & keine Angabe)
+  if(policy==='women_only') return g==='female'
+  if(policy==='men_only') return g==='male'
+  return true }
+function policyBadge(policy,reason){ const v=ROOM_POLICIES[policy||'mixed']||ROOM_POLICIES.mixed // farbenblind-sicher: Icon + Text
+  return '<span class="gp-badge" style="color:'+v.color+';background:'+v.color+'1a" title="'+esc(SELF_DECL_HINT)+'">'+v.ic+' '+esc(v.label)+(reason?' · '+esc(reason):'')+'</span>' }
+function policySelectorHTML(){ return '<label style="display:flex;align-items:center;gap:6px">Raumtyp <button type="button" class="gp-i" onclick="actions.policyInfo()" title="Info">i</button></label>'+
+  '<div class="gp-tiles">'+Object.entries(ROOM_POLICIES).map(([k,v])=>'<label class="gp-tile"><input type="radio" name="gp" value="'+k+'"'+(k==='mixed'?' checked':'')+'><span class="gp-ic" style="color:'+v.color+'">'+v.ic+'</span><b>'+esc(v.label)+'</b></label>').join('')+'</div>'+
+  '<div class="gp-reasons"><span class="gp-rlbl">Grund (optional):</span>'+['',...REASON_TAGS].map((r,i)=>'<label class="gp-rchip"><input type="radio" name="gpr" value="'+esc(r)+'"'+(i===0?' checked':'')+'><span>'+(r||'—')+'</span></label>').join('')+'</div>'+
+  '<label class="gp-nb"><input type="checkbox" id="gp-nb" checked> Nicht-binär willkommen (bei „Gemischt“)</label>'+
+  '<p class="hint">'+SELF_DECL_HINT+'</p>' }
+function readPolicy(){ const p=(document.querySelector('input[name="gp"]:checked')||{}).value||'mixed'
+  const reason=(document.querySelector('input[name="gpr"]:checked')||{}).value||''
+  return { gender_policy:p, reason_tag:reason||null, nonbinary_welcome: p==='mixed'?!!((document.getElementById('gp-nb')||{}).checked):false } }
+/* Gate: Binärraum anlegen/beitreten setzt eine Profil-Geschlechtsangabe voraus (Selbstauskunft auf Record). */
+function genderGate(policy,onOk){ if(policy==='mixed'||DB.user.profile.gender){ onOk(); return }
+  state._genderGateOk=onOk
+  openModal('<div class="eyebrow">Geschützter Raum</div><h3>Geschlecht im Profil setzen</h3>'+
+   '<p class="sub">Für „Nur Frauen“ / „Nur Männer“ brauchst du eine Angabe in deinem Profil (Selbstauskunft) — oder wähle einfach einen gemischten Raum.</p>'+
+   '<label>Geschlecht</label><select id="gg-sel">'+GENDERS.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join('')+'</select>'+
+   '<div class="mrow"><button class="btn ghost" onclick="closeModal()">Abbrechen</button><button class="btn grad" onclick="actions.genderGateSave()">Speichern & weiter</button></div>'+
+   '<p class="hint">'+SELF_DECL_HINT+'</p>') }
+const ROOM_FILTERS=[['alle','Alle'],['women_only','Nur Frauen'],['men_only','Nur Männer'],['mixed','Gemischt']]
+function roomFilterChips(action){ const cur=state[action]||'alle'
+  return ROOM_FILTERS.map(([k,l])=>'<button class="chipbtn'+(cur===k?' on':'')+'" style="'+(cur===k?'background:#4F46E5;color:#fff':'')+'" onclick="actions.'+action+'(\''+k+'\')">'+esc(l)+'</button>').join('') }
+function roomPassesFilter(policy,filter){ return !filter||filter==='alle'||(policy||'mixed')===filter }
 const INTRO_VIDEO_VERSION=1
 const now=()=>Date.now()
 const uid=()=>'x'+Math.random().toString(36).slice(2,10)
@@ -2891,7 +2947,7 @@ const DEFAULT_DB={
    consents:{ privacy:false, terms:false, purpose:false, at:null },
    introSeen:false, introSeenAt:null, introVersion:null,
    modeChosen:null, intlWarningAccepted:false,
-   profile:{ complete:false, name:'', age:'', gender:'', city:'', countryId:'', universityId:'', program:'', degree:'', semester:'', language:'', learnMode:'', availability:'', goal:'' },
+   profile:{ complete:false, name:'', age:'', gender:'', pronouns:'', city:'', countryId:'', universityId:'', program:'', degree:'', semester:'', language:'', learnMode:'', availability:'', goal:'' },
    modules:[], firstMatchUsed:false, firstGroupJoinUsed:false, credits:0, creditLog:[], blockedUsers:[] },
  pendingUnis:[], invitationsOut:[], matches:[], chats:{},
  myGroups:[], joinRequests:[], adminTransfers:[],
@@ -2910,7 +2966,8 @@ function loadDB(){ try{ const raw=localStorage.getItem('wlt_db_v1'); DB=raw?JSON
   if(!DB.fireRequests) DB.fireRequests=[]
   if(DB.user&&DB.user.firstFireJoinUsed===undefined) DB.user.firstFireJoinUsed=false
   if(!DB.deviceId){ DB.deviceId='d-'+((crypto&&crypto.randomUUID)?crypto.randomUUID():(uid()+String(now()))) }
-  if(!DB.claimedSessions) DB.claimedSessions=[] }
+  if(!DB.claimedSessions) DB.claimedSessions=[]
+  if(DB.user&&DB.user.profile&&DB.user.profile.pronouns===undefined) DB.user.profile.pronouns='' } // Gender-Policy: additive Migration älterer Profile
 function saveDB(){ try{ localStorage.setItem('wlt_db_v1',JSON.stringify(DB)) }catch(e){} }
 loadDB()
 function audit(entry){ DB.auditLogs.push(Object.assign({id:uid(),created_at:now(),event_source:'system'},entry)); if(DB.auditLogs.length>500)DB.auditLogs.shift(); saveDB() }
@@ -2983,6 +3040,7 @@ function creditShop(){ const packs=PRICING.CREDIT_PACKS
    '<div class="mrow"><button class="btn ghost w" onclick="closeModal()">Schließen</button></div>') }
 function createMatchFromInvitation(inv){ const free=!DB.user.firstMatchUsed
   const m={id:uid(),partner_name:inv.receiver_name,partner_id:inv.receiver_id,module_name:inv.module_name,locked:true,
+    gender_policy:inv.gender_policy||'mixed',reason_tag:inv.reason_tag||null,
     my_unlock:'pending',their_unlock:'paid',chat_enabled:false,safety_seen:false,created_at:now()}
   if(free){ DB.user.firstMatchUsed=true; m.my_unlock='free'; m.locked=false }
   else if(creditSpend(1,'Match · '+inv.receiver_name,m.id)){ m.my_unlock='paid'; m.locked=false
@@ -3124,18 +3182,29 @@ const actions={
  save(){ toast('Einstellungen gespeichert','Alles bleibt für diese Session aktiv.'); if(state.settings.glb) loadGlb(state.settings.glb) },
  connect(pid){ if(guardBlock())return
    const p=state.partners.find(x=>x.id===pid); if(!p||p.req) return
-   useInvitation()
-   const inv={id:uid(),receiver_id:pid,receiver_name:p.name,module_name:p.subject,status:'pending',created_at:now()}
-   DB.invitationsOut.push(inv); saveDB()
-   p.req=true; if(typeof updatePartnerRings==='function')updatePartnerRings()
-   notify('Einladung gesendet','Lern-Einladung an '+p.name+' ('+p.subject+') ist unterwegs.','invite')
-   toast('Zum Lernen eingeladen',p.name+' · '+p.subject+' — Antwort kommt als Benachrichtigung.')
-   render()
-   setTimeout(()=>{ inv.status='accepted'; inv.responded_at=now()
-     const m=createMatchFromInvitation(inv)
-     notify('Match akzeptiert',p.name+' lernt mit dir '+inv.module_name+'.'+(m.my_unlock==='free'?' Dein erstes Lernmatch ist kostenlos.':' 1 Credit erforderlich.'),'match')
-     toast('Match! '+p.name+' hat angenommen',m.my_unlock==='free'?'Erstes Lernmatch kostenlos — Chat kann geöffnet werden.':'Löse 1 Credit ein, um den Chat zu öffnen.')
-     render() },4000) },
+   openModal('<div class="eyebrow">Lernpartner</div><h3>'+esc(p.name)+' einladen</h3>'+
+    '<p class="sub">'+esc(p.subject)+' · '+p.sem+'. Semester</p>'+policySelectorHTML()+
+    '<div class="mrow"><button class="btn ghost" onclick="closeModal()">Abbrechen</button><button class="btn grad" onclick="actions.connectSend(\''+pid+'\')">Einladen</button></div>') },
+ connectSend(pid){ const p=state.partners.find(x=>x.id===pid); if(!p||p.req) return
+   const pol=readPolicy()
+   const go=()=>{ // Eignung: beide Seiten müssen die Policy erfüllen (Selbstauskunft)
+     if(pol.gender_policy!=='mixed'){
+       if(!canJoinRoom(pol.gender_policy)){ toast('Passt nicht zum Raumtyp','Für „'+ROOM_POLICIES[pol.gender_policy].label+'“ musst du selbst passend sein. '+SELF_DECL_HINT,'info'); return }
+       if(!canJoinRoom(pol.gender_policy,p.gender)){ toast('Passt nicht zum Raumtyp',esc(p.name)+' erfüllt „'+ROOM_POLICIES[pol.gender_policy].label+'“ nicht. '+SELF_DECL_HINT,'info'); return } }
+     closeModal(); useInvitation()
+     const inv={id:uid(),receiver_id:pid,receiver_name:p.name,module_name:p.subject,status:'pending',created_at:now(),...pol}
+     DB.invitationsOut.push(inv); saveDB()
+     p.req=true; if(typeof updatePartnerRings==='function')updatePartnerRings()
+     notify('Einladung gesendet','Lern-Einladung an '+p.name+' ('+p.subject+') ist unterwegs.','invite')
+     toast('Zum Lernen eingeladen',p.name+' · '+p.subject+' — Antwort kommt als Benachrichtigung.')
+     render()
+     setTimeout(()=>{ inv.status='accepted'; inv.responded_at=now()
+       const m=createMatchFromInvitation(inv)
+       notify('Match akzeptiert',p.name+' lernt mit dir '+inv.module_name+'.'+(m.my_unlock==='free'?' Dein erstes Lernmatch ist kostenlos.':' 1 Credit erforderlich.'),'match')
+       toast('Match! '+p.name+' hat angenommen',m.my_unlock==='free'?'Erstes Lernmatch kostenlos — Chat kann geöffnet werden.':'Löse 1 Credit ein, um den Chat zu öffnen.')
+       render() },4000) }
+   if(pol.gender_policy!=='mixed'&&!DB.user.profile.gender){ genderGate(pol.gender_policy,go); return }
+   go() },
  openTable(id){ if(guardBlock())return
    if(state.myTable===id){ toast('Das ist schon dein Tisch','Du wartest hier auf Anfragen.','info'); return }
    state.myTable=id; rebuildPartners(); render()
@@ -3189,6 +3258,7 @@ const actions={
     '<label>Name der Gruppe</label><input id="f-name" placeholder="z. B. Spezi Team">'+
     '<label>Fach / Modul</label><input id="f-fach" placeholder="z. B. Mathe 2">'+
     '<label>Plätze (max. 7)</label><select id="f-cap">'+[2,3,4,5,6,7].map(n=>'<option '+(n===6?'selected':'')+'>'+n+'</option>').join('')+'</select>'+
+    policySelectorHTML()+
     '<div class="mrow"><button class="btn ghost" onclick="closeModal()">Abbrechen</button>'+
     '<button class="btn grad" onclick="actions.createConsent(\''+target+'\')">Weiter</button></div>'+
     '<p class="hint">Für die Gruppenerstellung kostet 1 Credit. Das hilft, ernsthafte Gruppen zu fördern und Spam zu vermeiden. Kein Abo.</p>')
@@ -3197,7 +3267,12 @@ const actions={
    if(!n||!f){ toast('Bitte Name und Fach angeben','','info'); return }
    const bad=modCheck(n)||modCheck(f)
    if(bad){ const r=modStrike(bad,n+' '+f); if(r.banned){ closeModal(); render() } return }
-   state._draft={n,f,cap,slot}
+   const pol=readPolicy()
+   state._draft={n,f,cap,slot,...pol}
+   const proceed=()=>actions._createConsentStep2()
+   if(pol.gender_policy!=='mixed'&&!DB.user.profile.gender){ genderGate(pol.gender_policy,proceed); return } // Gate: Binärraum braucht Angabe
+   proceed() },
+ _createConsentStep2(){
    const boxes=['Ich behandle Mitgliederdaten vertraulich.','Ich prüfe Beitrittsanfragen fair und respektvoll.','Ich nutze Admin-Rechte nur für den Zweck der Lerngruppe.','Ich akzeptiere Datenschutz-, Ethik- und Community-Regeln.','Ich verstehe, dass Missbrauch zur Einschränkung oder Sperrung führen kann.']
    openModal('<div class="eyebrow">Lerngruppen · Schritt 2/3</div><h3>Admin-Verantwortung</h3>'+
     boxes.map(b=>'<label style="display:flex;gap:8px;align-items:flex-start;margin:8px 0;font-weight:600;font-size:12.5px;color:#221c35"><input type="checkbox" class="adm" style="width:auto;margin-top:2px">'+b+'</label>').join('')+
@@ -3210,8 +3285,9 @@ const actions={
    if(!creditSpend(1,'Gruppe gegründet · '+d.n)){ closeModal(); creditShop(); return }
    const color=GROUP_COLORS[groups().length%GROUP_COLORS.length]
    const gid='g'+now()
-   groups().push({id:gid,name:d.n,subject:d.f,members:1,capacity:d.cap,color,slotId:d.slot,joined:true,mine:true})
-   DB.myGroups.push({id:gid,name:d.n,subject:d.f,role:'admin',status:'active',consent_at:now(),members:[{name:DB.user.profile.name||'Du',role:'admin'},{name:'Lena Vogt',role:'member'},{name:'Jonas Reincke',role:'member'}]})
+   const pol={gender_policy:d.gender_policy||'mixed',nonbinary_welcome:d.nonbinary_welcome!==false,reason_tag:d.reason_tag||null}
+   groups().push({id:gid,name:d.n,subject:d.f,members:1,capacity:d.cap,color,slotId:d.slot,joined:true,mine:true,...pol})
+   DB.myGroups.push({id:gid,name:d.n,subject:d.f,role:'admin',status:'active',consent_at:now(),...pol,members:[{name:DB.user.profile.name||'Du',role:'admin'},{name:'Lena Vogt',role:'member'},{name:'Jonas Reincke',role:'member'}]})
    saveDB(); closeModal(); state.selected=d.slot; rebuildTables()
    notify('Mitgliedschaft aktiviert','Gruppe „'+d.n+'“ ist aktiv. Du bist Admin. 1 Credit eingelöst — Guthaben: '+credits()+' Credits.','group')
    toast('Gruppe „'+d.n+'“ gegründet','1 Credit eingelöst · ein neuer freier Tisch rückt nach.')
@@ -3219,6 +3295,9 @@ const actions={
  join(gid){ if(guardBlock())return
    const g=groups().find(x=>x.id===gid); if(!g||g.joined) return
    if(g.members>=g.capacity){ toast('Tisch voll','Wenn eine Gruppe voll ist, wird kein Payment gestartet.','info'); return }
+   const pol=g.gender_policy||'mixed' // Eignung VOR jedem Payment — nie ein Credit bei Ausschluss
+   if(pol!=='mixed'){ if(!DB.user.profile.gender){ genderGate(pol,()=>actions.join(gid)); return }
+     if(!canJoinRoom(pol)){ toast('Raum reserviert','Dieser Raum ist für '+ROOM_POLICIES[pol].label+' reserviert. '+SELF_DECL_HINT,'info'); return } }
    let jr=DB.joinRequests.find(r=>r.group_id===gid&&['requested','approved_payment_pending'].includes(r.status))
    if(jr&&jr.status==='requested'){ toast('Anfrage läuft','Der Gruppenadmin wurde benachrichtigt.','info'); return }
    if(jr&&jr.status==='approved_payment_pending'){ actions.joinPay(jr.id); return }
@@ -3234,6 +3313,7 @@ const actions={
  joinPay(jrId){ const jr=DB.joinRequests.find(r=>r.id===jrId); if(!jr||jr.status!=='approved_payment_pending')return
    const g=groups().find(x=>x.id===jr.group_id); if(!g)return
    if(g.members>=g.capacity){ toast('Tisch inzwischen voll','Kein Payment möglich.','info'); return }
+   if(!canJoinRoom(g.gender_policy||'mixed')){ toast('Raum reserviert','Dieser Raum ist für '+ROOM_POLICIES[g.gender_policy].label+' reserviert — es wird kein Credit belastet. '+SELF_DECL_HINT,'info'); return } // defensiv: nie ein Credit bei Ausschluss
    if(jr.slot_reserved_until&&now()>jr.slot_reserved_until){ jr.status='expired'; saveDB(); render()
      toast('Slot abgelaufen','Der reservierte Platz wurde wieder freigegeben — stelle die Anfrage neu.','info'); return }
    const freeJ=!DB.user.firstGroupJoinUsed
@@ -3661,8 +3741,20 @@ const actions={
  obProfile(){ const g=id=>document.getElementById(id).value.trim()
    const req=['p-name','p-age','p-prog','p-sem','p-lang','p-avail','p-goal']
    if(req.some(id=>!document.getElementById(id).value.trim())){ document.getElementById('ob-err').textContent='Bitte alle Pflichtfelder ausfüllen (Geschlecht ist optional).'; return }
-   Object.assign(DB.user.profile,{complete:true,name:g('p-name'),age:g('p-age'),gender:g('p-gender'),program:g('p-prog'),degree:document.getElementById('p-degree').value,semester:g('p-sem'),language:g('p-lang'),learnMode:document.getElementById('p-mode').value,availability:g('p-avail'),goal:g('p-goal')})
+   Object.assign(DB.user.profile,{complete:true,name:g('p-name'),age:g('p-age'),gender:g('p-gender'),pronouns:g('p-pron').slice(0,20),program:g('p-prog'),degree:document.getElementById('p-degree').value,semester:g('p-sem'),language:g('p-lang'),learnMode:document.getElementById('p-mode').value,availability:g('p-avail'),goal:g('p-goal')})
    saveDB(); render() },
+ policyInfo(){ toast('Geschützte Lernräume',POLICY_LEGAL,'info') },
+ genderGateSave(){ DB.user.profile.gender=document.getElementById('gg-sel').value; saveDB(); closeModal()
+   const cb=state._genderGateOk; state._genderGateOk=null; if(cb) cb() },
+ genderModal(){ const p=DB.user.profile
+   openModal('<div class="eyebrow">Profil</div><h3>Geschlecht & Pronomen</h3>'+
+    '<label>Geschlecht (Selbstauskunft)</label><select id="gm-g"><option value="">— keine Auswahl —</option>'+GENDERS.map(([v,l])=>'<option value="'+v+'"'+(p.gender===v?' selected':'')+'>'+l+'</option>').join('')+'</select>'+
+    '<label>Pronomen (optional, ≤ 20)</label><input id="gm-p" maxlength="20" value="'+esc(p.pronouns||'')+'" placeholder="z. B. sie/ihr">'+
+    '<div class="mrow"><button class="btn ghost" onclick="closeModal()">Abbrechen</button><button class="btn grad" onclick="actions.genderSave()">Speichern</button></div>'+
+    '<p class="hint">'+SELF_DECL_HINT+' Für andere sichtbar nur bei aktivem „Profil sichtbar“.</p>') },
+ genderSave(){ DB.user.profile.gender=document.getElementById('gm-g').value; DB.user.profile.pronouns=document.getElementById('gm-p').value.trim().slice(0,20); saveDB(); closeModal(); render(); toast('Gespeichert ✓','') },
+ groupFilter(k){ state.groupFilter=k; render() },
+ partnerFilter(k){ state.partnerFilter=k; render() },
  obAddModule(){ DB.user.modules.push({name:'',total:'',lecture:'',exercise:'',tutorial:'',self:'',exam:'',attempt:'1. Versuch',status:MODULE_STATI[0]}); saveDB(); render() },
  obModField(i,k,v){ DB.user.modules[i][k]=(k==='name'||k==='attempt'||k==='status')?v:Math.max(0,Math.min(100,+v||0)); saveDB() },
  obModulesDone(){ if(!DB.user.modules.length||DB.user.modules.some(m=>!moduleComplete(m))){ document.getElementById('ob-err').textContent='Ohne vollständigen Modulfortschritt kein Zugriff auf Matching, Gruppen, Chat oder Club Unterlagen.'; return }
@@ -4077,7 +4169,8 @@ function gateHTML(g){ const u=DB.user
   '<h2>Dein Lernprofil</h2>'+
   '<label>Vollständiger Name*</label><input id="p-name" value="'+esc(p.name)+'">'+
   '<div class="row"><span style="flex:1"><label>Alter*</label><input id="p-age" type="number" value="'+esc(p.age)+'"></span>'+
-  '<span style="flex:1"><label>Geschlecht (optional)</label><input id="p-gender" value="'+esc(p.gender)+'"></span></div>'+
+  '<span style="flex:1"><label>Geschlecht (optional, Selbstauskunft)</label><select id="p-gender"><option value="">— keine Auswahl —</option>'+GENDERS.map(([v,l])=>'<option value="'+v+'"'+(p.gender===v?' selected':'')+'>'+l+'</option>').join('')+'</select></span></div>'+
+  '<label>Pronomen (optional, ≤ 20)</label><input id="p-pron" maxlength="20" value="'+esc(p.pronouns||'')+'" placeholder="z. B. sie/ihr">'+
   '<label>Universität</label><input value="'+esc((UNIVERSITIES.find(x=>x.id===p.universityId)||{}).name||'')+'" disabled>'+
   '<label>Studiengang*</label><input id="p-prog" value="'+esc(p.program)+'">'+
   '<div class="row"><span style="flex:1"><label>Abschluss*</label><select id="p-degree"><option>Bachelor</option><option>Master</option><option>Staatsexamen</option><option>PhD</option><option>Sonstiges</option></select></span>'+
@@ -4136,18 +4229,21 @@ const HUD={
   '<div class="stat"><b style="color:#8B5CF6">'+DB.matches.length+'</b><span>Matches</span></div>'+
   '<div class="stat"><b style="color:#4F46E5">'+state.invitations.length+'</b><span>Einladungen</span></div></div>'+
   '<div class="chiph bl">Ziehen = drehen · Scrollen = zoomen</div>' },
- partner(){ const left=credits()
+ partner(){ const left=credits(); const pf=state.partnerFilter||'alle'
   return '<div class="card tl" style="max-width:410px"><div class="eyebrow">Lernpartner finden</div><h2>Setz dich dazu</h2>'+
   '<p>Kommiliton:innen sitzen allein am Tisch — der Stuhl daneben ist frei. Klicke einen Tisch für eine <b>Lern-Einladung</b> (kein Dating, kein Swipe). Oder öffne selbst einen freien 2er-Tisch und warte auf Anfragen.</p>'+
-  '<div class="mrow"><span class="tag teal" style="cursor:pointer" onclick="actions.shop()">💎 '+left+' Credits · kaufen</span><span class="tag">Einladungen: unbegrenzt & kostenlos</span>'+modeBtns()+'</div></div>'+
-  '<div class="card br list">'+state.partners.map((p,i)=>'<div class="litem stat2">'+avatarB(p.name,i)+'<span class="li-t grow"><b>'+esc(p.name)+'</b><i>'+esc(p.subject)+' · '+p.sem+'. Sem · passt: gleiches Modul, ähnlicher Fortschritt</i></span>'+ring(p.match)+'</div>'+
-  '<button class="btn grad w" style="margin:0 0 10px" '+(p.req?'disabled':'')+' onclick="actions.connect(\''+p.id+'\')">'+(p.req?'Eingeladen ✓':'Zum Lernen einladen')+'</button>').join('')+'</div>'+
+  '<div class="mrow"><span class="tag teal" style="cursor:pointer" onclick="actions.shop()">💎 '+left+' Credits · kaufen</span><span class="tag">Einladungen: unbegrenzt & kostenlos</span>'+modeBtns()+'</div>'+
+  '<div class="mrow" style="margin-top:6px"><span class="gp-rlbl">Raumtyp:</span>'+roomFilterChips('partnerFilter')+'</div></div>'+
+  '<div class="card br list">'+state.partners.map((p,i)=>{ const elig=pf==='alle'||pf==='mixed'||canJoinRoom(pf,p.gender) // ineligible sichtbar, aber gesperrt (Privatsphäre: kein fremdes Geschlecht anzeigen)
+    return '<div class="litem stat2'+(elig?'':' gp-lock')+'">'+avatarB(p.name,i)+'<span class="li-t grow"><b>'+(elig?'':'🔒 ')+esc(p.name)+'</b><i>'+esc(p.subject)+' · '+p.sem+'. Sem · passt: gleiches Modul, ähnlicher Fortschritt</i></span>'+ring(p.match)+'</div>'+
+    (elig?'<button class="btn grad w" style="margin:0 0 10px" '+(p.req?'disabled':'')+' onclick="actions.connect(\''+p.id+'\')">'+(p.req?'Eingeladen ✓':'Zum Lernen einladen')+'</button>'
+         :'<button class="btn grad w gp-lock" style="margin:0 0 10px" disabled title="Für „'+esc(ROOM_POLICIES[pf].label)+'“ nicht verfügbar">Für diesen Raumtyp nicht verfügbar</button>') }).join('')+'</div>'+
   '<div class="chiph bl">Besetzter Tisch = einladen · freier Tisch = selbst öffnen</div>' },
  matches(){ const items=DB.matches.length?DB.matches.map((m,i)=>{ let btn=''
     if(m.locked&&matchNeedsDeposit(m)) btn='<button class="btn grad sm" onclick="actions.deposit(\''+m.id+'\')">1 Credit einlösen</button>'
     else if(!m.chat_enabled) btn='<button class="btn grad sm" onclick="actions.openChat(\''+m.id+'\')">Chat öffnen</button>'
     else btn='<button class="btn grad sm" onclick="actions.openChat(\''+m.id+'\')">Nachricht</button>'
-    return '<div class="card row">'+avatarB(m.partner_name,i+1)+'<span class="li-t grow"><b>'+esc(m.partner_name)+' <span class="tag viol">'+esc(m.module_name)+'</span></b><i>'+(m.locked?(matchNeedsDeposit(m)?'Wartet auf dein Credits (0,25 €)':'Wartet auf Freischaltung'):(m.chat_enabled?'Chat aktiv':'Bereit — Sicherheitshinweis noch offen'))+'</i></span>'+
+    return '<div class="card row">'+avatarB(m.partner_name,i+1)+'<span class="li-t grow"><b>'+esc(m.partner_name)+' <span class="tag viol">'+esc(m.module_name)+'</span> '+policyBadge(m.gender_policy,m.reason_tag)+'</b><i>'+(m.locked?(matchNeedsDeposit(m)?'Wartet auf dein Credits (0,25 €)':'Wartet auf Freischaltung'):(m.chat_enabled?'Chat aktiv':'Bereit — Sicherheitshinweis noch offen'))+'</i></span>'+
     '<span class="row">'+btn+'<button class="btn ghost sm" onclick="actions.unwohl(\''+esc(m.partner_name)+'\')">🚪</button></span></div>' }).join('')
    :'<div class="card mut">Noch keine Matches. Dein erstes Lernmatch ist kostenlos. Danach kostet jedes bestätigte Lernmatch 1 Credit. Kein Abo.</div>'
   return '<div class="card tl"><div class="eyebrow">Matches</div><h2>Deine Lern-Verbindungen</h2><p>Chat öffnet erst, wenn beide Seiten den Freischalt-Status abgeschlossen haben.</p></div>'+
@@ -4158,26 +4254,32 @@ const HUD={
    '<h2>'+(isSH?'Studierendenhaus':'Campus '+uni().short)+'</h2>'+
    '<p>Beitritt anfragen ist kostenlos. Nach Admin-Annahme ist dein Platz 24 h reserviert — aktiv wird die Mitgliedschaft nach Bestätigung — dein erster Beitritt ist kostenlos, danach 1 Credit. Max. 7 Personen, genau 1 Admin.</p>'+
    '<div class="mrow">'+UNIS.map(u=>'<button class="chipbtn'+(u.id===state.uniId?' on':'')+'" style="'+(u.id===state.uniId?'background:'+u.color+';color:#fff':'')+'" onclick="actions.uni(\''+u.id+'\')">'+u.short+'</button>').join('')+
-   '<span style="flex-basis:100%;height:0"></span>'+modeBtns()+'</div></div>'
+   '<span style="flex-basis:100%;height:0"></span>'+modeBtns()+'</div>'+
+   '<div class="mrow" style="margin-top:6px"><span class="gp-rlbl">Raumtyp:</span>'+roomFilterChips('groupFilter')+'</div></div>'
+  const gf=state.groupFilter||'alle'
   const tools='<div class="tools tr"><button class="btn grad" onclick="actions.createModal()">+ Gruppe gründen (1 Credit)</button></div>'
   let detail
   if(sel){ const jr=jrFor(sel.id); const mine=DB.myGroups.find(x=>x.id===sel.id)
+    const selPol=sel.gender_policy||'mixed', selElig=canJoinRoom(selPol)
     let act=''
     if(mine&&mine.role==='admin') act='<button class="btn ghost w" onclick="actions.transferModal(\''+sel.id+'\')">Admin-Rolle übertragen</button><button class="btn ghost w" onclick="actions.leaveGroup(\''+sel.id+'\')">Gruppe verlassen</button>'
     else if(mine) act='<button class="btn ghost w" onclick="actions.leaveGroup(\''+sel.id+'\')">Gruppe verlassen (kostenlos)</button>'
     else if(sel.members>=sel.capacity) act='<p class="hint center">Tisch voll — es wird kein Payment gestartet.</p>'
     else if(jr&&jr.status==='approved_payment_pending') act='<button class="btn grad w" onclick="actions.joinPay(\''+jr.id+'\')">Beitritt bestätigen · 1 Credit einlösen</button><p class="hint center">Platz reserviert bis '+new Date(jr.slot_reserved_until).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr (24 h).</p>'
     else if(jr&&jr.status==='requested') act='<p class="hint center">Anfrage gesendet — der Admin prüft fair und respektvoll.</p>'
+    else if(!selElig) act='<p class="hint center gp-lock">🔒 Dieser Raum ist für '+ROOM_POLICIES[selPol].label+' reserviert.<br>'+SELF_DECL_HINT+'</p>'
     else act='<button class="btn grad w" onclick="actions.join(\''+sel.id+'\')">Beitritt anfragen (kostenlos)</button>'
     detail='<div class="card bl" style="width:310px"><div class="row"><span class="dot" style="background:'+sel.color+'"></span><b>'+esc(sel.name)+'</b>'+(mine?'<span class="tag teal">'+(mine.role==='admin'?'Du bist Admin':'Mitglied')+'</span>':'')+'<span class="mut" style="margin-left:auto">'+sel.members+'/'+sel.capacity+'</span></div>'+
+    '<div class="row" style="margin:2px 0">'+policyBadge(selPol,sel.reason_tag)+'</div>'+
     '<div class="sub">'+esc(sel.subject)+'</div>'+act+
     '<button class="btn ghost w" onclick="actions.unwohl(\''+esc(sel.name)+'\')">Ich fühle mich unwohl</button></div>' }
   else detail='<div class="chiph bl">Tisch direkt anklicken · gestrichelt = frei (gründen)</div>'
-  const list='<div class="card br list"><div class="row sp"><b>Tische</b><span class="tag viol">'+groups().length+' Gruppen</span></div>'+
-   visibleSlots().map(sl=>{ const gg=m.get(sl.id); const on=state.selected===sl.id
-    return '<button class="litem'+(on?' on':'')+'" onclick="actions.select(\''+sl.id+'\')">'+
-    (gg?'<span class="dot" style="background:'+gg.color+'"></span><span class="li-t grow"><b>'+esc(gg.name)+'</b><i>'+esc(gg.subject)+'</i></span><em>'+gg.members+'/'+gg.capacity+'</em>'
-      :'<span class="dot" style="background:#c4b5fd"></span><span class="li-t grow"><b style="color:#8B5CF6">Frei — gründen</b></span><em>+</em>')+'</button>' }).join('')+'</div>'
+  const rows=visibleSlots().map(sl=>{ const gg=m.get(sl.id); const on=state.selected===sl.id
+    if(gg&&!roomPassesFilter(gg.gender_policy,gf)) return '' // Filter: Raumtyp (freie Tische bleiben — man kann jeden Typ gründen)
+    if(!gg) return '<button class="litem'+(on?' on':'')+'" onclick="actions.select(\''+sl.id+'\')"><span class="dot" style="background:#c4b5fd"></span><span class="li-t grow"><b style="color:#8B5CF6">Frei — gründen</b></span><em>+</em></button>'
+    const pol=gg.gender_policy||'mixed', locked=!canJoinRoom(pol) // ineligible: sichtbar, aber gesperrt — nie still versteckt
+    return '<button class="litem'+(on?' on':'')+(locked?' gp-lock':'')+'" onclick="actions.select(\''+sl.id+'\')" title="'+(locked?esc('Dieser Raum ist für '+ROOM_POLICIES[pol].label+' reserviert'):'')+'"><span class="dot" style="background:'+gg.color+'"></span><span class="li-t grow"><b>'+(locked?'🔒 ':'')+esc(gg.name)+'</b><i>'+esc(gg.subject)+' · '+ROOM_POLICIES[pol].ic+' '+esc(ROOM_POLICIES[pol].label)+'</i></span><em>'+gg.members+'/'+gg.capacity+'</em></button>' }).join('')
+  const list='<div class="card br list"><div class="row sp"><b>Tische</b><span class="tag viol">'+groups().length+' Gruppen</span></div>'+(rows||'<div class="mut">Keine Räume dieses Typs — oder gründe einen neuen.</div>')+'</div>'
   return head+tools+detail+list },
  aktivitaeten(){ const fs=fires(), occ=new Map(fs.map(f=>[f.slotId,f]))
   const cat=state.fireCat||'Alle'
@@ -4255,6 +4357,7 @@ const HUD={
  profil(){ const p=DB.user.profile
   return '<div class="card br" style="width:380px"><div class="eyebrow">Profil</div><h2>'+esc(p.name||'Du')+' <span class="tag grad-bg">'+esc((UNIVERSITIES.find(x=>x.id===p.universityId)||{}).name||'')+'</span></h2>'+
   '<p class="sub">'+esc(p.program)+' · '+esc(p.degree)+' · '+esc(p.semester)+'. Semester · '+esc(p.learnMode)+'</p>'+
+  '<div class="row sp" style="margin:2px 0 6px"><span class="sub">'+(p.gender?esc(GENDER_LABEL(p.gender)):'Geschlecht: keine Angabe')+(p.pronouns?' · '+esc(p.pronouns):'')+'</span><button class="btn ghost sm" onclick="actions.genderModal()">ändern</button></div>'+
   '<div class="stats stat-in"><div class="stat"><b style="color:#6366F1">'+DB.user.modules.length+'</b><span>Module</span></div><div class="stat"><b style="color:#8B5CF6">'+DB.matches.length+'</b><span>Matches</span></div><div class="stat"><b style="color:#14B8A6">'+DB.myGroups.filter(x=>x.status==='active').length+'</b><span>Gruppen</span></div></div>'+
   '<h4>Lernziel</h4><p>'+esc(p.goal)+'</p><h4>Verfügbarkeit</h4><p>'+esc(p.availability)+'</p>'+
   '<h4>Modulfortschritt</h4>'+DB.user.modules.map(m=>'<div class="sub">'+esc(m.name)+' · Gesamt '+m.total+' % · '+esc(m.status)+' · '+esc(m.attempt)+'</div>').join('')+'</div>'+
@@ -4460,7 +4563,7 @@ function updateLabels(){
     if(projV.z>1) return
     const x=r.left+(projV.x*.5+.5)*r.width, y=r.top+(-projV.y*.5+.5)*r.height
     const g=m.get(t.userData.slotId)
-    html+= g? '<div class="tlabel" style="left:'+x+'px;top:'+y+'px"><b>'+esc(g.name)+'</b><i style="color:'+g.color+'">'+esc(g.subject)+' · '+g.members+'/'+g.capacity+'</i></div>'
+    html+= g? '<div class="tlabel" style="left:'+x+'px;top:'+y+'px"><b>'+((g.gender_policy&&g.gender_policy!=='mixed')?ROOM_POLICIES[g.gender_policy].ic+' ':'')+esc(g.name)+'</b><i style="color:'+g.color+'">'+esc(g.subject)+' · '+g.members+'/'+g.capacity+'</i></div>'
       : '<div class="tlabel free" style="left:'+x+'px;top:'+y+'px"><b>+ Gruppe gründen</b></div>' })
   labelLayer.innerHTML=html }
 addEventListener('resize',()=>{ camera.aspect=(innerWidth-264)/(innerHeight-64); camera.updateProjectionMatrix()
